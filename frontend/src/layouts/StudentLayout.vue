@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+  <div class="min-h-screen bg-white">
     <!-- Top Navigation Bar -->
     <nav class="bg-white shadow-lg border-b-4 border-blue-500">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

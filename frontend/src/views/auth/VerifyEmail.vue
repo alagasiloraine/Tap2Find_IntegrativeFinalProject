@@ -1,27 +1,24 @@
 <template>
-  <div class="auth-page">
+  <div class="auth-page bg-white">
     <!-- Auth Card -->
-    <div class="bg-white py-8 px-6 shadow-lg rounded-lg">
+    <div class="py-8 px-6">
       <!-- Header -->
       <div class="text-center mb-8">
-        <div class="mb-4">
-          <div class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-            <span class="text-2xl">📧</span>
-          </div>
-        </div>
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Verify Your Email</h1>
-        <p class="text-gray-600">We've sent a verification code to</p>
-        <p class="text-sm font-medium text-gray-800 mt-1">{{ email || 'user@example.com' }}</p>
+        <img src="/t2flogo.gif" alt="Tap2Find Logo" class="w-24 h-24 mx-auto mb-2" />
+        <h1 class="text-3xl font-semibold text-gray-800">Verify Your Email</h1>
+        <p class="text-gray-400">Enter the OTP sent to your email</p>
       </div>
 
       <!-- OTP Form -->
-      <form @submit.prevent="handleVerifyEmail" class="space-y-6">
+      <form @submit.prevent="verifyOTP" class="space-y-6">
         <!-- OTP Input Fields -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-4 text-center">
-            Enter 6-digit verification code
-          </label>
-          <div class="flex justify-center gap-3">
+        <div class="text-center mb-6">
+          <p class="text-gray-600 mb-4">
+            We've sent a 6-digit code to <strong>{{ email }}</strong>
+          </p>
+          
+          <!-- OTP Input Container -->
+          <div class="flex justify-center space-x-3 mb-6">
             <input
               v-for="(digit, index) in otpDigits"
               :key="index"
@@ -29,90 +26,53 @@
               v-model="otpDigits[index]"
               type="text"
               maxlength="1"
-              required
-              class="w-12 h-12 text-center text-xl font-bold border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              @input="handleOtpInput(index, $event)"
-              @keydown="handleOtpKeydown(index, $event)"
-              @paste="handleOtpPaste"
+              class="w-12 h-12 text-center text-xl font-semibold border-2 border-gray-300 rounded-md focus:border-[#102A71] focus:ring-1 focus:ring-[#102A71] focus:ring-opacity-100 transition-colors"
+              @input="handleOTPInput(index, $event)"
+              @keydown="handleKeyDown(index, $event)"
+              @paste="handlePaste"
             />
           </div>
         </div>
 
         <!-- Timer -->
-        <div class="text-center">
-          <p class="text-sm text-gray-600">
-            Code expires in 
-            <span class="font-medium text-blue-600">{{ formatTime(timeLeft) }}</span>
+        <div class="text-center mb-6">
+          <p class="text-sm text-gray-500">
+            Code expires in: <span class="font-medium text-red-600">{{ formatTime(timeLeft) }}</span>
           </p>
         </div>
 
-        <!-- Submit Button -->
+        <!-- Verify Button -->
         <button
           type="submit"
-          :disabled="!isOtpComplete || isLoading"
-          class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="!isOTPComplete || isVerifying"
+          class="w-full bg-[#F5C400] text-white py-2 px-4 rounded-full hover:bg-[#e8bc09] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span v-if="!isLoading">Verify Email</span>
-          <span v-else>Verifying...</span>
+          {{ isVerifying ? 'Verifying...' : 'Verify OTP' }}
         </button>
       </form>
 
-      <!-- Resend Code -->
+      <!-- Resend Section -->
       <div class="mt-6 text-center">
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-gray-500 mb-4">
           Didn't receive the code?
+        </p>
+        
+        <button
+          @click="resendOTP"
+          :disabled="isResending || timeLeft > 0"
+          class="text-blue-600 hover:text-blue-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {{ isResending ? 'Sending...' : 'Resend OTP' }}
+        </button>
+        
+        <div class="mt-4">
           <button
-            @click="resendCode"
-            :disabled="timeLeft > 0"
-            class="font-medium text-blue-600 hover:text-blue-500 disabled:text-gray-400 disabled:cursor-not-allowed"
+            @click="goToLogin"
+            class="text-gray-500 hover:text-gray-700 text-sm"
           >
-            {{ timeLeft > 0 ? `Resend in ${formatTime(timeLeft)}` : 'Resend Code' }}
+            ← Back to Login
           </button>
-        </p>
-      </div>
-
-      <!-- Success Message -->
-      <div v-if="verificationSuccess" class="mt-6 p-4 bg-green-50 border border-green-200 rounded-md">
-        <div class="flex">
-          <div class="flex-shrink-0">
-            <span class="text-green-400 text-xl">✅</span>
-          </div>
-          <div class="ml-3">
-            <h3 class="text-sm font-medium text-green-800">
-              Email Verified!
-            </h3>
-            <div class="mt-2 text-sm text-green-700">
-              <p>Your email has been successfully verified. You can now access all features.</p>
-            </div>
-          </div>
         </div>
-      </div>
-
-      <!-- Error Message -->
-      <div v-if="errorMessage" class="mt-6 p-4 bg-red-50 border border-red-200 rounded-md">
-        <div class="flex">
-          <div class="flex-shrink-0">
-            <span class="text-red-400 text-xl">❌</span>
-          </div>
-          <div class="ml-3">
-            <h3 class="text-sm font-medium text-red-800">
-              Verification Failed
-            </h3>
-            <div class="mt-2 text-sm text-red-700">
-              <p>{{ errorMessage }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Back to Login -->
-      <div class="mt-6 text-center">
-        <p class="text-sm text-gray-600">
-          Wrong email?
-          <router-link to="/register" class="font-medium text-blue-600 hover:text-blue-500">
-            Change Email
-          </router-link>
-        </p>
       </div>
     </div>
   </div>
@@ -120,26 +80,41 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
-const props = defineProps({
-  email: {
-    type: String,
-    default: ''
-  }
-})
+const router = useRouter()
+const route = useRoute()
 
+// Get email from route params or use default
+const email = ref(route.query.email || 'your-email@example.com')
+
+// OTP related state
 const otpDigits = ref(['', '', '', '', '', ''])
 const otpInputs = ref([])
-const isLoading = ref(false)
-const verificationSuccess = ref(false)
-const errorMessage = ref('')
+const isVerifying = ref(false)
+const isResending = ref(false)
 const timeLeft = ref(300) // 5 minutes in seconds
-
 let timer = null
 
-const isOtpComplete = computed(() => {
+// Computed properties
+const isOTPComplete = computed(() => {
   return otpDigits.value.every(digit => digit !== '')
 })
+
+const otpCode = computed(() => {
+  return otpDigits.value.join('')
+})
+
+// Timer functions
+const startTimer = () => {
+  timeLeft.value = 300 // Reset to 5 minutes
+  timer = setInterval(() => {
+    timeLeft.value--
+    if (timeLeft.value <= 0) {
+      clearInterval(timer)
+    }
+  }, 1000)
+}
 
 const formatTime = (seconds) => {
   const mins = Math.floor(seconds / 60)
@@ -147,7 +122,8 @@ const formatTime = (seconds) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-const handleOtpInput = (index, event) => {
+// OTP input handling
+const handleOTPInput = (index, event) => {
   const value = event.target.value
   
   // Only allow numbers
@@ -158,20 +134,20 @@ const handleOtpInput = (index, event) => {
   
   otpDigits.value[index] = value
   
-  // Move to next input if current is filled
+  // Auto-focus next input
   if (value && index < 5) {
     otpInputs.value[index + 1]?.focus()
   }
 }
 
-const handleOtpKeydown = (index, event) => {
+const handleKeyDown = (index, event) => {
   // Handle backspace
   if (event.key === 'Backspace' && !otpDigits.value[index] && index > 0) {
     otpInputs.value[index - 1]?.focus()
   }
 }
 
-const handleOtpPaste = (event) => {
+const handlePaste = (event) => {
   event.preventDefault()
   const pastedData = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
   
@@ -180,69 +156,74 @@ const handleOtpPaste = (event) => {
   }
   
   // Focus the next empty input or the last one
-  const nextIndex = Math.min(pastedData.length, 5)
-  otpInputs.value[nextIndex]?.focus()
+  const nextEmptyIndex = otpDigits.value.findIndex(digit => digit === '')
+  const focusIndex = nextEmptyIndex !== -1 ? nextEmptyIndex : 5
+  otpInputs.value[focusIndex]?.focus()
 }
 
-const handleVerifyEmail = async () => {
-  if (!isOtpComplete.value) return
+// Verification function
+const verifyOTP = async () => {
+  if (!isOTPComplete.value) return
   
-  isLoading.value = true
-  errorMessage.value = ''
+  isVerifying.value = true
   
   try {
-    const otpCode = otpDigits.value.join('')
+    // TODO: Implement actual OTP verification logic
+    console.log('Verifying OTP:', otpCode.value)
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 2000))
     
-    console.log('Verifying OTP:', otpCode)
-    
-    // Simulate verification (replace with actual logic)
-    if (otpCode === '123456') {
-      verificationSuccess.value = true
-      // TODO: Redirect to dashboard or next step
+    // For demo purposes, accept any 6-digit code
+    if (otpCode.value.length === 6) {
+      alert('Email verified successfully!')
+      router.push('/login')
     } else {
-      errorMessage.value = 'Invalid verification code. Please try again.'
+      alert('Invalid OTP. Please try again.')
       // Clear OTP inputs
       otpDigits.value = ['', '', '', '', '', '']
       otpInputs.value[0]?.focus()
     }
+    
   } catch (error) {
-    errorMessage.value = 'Verification failed. Please try again.'
+    console.error('Error verifying OTP:', error)
+    alert('Verification failed. Please try again.')
   } finally {
-    isLoading.value = false
+    isVerifying.value = false
   }
 }
 
-const resendCode = async () => {
+const resendOTP = async () => {
   if (timeLeft.value > 0) return
   
+  isResending.value = true
+  
   try {
-    console.log('Resending verification code to:', props.email)
-    // TODO: Implement resend logic
+    // TODO: Implement actual resend OTP logic
+    console.log('Resending OTP to:', email.value)
     
-    // Reset timer
-    timeLeft.value = 300
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    // Clear current OTP and start new timer
+    otpDigits.value = ['', '', '', '', '', '']
     startTimer()
     
-    // Clear current OTP
-    otpDigits.value = ['', '', '', '', '', '']
-    otpInputs.value[0]?.focus()
+    alert('New OTP sent successfully!')
+    
   } catch (error) {
-    console.error('Error resending code:', error)
+    console.error('Error resending OTP:', error)
+    alert('Failed to resend OTP. Please try again.')
+  } finally {
+    isResending.value = false
   }
 }
 
-const startTimer = () => {
-  timer = setInterval(() => {
-    timeLeft.value--
-    if (timeLeft.value <= 0) {
-      clearInterval(timer)
-    }
-  }, 1000)
+const goToLogin = () => {
+  router.push('/login')
 }
 
+// Lifecycle hooks
 onMounted(() => {
   startTimer()
   // Focus first input

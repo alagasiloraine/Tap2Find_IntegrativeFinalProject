@@ -11,3 +11,4 @@ app.use(router)
 app.mount('#app')
 
 console.log('Vue app mounted!')
+

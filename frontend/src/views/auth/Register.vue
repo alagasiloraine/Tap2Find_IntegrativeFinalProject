@@ -1,7 +1,7 @@
 <template>
   <div class="auth-page">
     <!-- Auth Card -->
-    <div class="bg-white py-8 px-6">
+    <div class="bg-white py-8 px-6 shadow-lg rounded-lg">
       <!-- Header -->
       <div class="text-center mb-8">
         <img src="/t2flogo.gif" alt="Tap2Find Logo" class="w-24 h-24 mx-auto mb-2" />
@@ -234,7 +234,7 @@
         <!-- Submit Button -->
         <button
           type="submit"
-          class="w-full bg-[#F5C400] text-white py-2 px-4 rounded-xl hover:bg-[#e8bc09] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+          class="w-full bg-[#F5C400] text-white py-2 px-4 rounded-full hover:bg-[#e8bc09] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
         >
           Create Account
         </button>

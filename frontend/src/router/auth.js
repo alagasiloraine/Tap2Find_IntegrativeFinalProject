@@ -7,44 +7,44 @@ import VerifyEmail from '@/views/auth/VerifyEmail.vue'
 const authRoutes = [
   {
     path: '/login',
-    name: 'login',
     component: AuthLayout,
     children: [
       {
         path: '',
+        name: 'login',
         component: Login,
       },
     ],
   },
   {
     path: '/register',
-    name: 'register',
     component: AuthLayout,
     children: [
       {
         path: '',
+        name: 'register',
         component: Register,
       },
     ],
   },
   {
     path: '/forgot-password',
-    name: 'forgot-password',
     component: AuthLayout,
     children: [
       {
         path: '',
+        name: 'forgot-password',
         component: ForgotPassword,
       },
     ],
   },
   {
     path: '/verify-email',
-    name: 'verify-email',
     component: AuthLayout,
     children: [
       {
         path: '',
+        name: 'verify-email',
         component: VerifyEmail,
       },
     ],

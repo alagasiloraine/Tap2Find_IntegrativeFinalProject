@@ -4,8 +4,14 @@
     <div class="bg-white py-8 px-6 shadow-lg rounded-lg">
       <!-- Header -->
       <div class="text-center mb-8">
+        <iframe
+          src="https://lottie.host/embed/dc16c330-042a-48f3-b473-f3947a85fc81/VmJVMnn9qr.lottie"
+          class="w-56 h-56 md:w-64 md:h-64 mx-auto mb-4"
+          style="border:0;"
+          title="Forgot password animation"
+        ></iframe>
         <h1 class="text-3xl font-bold text-gray-800 mb-2">Forgot Password?</h1>
-        <p class="text-gray-600">No worries! Enter your email and we'll send you a reset link.</p>
+        <p class="text-gray-400">No worries! Enter your email and we'll send you a reset link.</p>
       </div>
 
       <!-- Forgot Password Form -->
@@ -20,7 +26,7 @@
             v-model="form.email"
             type="email"
             required
-            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none"
             placeholder="Enter your email address"
           />
         </div>
@@ -29,7 +35,7 @@
         <button
           type="submit"
           :disabled="isLoading"
-          class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full bg-[#F5C400] text-white py-2 px-4 rounded-full hover:bg-[#e8bc09] transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span v-if="!isLoading">Send Reset Link</span>
           <span v-else>Sending...</span>

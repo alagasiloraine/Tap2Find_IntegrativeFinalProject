@@ -1,122 +1,12 @@
 <template>
   <div class="min-h-screen flex bg-white">
     <!-- Sidebar -->
-    <div class="hidden md:flex md:w-64 md:flex-col">
-      <div class="flex flex-col flex-grow pt-5 bg-white overflow-y-auto border-r border-gray-200">
-        <!-- Logo -->
-        <div class="flex items-center flex-shrink-0 px-4">
-          <router-link to="/professor" class="text-xl font-bold text-gray-800">
-            Tap2Find Professor 🔥
-          </router-link>
-        </div>
-        
-        <!-- Navigation -->
-        <div class="mt-5 flex-grow flex flex-col">
-          <nav class="flex-1 px-2 pb-4 space-y-1">
-            <!-- Dashboard -->
-            <router-link
-              to="/professor"
-              class="group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors"
-              :class="$route.path === '/professor' ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
-            >
-              <span class="mr-3 text-lg">📊</span>
-              Dashboard
-            </router-link>
-            
-            <!-- Students -->
-            <a
-              href="#"
-              class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-            >
-              <span class="mr-3 text-lg">👥</span>
-              Students
-            </a>
-            
-            <!-- Assignments -->
-            <a
-              href="#"
-              class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-            >
-              <span class="mr-3 text-lg">📝</span>
-              Assignments
-            </a>
-            
-            <!-- Grades -->
-            <a
-              href="#"
-              class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-            >
-              <span class="mr-3 text-lg">📈</span>
-              Grades
-            </a>
-          </nav>
-        </div>
-        
-        <!-- User Profile -->
-        <div class="flex-shrink-0 flex border-t border-gray-200 p-4">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                <span class="text-white text-sm font-medium">P</span>
-              </div>
-            </div>
-            <div class="ml-3">
-              <p class="text-sm font-medium text-gray-700">Prof. Smith</p>
-              <p class="text-xs text-gray-500">prof@tap2find.com</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ProfessorSidebar />
 
     <!-- Main Content -->
     <div class="flex flex-col w-0 flex-1 overflow-hidden">
       <!-- Top Navigation -->
-      <div class="relative z-10 flex-shrink-0 flex h-16 bg-white shadow">
-        <!-- Mobile menu button -->
-        <button
-          @click="mobileMenuOpen = !mobileMenuOpen"
-          class="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 md:hidden"
-        >
-          <span class="sr-only">Open sidebar</span>
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-        
-        <!-- Page title -->
-        <div class="flex-1 px-4 flex justify-between">
-          <div class="flex-1 flex items-center">
-            <h1 class="text-2xl font-semibold text-gray-900">
-              {{ pageTitle }}
-            </h1>
-          </div>
-          
-          <!-- Right side actions -->
-          <div class="ml-4 flex items-center md:ml-6">
-            <!-- Notifications -->
-            <button class="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              <span class="sr-only">View notifications</span>
-              <span class="text-xl">🔔</span>
-            </button>
-            
-            <!-- Profile dropdown -->
-            <div class="ml-3 relative">
-              <div class="flex items-center space-x-3">
-                <div class="text-sm text-gray-700">
-                  Welcome back, <span class="font-medium">Professor</span>
-                </div>
-                <router-link
-                  to="/"
-                  class="text-sm text-blue-600 hover:text-blue-500"
-                >
-                  View Site
-                </router-link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ProfessorTopNav @toggle-menu="mobileMenuOpen = !mobileMenuOpen" />
 
       <!-- Mobile sidebar -->
       <div v-if="mobileMenuOpen" class="md:hidden">
@@ -137,25 +27,26 @@
                 <span class="text-xl font-bold text-gray-800">Tap2Find Professor 🔥</span>
               </div>
               <nav class="mt-5 px-2 space-y-1">
-                <router-link
-                  to="/professor"
-                  class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                >
+                <router-link to="/professor" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
                   <span class="mr-4 text-lg">📊</span>
-                  Dashboard
+                  Professor Dashboard
                 </router-link>
-                <a href="#" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-                  <span class="mr-4 text-lg">👥</span>
-                  Students
-                </a>
-                <a href="#" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-                  <span class="mr-4 text-lg">📝</span>
-                  Assignments
-                </a>
-                <a href="#" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-                  <span class="mr-4 text-lg">📈</span>
-                  Grades
-                </a>
+                <router-link to="/professor/availability" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                  <span class="mr-4 text-lg">✅</span>
+                  Set Availability Status
+                </router-link>
+                <router-link to="/professor/concerns" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                  <span class="mr-4 text-lg">📬</span>
+                  Manage Student Concerns
+                </router-link>
+                <router-link to="/professor/schedule" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                  <span class="mr-4 text-lg">📅</span>
+                  Upload New/Edit Teaching Schedule
+                </router-link>
+                <router-link to="/professor/profile" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                  <span class="mr-4 text-lg">👤</span>
+                  Profile Page
+                </router-link>
               </nav>
             </div>
           </div>
@@ -177,6 +68,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import ProfessorSidebar from '@/components/ProfessorSidebar.vue'
+import ProfessorTopNav from '@/components/ProfessorTopNav.vue'
 
 const route = useRoute()
 const mobileMenuOpen = ref(false)

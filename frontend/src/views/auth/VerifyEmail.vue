@@ -1,10 +1,18 @@
 <template>
   <div class="auth-page bg-white">
     <!-- Auth Card -->
-    <div class="py-8 px-6">
+    <div class="py-8 px-6 relative">
+      <button @click="goBack" class="absolute top-2 left-2 p-2 text-gray-600">
+        <iconify-icon icon="material-symbols:arrow-back-ios-rounded" class="w-5 h-5" />
+      </button>
       <!-- Header -->
       <div class="text-center mb-8">
-        <img src="/t2flogo.gif" alt="Tap2Find Logo" class="w-24 h-24 mx-auto mb-2" />
+        <iframe
+          src="https://lottie.host/embed/3aaed7c4-84f2-4923-bde8-ae95a2502fa6/zET5kXzx2P.lottie"
+          class="w-40 h-40 md:w-48 md:h-48 mx-auto mb-2"
+          style="border:0;"
+          title="Verify email animation"
+        ></iframe>
         <h1 class="text-3xl font-semibold text-gray-800">Verify Your Email</h1>
         <p class="text-gray-400">Enter the OTP sent to your email</p>
       </div>
@@ -26,7 +34,7 @@
               v-model="otpDigits[index]"
               type="text"
               maxlength="1"
-              class="w-12 h-12 text-center text-xl font-semibold border-2 border-gray-300 rounded-md focus:border-[#102A71] focus:ring-1 focus:ring-[#102A71] focus:ring-opacity-100 transition-colors"
+              class="w-12 h-12 text-center text-xl font-semibold bg-gray-50 rounded-md text-[#102A71] focus:border-[#102A71] focus:ring-1 focus:ring-[#102A71] focus:ring-opacity-100 transition-colors"
               @input="handleOTPInput(index, $event)"
               @keydown="handleKeyDown(index, $event)"
               @paste="handlePaste"
@@ -52,25 +60,15 @@
       </form>
 
       <!-- Resend Section -->
-      <div class="mt-6 text-center">
-        <p class="text-sm text-gray-500 mb-4">
-          Didn't receive the code?
-        </p>
-        
-        <button
-          @click="resendOTP"
-          :disabled="isResending || timeLeft > 0"
-          class="text-blue-600 hover:text-blue-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {{ isResending ? 'Sending...' : 'Resend OTP' }}
-        </button>
-        
-        <div class="mt-4">
+      <div class="mt-6">
+        <div class="text-sm text-gray-500 flex items-center justify-between">
+          <span>Didn't receive the code?</span>
           <button
-            @click="goToLogin"
-            class="text-gray-500 hover:text-gray-700 text-sm"
+            @click="resendOTP"
+            :disabled="isResending || timeLeft > 0"
+            class="text-[#102A71] hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            ← Back to Login
+            {{ isResending ? 'Sending...' : 'Resend OTP' }}
           </button>
         </div>
       </div>
@@ -221,6 +219,10 @@ const resendOTP = async () => {
 
 const goToLogin = () => {
   router.push('/login')
+}
+
+const goBack = () => {
+  router.back()
 }
 
 // Lifecycle hooks

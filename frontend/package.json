@@ -16,12 +16,16 @@
   },
   "dependencies": {
     "@dotlottie/player-component": "^2.7.12",
+    "@iconify/json": "^2.2.400",
+    "@iconify/utils": "^3.0.2",
     "@iconify/vue": "^5.0.0",
     "@lottiefiles/dotlottie-wc": "^0.8.5",
     "@lottiefiles/lottie-player": "^2.0.12",
+    "chart.js": "^4.5.1",
     "lucide-vue-next": "^0.546.0",
     "pinia": "^3.0.3",
     "vue": "^3.5.22",
+    "vue-chartjs": "^5.3.2",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {

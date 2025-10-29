@@ -19,7 +19,7 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-connectDB();
+await connectDB();
 
 app.use(cors());
 app.use(express.json());

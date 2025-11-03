@@ -53,6 +53,7 @@
               {{ errors.firstName }}
             </div>
           </div>
+          
           <div class="relative">
             <input
               id="lastName"
@@ -88,8 +89,8 @@
         </div>
 
         <!-- ID Number and Contact Number Fields -->
-        <div class="grid grid-cols-5 gap-4">
-          <div class="relative col-span-2">
+        <div class="grid grid-cols-1 gap-4">
+          <div class="relative">
             <input
               id="idNumber"
               v-model="form.idNumber"
@@ -121,39 +122,10 @@
               {{ errors.idNumber }}
             </div>
           </div>
-          <div class="relative col-span-3">
-            <input
-              id="contactNumber"
-              v-model="form.contactNumber"
-              type="tel"
-              required
-              :disabled="isLoading"
-              class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#102A71] focus:ring-opacity-100 transition-colors"
-              :class="getInputClasses('contactNumber')"
-              @focus="isContactNumberFocused = true"
-              @blur="isContactNumberFocused = false; validateField('contactNumber')"
-            />
-            <label 
-              for="contactNumber" 
-              class="absolute left-3 transition-all duration-200 pointer-events-none"
-              :class="(form.contactNumber || isContactNumberFocused) ? '-top-2 text-xs text-black bg-white px-1' : 'top-2 text-sm text-gray-400'"
-            >
-              Contact Number
-            </label>
-            <!-- Example text visible when focused but empty -->
-            <div 
-              v-if="isContactNumberFocused && !form.contactNumber"
-              class="absolute left-3 top-2 text-sm text-gray-300 pointer-events-none"
-              style="z-index: 1;"
-            >
-              +63 912 345 6789
-            </div>
-            <!-- Validation Message -->
-            <div v-if="errors.contactNumber" class="text-red-500 text-xs mt-1 absolute -bottom-5 left-0">
-              {{ errors.contactNumber }}
-            </div>
-          </div>
+          
         </div>
+
+        
 
         <!-- Email Field -->
         <div class="relative">
@@ -347,7 +319,6 @@ const form = ref({
   firstName: '',
   lastName: '',
   idNumber: '',
-  contactNumber: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -370,7 +341,6 @@ const errorFadeClass = ref('')
 const isFirstNameFocused = ref(false)
 const isLastNameFocused = ref(false)
 const isIdNumberFocused = ref(false)
-const isContactNumberFocused = ref(false)
 const isEmailFocused = ref(false)
 const isPasswordFocused = ref(false)
 const isConfirmPasswordFocused = ref(false)
@@ -380,7 +350,6 @@ const errors = ref({
   firstName: '',
   lastName: '',
   idNumber: '',
-  contactNumber: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -389,7 +358,6 @@ const errors = ref({
 
 // --- Regex patterns ---
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const phoneRegex = /^(09|\+639)\d{9}$/ 
 const idRegex = /^MCC\d{4}-\d{4}$/
 
 let messageTimer = null
@@ -471,11 +439,6 @@ const validateField = (fieldName) => {
         errors.value.idNumber = 'Invalid ID format. Use MCCYYYY-NNNN (e.g., MCC2020-1234).'
       }
       break
-    case 'contactNumber':
-      if (!phoneRegex.test(form.value.contactNumber)) {
-        errors.value.contactNumber = 'Invalid phone number. Use 09XXXXXXXXX or +639XXXXXXXXX.'
-      }
-      break
     case 'email':
       if (!emailRegex.test(form.value.email)) {
         errors.value.email = 'Invalid email address format.'
@@ -515,6 +478,7 @@ const validateForm = () => {
 }
 
 // --- Register Function ---
+
 const handleRegister = async () => {
   if (isLoading.value) return
   
@@ -540,8 +504,7 @@ const handleRegister = async () => {
       firstName: form.value.firstName,
       lastName: form.value.lastName,
       idNumber: form.value.idNumber,
-      contactNumber: form.value.contactNumber,
-      facultyPosition: 'N/A'
+      facultyPosition: 'N/A',
     }
 
     const response = await api.post('/auth/register', payload)

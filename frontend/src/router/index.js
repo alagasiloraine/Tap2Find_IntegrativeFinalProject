@@ -61,12 +61,7 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  // 🚫 Prevent logged-in users from going back to login/register
-  if ((to.path === '/login' || to.path === '/register') && token && userRole) {
-    if (userRole === 'student') return next('/student')
-    if (userRole === 'professor') return next('/professor')
-    if (userRole === 'admin') return next('/admin')
-  }
+  // Allow visiting /login and /register even if already authenticated
 
   return next()
 })

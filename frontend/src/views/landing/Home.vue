@@ -13,18 +13,18 @@
               Discover, connect, and thrive with our innovative platform.
             </p>
             <div class="flex justify-center gap-4 flex-wrap">
-              <a 
-                href="/register"
+              <router-link 
+                to="/register"
                 class="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
               >
                 🚀 Get Started
-              </a>
-              <a 
-                href="/about"
+              </router-link>
+              <router-link 
+                to="/about"
                 class="border-2 border-gray-600 text-gray-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-600 hover:text-white transition-colors"
               >
                 ℹ️ Learn More
-              </a>
+              </router-link>
             </div>
           </div>
         </div>
@@ -60,12 +60,12 @@
             <p class="text-xl text-white mb-8">
               Join thousands of users who are already using Tap2Find to achieve their goals.
             </p>
-            <a 
-              href="/register"
+            <router-link 
+              to="/register"
               class="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors inline-block"
             >
               ➡️ Start Your Journey
-            </a>
+            </router-link>
           </div>
         </div>
       </div>

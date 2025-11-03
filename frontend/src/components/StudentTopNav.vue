@@ -92,13 +92,14 @@
       >
         <!-- Profile Picture -->
         <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center overflow-hidden">
-          <span class="text-sm font-semibold text-blue-600">JD</span>
+          <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="w-full h-full object-cover" />
+          <span v-else class="text-sm font-semibold text-blue-600">{{ initials }}</span>
         </div>
         
         <!-- Profile Info -->
         <div class="flex flex-col items-start">
-          <span class="text-sm font-semibold text-gray-900">John Doe</span>
-          <span class="text-xs text-gray-500">john.doe@student.edu</span>
+          <span class="text-sm font-semibold text-gray-900">{{ fullName }}</span>
+          <span class="text-xs text-gray-500">{{ userEmail }}</span>
         </div>
         
         <!-- Dropdown Icon -->
@@ -187,6 +188,21 @@ const isDashboard = computed(() => {
 const currentPageTitle = ref('Dashboard')
 const currentPageDescription = ref('Welcome to your student dashboard')
 
+// User info (from localStorage)
+const storedUser = (() => { try { return JSON.parse(localStorage.getItem('user')||'{}') } catch { return {} } })()
+const fullName = computed(() => {
+  const parts = [storedUser.firstName, storedUser.middleName, storedUser.lastName]
+  return parts.filter(Boolean).join(' ').trim() || 'Student'
+})
+const userEmail = computed(() => storedUser.emailAddress || '')
+const initials = computed(() => {
+  const f = (storedUser.firstName||'').trim()
+  const l = (storedUser.lastName||'').trim()
+  const letters = `${f?f[0]:''}${l?l[0]:''}`.toUpperCase()
+  return letters || 'JD'
+})
+const avatarUrl = computed(() => storedUser.avatarUrl || '')
+
 import { useNotifications } from '@/composables/useNotifications'
 const { notifications, count } = useNotifications()
 notificationCount.value = count.value
@@ -222,7 +238,8 @@ const handleClickOutside = (event) => {
 const updatePageInfo = () => {
   const path = route.path
   if (path.includes('/dashboard')) {
-    currentPageTitle.value = 'Welcome back, John!'
+    const first = (storedUser.firstName || 'Student').split(' ')[0]
+    currentPageTitle.value = `Welcome back, ${first}!`
     currentPageDescription.value = 'Manage your professor inquiries and track availability'
   } else if (path.includes('/locate-professor')) {
     currentPageTitle.value = 'Locate Professor'

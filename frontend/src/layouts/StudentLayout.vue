@@ -19,14 +19,13 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import StudentSidebar from '@/views/student/StudentSidebar.vue'
 import StudentBottomNav from '@/views/student/StudentBottomNav.vue'
 
 const route = useRoute()
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+
 
 const router = useRouter()
 const showConfirm = ref(false)

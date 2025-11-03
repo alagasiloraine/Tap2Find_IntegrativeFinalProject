@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
+import { ObjectId } from "mongodb";
 import { getDB } from "../db.js";
 
 // 📧 Setup email transporter (use App Password if Gmail)
@@ -19,13 +20,15 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// (moved) me handler is now in studentprofileController.js
+
 // 🧩 Register User and send OTP
 export const registerUser = async (req, res) => {
   try {
     const db = getDB("tap2find_db");
     const users = db.collection("users");
 
-    const { role, emailAddress, password, firstName, lastName, idNumber, contactNumber, facultyPosition } = req.body;
+    const { role, emailAddress, password, firstName, middleName, lastName, idNumber, contactNumber, facultyPosition, program, yearLevel, section, avatarUrl, coverUrl } = req.body;
 
     const existingUser = await users.findOne({ emailAddress });
     if (existingUser)
@@ -40,15 +43,20 @@ export const registerUser = async (req, res) => {
       emailAddress,
       password: hashedPassword,
       firstName,
+      middleName: middleName || '',
       lastName,
       idNumber,
       contactNumber,
       facultyPosition,
+      program: program || '',
+      yearLevel: yearLevel || '',
+      section: section || '',
+      avatarUrl: avatarUrl || '',
+      coverUrl: coverUrl || '',
       otp,
       otpExpires,
       isVerified: false,
     };
-
     await users.insertOne(newUser);
 
     // ✉️ Send OTP Email
@@ -161,6 +169,10 @@ export const loginUser = async (req, res) => {
       expiresIn: "1d",
     });
 
+    const when = new Date().toISOString()
+    const agent = req.headers['user-agent'] || 'Unknown'
+    await users.updateOne({ _id: user._id }, { $set: { lastLogin: when, lastLoginAgent: agent } })
+
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -170,7 +182,19 @@ export const loginUser = async (req, res) => {
         role: user.role,
         emailAddress: user.emailAddress,
         firstName: user.firstName,
+        middleName: user.middleName,
         lastName: user.lastName,
+        birthdate: user.birthdate,
+        address: user.address,
+        idNumber: user.idNumber,
+        contactNumber: user.contactNumber,
+        program: user.program,
+        yearLevel: user.yearLevel,
+        section: user.section,
+        avatarUrl: user.avatarUrl,
+        coverUrl: user.coverUrl,
+        lastLogin: when,
+        lastLoginAgent: agent,
       },
     });
   } catch (error) {
@@ -238,3 +262,5 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to reset password.", error: error.message });
   }
 };
+
+// (moved) updateProfile handler is now in studentprofileController.js

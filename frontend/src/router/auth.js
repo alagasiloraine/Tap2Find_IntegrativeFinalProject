@@ -42,7 +42,6 @@ const authRoutes = [
   },
   {
     path: '/:random/verify-email',
-    name: 'verify-email',
     component: AuthLayout,
     children: [
       {

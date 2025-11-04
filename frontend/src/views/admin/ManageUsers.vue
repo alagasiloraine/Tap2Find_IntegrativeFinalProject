@@ -159,6 +159,46 @@
         </div>
       </div>
     </div>
+
+    <!-- OTP Verification Modal -->
+    <div v-if="showOtpModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-md">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-lg font-medium text-gray-900">Verify Email</h3>
+          <button class="text-gray-400 hover:text-gray-600" @click="showOtpModal = false">✖</button>
+        </div>
+        <div class="px-6 py-4 space-y-3">
+          <p class="text-sm text-gray-600">We sent a 6-digit verification code to <b>{{ otpEmail }}</b>. Enter it below to activate the account.</p>
+          <input
+            v-model="otpCode"
+            type="text"
+            maxlength="6"
+            placeholder="Enter 6-digit code"
+            class="w-full border rounded px-3 py-2 text-sm tracking-widest text-center"
+          />
+          <div v-if="otpError" class="text-sm text-red-600">{{ otpError }}</div>
+          <div class="flex items-center justify-between pt-2">
+            <button class="px-4 py-2 rounded border" @click="showOtpModal = false">Cancel</button>
+            <div class="flex items-center gap-2">
+              <button
+                class="px-3 py-2 rounded text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+                :disabled="resendIn > 0 || resendBusy"
+                @click="resendOtp"
+              >
+                Resend Code <span v-if="resendIn > 0">({{ resendIn }})</span>
+              </button>
+              <button
+                class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                :disabled="verifying || otpCode.length !== 6"
+                @click="verifyOtp"
+              >
+                {{ verifying ? 'Verifying...' : 'Verify' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -176,6 +216,14 @@ export default {
       showModal: false,
       editTarget: null,
       deleteTarget: null,
+      showOtpModal: false,
+      otpEmail: "",
+      otpCode: "",
+      otpError: "",
+      verifying: false,
+      resendBusy: false,
+      resendIn: 0,
+      resendTimerId: null,
       form: {
         firstName: "",
         lastName: "",
@@ -274,7 +322,13 @@ export default {
         };
         await api.post("/auth/register", payload);
         this.showModal = false;
-        await this.fetchStudents();
+        // Open OTP modal for verification
+        this.otpEmail = this.form.emailAddress;
+        this.otpCode = "";
+        this.otpError = "";
+        this.showOtpModal = true;
+        // Start resend cooldown
+        this.startResendTimer(30);
       } catch (e) {
         console.error("Failed to submit form", e);
         alert("Failed to submit form");
@@ -293,6 +347,44 @@ export default {
         console.error("Failed to delete user", e);
         alert("Failed to delete user");
       }
+    },
+    async verifyOtp() {
+      try {
+        this.verifying = true;
+        this.otpError = "";
+        await api.post("/auth/verify-otp", { emailAddress: this.otpEmail, otp: this.otpCode });
+        this.showOtpModal = false;
+        await this.fetchStudents();
+      } catch (e) {
+        console.error("Failed to verify OTP", e);
+        this.otpError = e?.response?.data?.message || "Invalid or expired code";
+      } finally {
+        this.verifying = false;
+      }
+    },
+    async resendOtp() {
+      try {
+        if (this.resendIn > 0 || this.resendBusy) return;
+        this.resendBusy = true;
+        await api.post("/auth/resend-otp", { emailAddress: this.otpEmail });
+        this.startResendTimer(30);
+      } catch (e) {
+        console.error("Failed to resend OTP", e);
+        this.otpError = e?.response?.data?.message || "Failed to resend code";
+      } finally {
+        this.resendBusy = false;
+      }
+    },
+    startResendTimer(seconds) {
+      this.resendIn = seconds;
+      if (this.resendTimerId) clearInterval(this.resendTimerId);
+      this.resendTimerId = setInterval(() => {
+        if (this.resendIn > 0) this.resendIn -= 1;
+        if (this.resendIn <= 0 && this.resendTimerId) {
+          clearInterval(this.resendTimerId);
+          this.resendTimerId = null;
+        }
+      }, 1000);
     },
   },
 };

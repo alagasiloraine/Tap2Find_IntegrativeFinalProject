@@ -16,7 +16,6 @@
           <option value="">All Status</option>
           <option value="pending">Pending</option>
           <option value="resolved">Resolved</option>
-          <option value="archived">Archived</option>
         </select>
         <button class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700" @click="exportCSV">
           ⬇️ Export CSV
@@ -25,9 +24,27 @@
     </div>
 
     <div class="bg-white shadow rounded-lg overflow-hidden">
-      <div class="px-6 py-3 border-b border-gray-200 text-sm text-gray-500 flex items-center justify-between">
-        <div>Showing {{ filteredConcerns.length }} of {{ concerns.length }} concerns</div>
-        <div v-if="loading" class="text-gray-400">Loading...</div>
+      <div class="px-6 py-3 border-b border-gray-200 text-sm text-gray-500">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <button
+              class="px-3 py-1.5 rounded-md text-sm"
+              :class="activeTab === 'concerns' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+              @click="activeTab = 'concerns'"
+            >
+              Concerns
+            </button>
+            <button
+              class="px-3 py-1.5 rounded-md text-sm"
+              :class="activeTab === 'archive' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+              @click="activeTab = 'archive'"
+            >
+              Archive
+            </button>
+          </div>
+          <div v-if="loading" class="text-gray-400">Loading...</div>
+        </div>
+        <div class="mt-2">Showing {{ filteredConcerns.length }} of {{ concerns.length }} concerns</div>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
@@ -55,16 +72,33 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium"
                       :class="badgeClass(c.status)">
-                  {{ (c.status || 'pending') | capitalize }}
+                  {{ capitalize(c.status || 'pending') }}
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ formatDate(c.createdAt || c.timestamp || c.date) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-right space-x-2">
-                <button class="px-3 py-1.5 rounded-md text-amber-700 bg-amber-50 hover:bg-amber-100" @click="archiveConcern(c)">
-                  🗂️ Archive
-                </button>
+                <template v-if="(c.status || 'pending').toLowerCase() === 'archived'">
+                  <button
+                    class="px-3 py-1.5 rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
+                    @click="setConcernStatus(c, 'pending')"
+                  >
+                    ♻️ Restore
+                  </button>
+                </template>
+                <template v-else>
+                  <button v-if="(c.status || 'pending').toLowerCase() !== 'resolved'"
+                          class="px-3 py-1.5 rounded-md text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                          @click="setConcernStatus(c, 'resolved')">
+                    ✅ Resolve
+                  </button>
+                  <button v-else
+                          class="px-3 py-1.5 rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
+                          @click="setConcernStatus(c, 'pending')">
+                    ↩️ Mark Pending
+                  </button>
+                </template>
                 <button class="px-3 py-1.5 rounded-md text-red-700 bg-red-50 hover:bg-red-100" @click="confirmDelete(c)">
                   🗑️ Delete
                 </button>
@@ -107,6 +141,7 @@ export default {
       loading: false,
       query: "",
       statusFilter: "",
+      activeTab: 'concerns',
       deleteTarget: null,
     };
   },
@@ -126,8 +161,9 @@ export default {
         const msg = (c.message || c.concern || "").toLowerCase();
         const matchesText = student.includes(q) || prof.includes(q) || msg.includes(q);
         const status = (c.status || "").toLowerCase();
+        const inTab = this.activeTab === 'archive' ? status === 'archived' : status !== 'archived';
         const matchesStatus = this.statusFilter ? status === this.statusFilter : true;
-        return matchesText && matchesStatus;
+        return matchesText && matchesStatus && inTab;
       });
       return list;
     },
@@ -136,6 +172,11 @@ export default {
     this.fetchConcerns();
   },
   methods: {
+    capitalize(v) {
+      if (!v) return "";
+      const s = String(v);
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    },
     async fetchConcerns() {
       try {
         this.loading = true;
@@ -183,21 +224,36 @@ export default {
     async performDelete() {
       try {
         if (!this.deleteTarget) return;
-        await api.delete(`/admin/concerns/${this.deleteTarget._id}`);
+        const id = this.deleteTarget._id;
+        // In Concerns tab: soft-delete by archiving. In Archive tab: hard delete
+        if (this.activeTab === 'archive') {
+          await api.delete(`/admin/concerns/${id}`);
+        } else {
+          await api.patch(`/admin/concerns/${id}/archive`);
+        }
         this.deleteTarget = null;
         await this.fetchConcerns();
       } catch (e) {
-        console.error("Failed to delete concern", e);
-        alert("Failed to delete concern");
+        console.error("Failed to delete/archive concern", e);
+        alert(e?.response?.data?.message || "Failed to delete/archive concern");
+      }
+    },
+    async setConcernStatus(c, nextStatus) {
+      try {
+        await api.patch(`/admin/concerns/${c._id}/status`, { status: nextStatus });
+        await this.fetchConcerns();
+      } catch (e) {
+        console.error("Failed to update status", e);
+        alert(e?.response?.data?.message || "Failed to update status");
       }
     },
     async archiveConcern(c) {
       try {
-        await api.patch(`/admin/concerns/${c._id}`);
+        await api.patch(`/admin/concerns/${c._id}/archive`);
         await this.fetchConcerns();
       } catch (e) {
         console.error("Failed to archive concern", e);
-        alert("Failed to archive concern");
+        alert(e?.response?.data?.message || "Failed to archive concern");
       }
     },
     exportCSV() {

@@ -70,7 +70,7 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm text-right space-x-2">
                 <button class="px-3 py-1.5 rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
                         @click="openScheduleModal(p)">
-                  📅 Upload Schedule
+                  {{ scheduleMeta[p._id] ? '📄 View Schedule' : '📅 Upload Schedule' }}
                 </button>
                 <button class="px-3 py-1.5 rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100"
                         @click="openEditModal(p)">
@@ -159,14 +159,36 @@
           <button class="text-gray-400 hover:text-gray-600" @click="scheduleTarget = null">✖</button>
         </div>
         <div class="px-6 py-4 space-y-4">
-          <input type="file" @change="onScheduleFile" class="w-full text-sm" />
+          <div v-if="scheduleTarget && scheduleMeta[scheduleTarget._id]" class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-gray-700">Current schedule preview</span>
+              <a
+                class="text-sm text-indigo-600 hover:underline"
+                :href="scheduleUrl(scheduleTarget._id, { download: true })"
+                target="_blank"
+                rel="noopener"
+              >
+                Download
+              </a>
+            </div>
+            <iframe
+              class="w-full border rounded"
+              style="height: 420px;"
+              :key="scheduleMeta[scheduleTarget._id]?.fileId || scheduleTarget._id"
+              :src="scheduleUrl(scheduleTarget._id)"
+            ></iframe>
+          </div>
+          <div class="space-y-2">
+            <div class="text-sm text-gray-600">{{ scheduleMeta[scheduleTarget?._id] ? 'Upload a new file to replace the current schedule' : 'Upload a schedule file' }}</div>
+            <input ref="scheduleFileInput" type="file" @change="onScheduleFile" class="w-full text-sm" />
+          </div>
           <div class="flex items-center justify-end gap-3">
             <button class="px-4 py-2 rounded border" @click="scheduleTarget = null">Cancel</button>
+
             <button class="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700" @click="uploadSchedule">
-              Upload
+              {{ scheduleMeta[scheduleTarget?._id] ? 'Replace' : 'Upload' }}
             </button>
           </div>
-          <p class="text-xs text-gray-500">Note: Backend endpoint for schedule upload is not yet implemented.</p>
         </div>
       </div>
     </div>
@@ -207,6 +229,7 @@ export default {
       deleteTarget: null,
       scheduleTarget: null,
       scheduleFile: null,
+      scheduleMeta: {},
       form: {
         firstName: "",
         lastName: "",
@@ -233,6 +256,14 @@ export default {
       }
       return list;
     },
+    backendBase() {
+      try {
+        const base = (api && api.defaults && api.defaults.baseURL) ? api.defaults.baseURL : "/api";
+        return base || "/api";
+      } catch {
+        return "/api";
+      }
+    },
   },
   mounted() {
     this.fetchProfessors();
@@ -243,6 +274,7 @@ export default {
         this.loading = true;
         const res = await api.get("/admin/professors");
         this.professors = res.data.professors || [];
+        await this.loadScheduleMetaForList();
       } catch (e) {
         console.error("Failed to fetch professors", e);
       } finally {
@@ -273,9 +305,10 @@ export default {
       };
       this.showModal = true;
     },
-    openScheduleModal(p) {
+    async openScheduleModal(p) {
       this.scheduleTarget = p;
       this.scheduleFile = null;
+      await this.fetchScheduleMeta(p._id);
     },
     closeModal() {
       this.showModal = false;
@@ -309,10 +342,56 @@ export default {
         await api.post("/auth/register", payload);
         this.showModal = false;
         await this.fetchProfessors();
+        alert("Professor created. A verification code has been sent to their email.");
       } catch (e) {
         console.error("Failed to submit professor", e);
         alert("Failed to submit professor");
       }
+    },
+    async uploadSchedule() {
+      if (!this.scheduleTarget || !this.scheduleFile) {
+        alert("Please select a file.");
+        return;
+      }
+      try {
+        const formData = new FormData();
+        formData.append("file", this.scheduleFile);
+        await api.post(`/admin/professors/${this.scheduleTarget._id}/schedule`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        alert("Schedule uploaded successfully!");
+        this.scheduleFile = null;
+        if (this.$refs && this.$refs.scheduleFileInput) {
+          this.$refs.scheduleFileInput.value = null;
+        }
+        await this.fetchScheduleMeta(this.scheduleTarget._id);
+      } catch (e) {
+        console.error("Upload failed:", e);
+        alert(e?.response?.data?.message || "Failed to upload schedule");
+      }
+    },
+    async fetchScheduleMeta(id) {
+      try {
+        const r = await api.get(`/admin/professors/${id}/schedule/meta`);
+        this.$set ? this.$set(this.scheduleMeta, id, r.data.file) : (this.scheduleMeta[id] = r.data.file);
+      } catch (e) {
+        if (e?.response?.status === 404) {
+          this.$set ? this.$set(this.scheduleMeta, id, null) : (this.scheduleMeta[id] = null);
+        } else {
+          console.error("Failed to load schedule meta", e);
+        }
+      }
+    },
+    async loadScheduleMetaForList() {
+      const ids = (this.professors || []).map(p => p._id);
+      await Promise.all(ids.map(id => this.fetchScheduleMeta(id)));
+    },
+    scheduleUrl(id, opts = {}) {
+      const base = this.backendBase;
+      const meta = this.scheduleMeta[id];
+      const v = meta && meta.uploadDate ? new Date(meta.uploadDate).getTime() : Date.now();
+      if (opts.download) return `${base}/admin/professors/${id}/schedule?download=1`;
+      return `${base}/admin/professors/${id}/schedule?v=${v}`;
     },
     confirmDelete(p) {
       this.deleteTarget = p;
@@ -337,22 +416,17 @@ export default {
         alert("Failed to update account state");
       }
     },
-    resetPassword(p) {
-      // Not implemented server-side; could call a new admin reset endpoint in future
-      alert("Reset password is not implemented yet.");
+    async resetPassword(p) {
+      try {
+        await api.post('/auth/forgot-password', { emailAddress: p.emailAddress });
+        alert('Password reset email has been sent to ' + p.emailAddress + '.');
+      } catch (e) {
+        console.error('Failed to request password reset', e);
+        alert(e?.response?.data?.message || 'Failed to request password reset');
+      }
     },
     onScheduleFile(e) {
       this.scheduleFile = e.target.files?.[0] || null;
-    },
-    async uploadSchedule() {
-      if (!this.scheduleTarget || !this.scheduleFile) {
-        alert("Please select a file.");
-        return;
-      }
-      // Placeholder: backend endpoint not implemented
-      alert("Schedule upload is not implemented yet.");
-      this.scheduleTarget = null;
-      this.scheduleFile = null;
     },
   },
 };

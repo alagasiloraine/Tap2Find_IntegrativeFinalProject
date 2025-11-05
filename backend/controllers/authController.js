@@ -27,9 +27,7 @@ export const registerUser = async (req, res) => {
   try {
     const db = getDB("tap2find_db");
     const users = db.collection("users");
-
     const { role, emailAddress, password, firstName, middleName, lastName, idNumber, contactNumber, facultyPosition, program, yearLevel, section, avatarUrl, coverUrl } = req.body;
-
     const existingUser = await users.findOne({ emailAddress });
     if (existingUser)
       return res.status(400).json({ message: "Email already registered" });
@@ -172,7 +170,6 @@ export const loginUser = async (req, res) => {
     const when = new Date().toISOString()
     const agent = req.headers['user-agent'] || 'Unknown'
     await users.updateOne({ _id: user._id }, { $set: { lastLogin: when, lastLoginAgent: agent } })
-
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -264,3 +261,4 @@ export const resetPassword = async (req, res) => {
 };
 
 // (moved) updateProfile handler is now in studentprofileController.js
+};

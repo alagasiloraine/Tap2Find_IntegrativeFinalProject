@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
   firstName: String,
   lastName: String,
   idNumber: String,
+  section:String,
   facultyPosition: String,
   contactNumber: String,
   emailAddress: { type: String, required: true, unique: true },
@@ -14,4 +15,4 @@ const userSchema = new mongoose.Schema({
   isVerified: { type: Boolean, default: false }
 });
 
-export const User = mongoose.model("User", userSchema);
+export const User = mongoose.model("User", userSchema, "users");

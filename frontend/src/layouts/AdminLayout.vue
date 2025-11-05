@@ -24,31 +24,44 @@
             </router-link>
             
             <!-- Users -->
-            <a
-              href="#"
-              class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            <router-link
+              to="/admin/users"
+              class="group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors"
+              :class="$route.path.startsWith('/admin/users') ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
             >
               <span class="mr-3 text-lg">👥</span>
-              Users
-            </a>
+              Manage Users
+            </router-link>
             
-            <!-- Analytics -->
-            <a
-              href="#"
-              class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            <!-- Professor Management -->
+            <router-link
+              to="/admin/professors"
+              class="group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors"
+              :class="$route.path.startsWith('/admin/professors') ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
             >
               <span class="mr-3 text-lg">📈</span>
-              Analytics
-            </a>
+              Professor Management
+            </router-link>
             
-            <!-- Settings -->
-            <a
-              href="#"
-              class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            <!-- Manage Student Concerns -->
+            <router-link
+              to="/admin/concerns"
+              class="group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors"
+              :class="$route.path.startsWith('/admin/concerns') ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
             >
-              <span class="mr-3 text-lg">⚙️</span>
-              Settings
-            </a>
+              <span class="mr-3 text-lg">📝</span>
+              Manage Student Concerns
+            </router-link>
+
+            <!-- Generate Reports -->
+            <router-link
+              to="/admin/reports"
+              class="group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors"
+              :class="$route.path.startsWith('/admin/reports') ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+            >
+              <span class="mr-3 text-lg">📄</span>
+              Generate Reports
+            </router-link>
           </nav>
         </div>
         

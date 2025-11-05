@@ -36,48 +36,46 @@
                   v-if="showSearchDropdown && searchQuery && searchResults.length > 0"
                   class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
                 >
-                <div
-                  v-for="professor in searchResults"
-                  :key="professor.id"
-                  @click="selectProfessor(professor)"
-                  class="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                >
-                  <!-- Profile Picture -->
-                  <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mr-3">
-                    <span class="text-white text-sm font-bold">{{ professor.name.split(' ').map(n => n[0]).join('') }}</span>
-          </div>
-                  
-                  <!-- Professor Info -->
-          <div class="flex-1">
-                    <p class="font-medium text-gray-900">{{ professor.name }}</p>
-                    <p class="text-sm text-gray-600">{{ professor.department }}</p>
+                  <div
+                    v-for="professor in searchResults"
+                    :key="professor.id"
+                    @click="selectProfessor(professor)"
+                    class="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                  >
+                    <!-- Profile Picture -->
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mr-3">
+                      <span class="text-white text-sm font-bold">{{ professor.name.split(' ').map(n => n[0]).join('') }}</span>
+                    </div>
+                    
+                    <!-- Professor Info -->
+                    <div class="flex-1">
+                      <p class="font-medium text-gray-900">{{ professor.name }}</p>
+                      <p class="text-sm text-gray-600">{{ professor.position }}</p>
+                    </div>
+                    
+                    <!-- Status Indicator -->
+                    <div class="ml-2">
+                      <span class="w-2 h-2 rounded-full"
+                        :class="professor.available === 'available' ? 'bg-green-500' : professor.available === 'busy' ? 'bg-red-500' : 'bg-gray-500'"
+                      ></span>
+                    </div>
                   </div>
-                  
-                  <!-- Status Indicator -->
-                  <div class="ml-2">
-                    <span class="w-2 h-2 rounded-full"
-                      :class="professor.available === 'available' ? 'bg-green-500' : professor.available === 'busy' ? 'bg-red-500' : 'bg-gray-500'"
-                    ></span>
-                  </div>
-                </div>
                 </div>
               </transition>
-              </div>
-              
-              <!-- Filter Icon -->
-              <div class="flex items-center">
-                <iconify-icon
-                  @click="toggleFilterSlider"
-                  icon="mage:filter-fill"
-                  class="text-xl cursor-pointer transition-colors"
-                  :class="(showFilterSlider || selectedYearLevel !== '' || selectedStatus !== null) ? 'text-[#102A71]' : 'text-gray-600'"
-                ></iconify-icon>
-              </div>
+            </div>
           </div>
+          </div>
+          <div class="flex items-center">
+            <iconify-icon
+              @click="toggleFilterSlider"
+              icon="mage:filter-fill"
+              class="text-xl cursor-pointer transition-colors"
+              :class="(showFilterSlider || selectedYearLevel !== '' || selectedStatus !== null) ? 'text-[#102A71]' : 'text-gray-600'"
+            ></iconify-icon>
           </div>
         </div>
       </div>
-
+      
       <!-- Applied Filters -->
       <div v-if="selectedYearLevel !== '' || selectedStatus !== null" class="mb-6">
         <div class="flex flex-wrap gap-2">
@@ -102,8 +100,12 @@
           v-for="professor in filteredProfessors"
           :key="professor.id"
           :data-professor-id="professor.id"
-          class="bg-gray-50 rounded-lg p-4 transition-shadow"
+          class="bg-gray-50 rounded-lg p-4 transition-shadow relative"
         >
+          <div class="absolute top-6 right-4 text-[11px] text-gray-500 flex items-center gap-1">
+            <iconify-icon icon="mingcute:time-line" class="text-base" />
+            <span>Updated {{ formatRelativeTime(professor.statusUpdatedAt) }}</span>
+          </div>
           <div class="flex items-center gap-4">
             <!-- Professor Avatar -->
             <div class="flex-shrink-0 flex items-center justify-center">
@@ -118,7 +120,7 @@
               <h3 class="font-medium text-gray-900 text-xl truncate">{{ professor.name }}</h3>
               
               <!-- Course/Department -->
-              <p class="text-sm text-gray-600 mb-2 truncate">{{ professor.department }}</p>
+              <p class="text-sm text-gray-600 mb-2 truncate">{{ professor.position }}</p>
               
               <!-- Status Badge -->
               <span class="px-2 py-1 rounded-lg text-xs font-medium w-fit inline-flex items-center gap-1"
@@ -136,7 +138,7 @@
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center text-sm text-gray-400">
                   <iconify-icon icon="lucide:map-pin" class="h-3 w-3 mr-1 flex-shrink-0" />
-                  <span class="truncate">{{ professor.office }}</span>
+                  <span class="truncate">{{ professor.inFaculty ? 'Faculty' : 'Not in Faculty' }}</span>
                 </div>
                 
                 <button
@@ -150,8 +152,10 @@
             </div>
             </div>
             </div>
-            </div>
           </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Overlay Background -->
     <transition
@@ -286,19 +290,11 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">To:</label>
             <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg">
               <p class="font-medium text-gray-900">{{ selectedProfessor?.name }}</p>
-              <p class="text-sm text-gray-600">{{ selectedProfessor?.department }}</p>
+              <p class="text-sm text-gray-600">{{ selectedProfessor?.position }}</p>
             </div>
           </div>
 
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Subject:</label>
-            <input
-              v-model="inquiryForm.subject"
-              type="text"
-              placeholder="Enter subject..."
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+
 
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-2">Message:</label>
@@ -359,8 +355,6 @@
 
     
 
-    </div>
-  </div>
 </template>
 
 <script setup>
@@ -408,8 +402,11 @@ const professors = ref([
     email: 'paulina.alvarez@university.edu',
     department: 'Computer Science',
     office: 'IT Room 202',
+    position: 'Professor',
+    inFaculty: true,
     yearLevel: 'first-year',
-    available: 'available'
+    available: 'available',
+    statusUpdatedAt: Date.now() - 5 * 60 * 1000
   },
   {
     id: 2,
@@ -417,8 +414,11 @@ const professors = ref([
     email: 'jane.doe@university.edu',
     department: 'Mathematics',
     office: 'Building B, Room 205',
+    position: 'Associate Professor',
+    inFaculty: true,
     yearLevel: 'second-year',
-    available: 'available'
+    available: 'available',
+    statusUpdatedAt: Date.now() - 35 * 60 * 1000
   },
   {
     id: 3,
@@ -426,8 +426,11 @@ const professors = ref([
     email: 'robert.johnson@university.edu',
     department: 'Physics',
     office: 'Building C, Room 310',
+    position: 'Lecturer',
+    inFaculty: false,
     yearLevel: 'third-year',
-    available: 'busy'
+    available: 'busy',
+    statusUpdatedAt: Date.now() - 2 * 60 * 60 * 1000
   },
   {
     id: 4,
@@ -435,8 +438,11 @@ const professors = ref([
     email: 'emily.williams@university.edu',
     department: 'Chemistry',
     office: 'Building D, Room 415',
+    position: 'Assistant Professor',
+    inFaculty: false,
     yearLevel: 'fourth-year',
-    available: 'not-available'
+    available: 'not-available',
+    statusUpdatedAt: Date.now() - 26 * 60 * 60 * 1000
   }
 ])
 
@@ -519,7 +525,7 @@ const contactProfessor = (professor) => {
   selectedProfessor.value = professor
   showInquiryModal.value = true
   inquiryForm.value = {
-    subject: '',
+    subject: professor.position,
     message: ''
   }
 }
@@ -574,6 +580,18 @@ const getStatusIcon = (status) => {
   if (status === 'available') return 'lucide:circle-check'
   if (status === 'busy') return 'lucide:clock'
   return 'lucide:circle-x'
+}
+
+const formatRelativeTime = (ts) => {
+  if (!ts) return 'just now'
+  const diff = Date.now() - ts
+  const m = Math.floor(diff / 60000)
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  const d = Math.floor(h / 24)
+  return d === 1 ? '1 day ago' : `${d} days ago`
 }
 </script>
 

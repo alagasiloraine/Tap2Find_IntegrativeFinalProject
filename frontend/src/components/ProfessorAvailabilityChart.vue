@@ -1,193 +1,175 @@
 <template>
-  <div class="chart-container">
-    <canvas 
-      ref="chartCanvas" 
-      class="chart-fade-in"
-      :class="{ 'chart-visible': chartOpacity === 1 }"
-      :style="{ opacity: chartOpacity }"
-    ></canvas>
-    <div v-if="!chartInstance" class="chart-loading">
-      <p>Loading chart...</p>
+  <div class="w-full h-full flex flex-col items-center p-2">
+    <div class="flex flex-col items-center w-full p-2 sm:p-4 text-white relative">
+      <h2 class="text-base font-semibold">Professor Availability</h2>
+      <span class="text-xs font-medium text-white/80 mb-8">Today</span>
+      <div class="flex items-end flex-grow w-full mt-2 space-x-1 sm:space-x-2">
+        <div class="relative flex flex-col items-center flex-grow pb-5 group">
+          <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div class="text-sm font-semibold">22 PROFESSOR</div>
+            <div class="mt-1 space-y-1 text-xs">
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span><span>12 Available</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span><span>4 Busy</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span><span>6 Not Available</span></div>
+            </div>
+          </div>
+          <div class="relative flex justify-center w-full h-6 bg-indigo-200" title="Not Available"></div>
+          <div class="relative flex justify-center w-full h-4 bg-indigo-300" title="Busy"></div>
+          <div class="relative flex justify-center w-full h-12 bg-indigo-400" title="Available"></div>
+          <span class="absolute bottom-0 text-[10px] font-semibold">8 AM</span>
+        </div>
+        <div class="relative flex flex-col items-center flex-grow pb-5 group">
+          <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div class="text-sm font-semibold">28 PROFESSOR</div>
+            <div class="mt-1 space-y-1 text-xs">
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span><span>16 Available</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span><span>4 Busy</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span><span>8 Not Available</span></div>
+            </div>
+          </div>
+          <div class="relative flex justify-center w-full h-8 bg-indigo-200" title="Not Available"></div>
+          <div class="relative flex justify-center w-full h-4 bg-indigo-300" title="Busy"></div>
+          <div class="relative flex justify-center w-full h-16 bg-indigo-400" title="Available"></div>
+          <span class="absolute bottom-0 text-[10px] font-semibold">9 AM</span>
+        </div>
+        <div class="relative flex flex-col items-center flex-grow pb-5 group">
+          <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div class="text-sm font-semibold">30 PROFESSOR</div>
+            <div class="mt-1 space-y-1 text-xs">
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span><span>16 Available</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span><span>6 Busy</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span><span>8 Not Available</span></div>
+            </div>
+          </div>
+          <div class="relative flex justify-center w-full h-8 bg-indigo-200" title="Not Available"></div>
+          <div class="relative flex justify-center w-full h-6 bg-indigo-300" title="Busy"></div>
+          <div class="relative flex justify-center w-full h-16 bg-indigo-400" title="Available"></div>
+          <span class="absolute bottom-0 text-[10px] font-semibold">10 AM</span>
+        </div>
+        <div class="relative flex flex-col items-center flex-grow pb-5 group">
+          <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div class="text-sm font-semibold">32 PROFESSOR</div>
+            <div class="mt-1 space-y-1 text-xs">
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span><span>20 Available</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span><span>4 Busy</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span><span>8 Not Available</span></div>
+            </div>
+          </div>
+          <div class="relative flex justify-center w-full h-8 bg-indigo-200" title="Not Available"></div>
+          <div class="relative flex justify-center w-full h-4 bg-indigo-300" title="Busy"></div>
+          <div class="relative flex justify-center w-full h-20 bg-indigo-400" title="Available"></div>
+          <span class="absolute bottom-0 text-[10px] font-semibold">11 AM</span>
+        </div>
+        <div class="relative flex flex-col items-center flex-grow pb-5 group">
+          <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div class="text-sm font-semibold">40 PROFESSOR</div>
+            <div class="mt-1 space-y-1 text-xs">
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span><span>24 Available</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span><span>6 Busy</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span><span>10 Not Available</span></div>
+            </div>
+          </div>
+          <div class="relative flex justify-center w-full h-10 bg-indigo-200" title="Not Available"></div>
+          <div class="relative flex justify-center w-full h-6 bg-indigo-300" title="Busy"></div>
+          <div class="relative flex justify-center w-full h-24 bg-indigo-400" title="Available"></div>
+          <span class="absolute bottom-0 text-[10px] font-semibold">12 PM</span>
+        </div>
+        <div class="relative flex flex-col items-center flex-grow pb-5 group">
+          <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div class="text-sm font-semibold">34 PROFESSOR</div>
+            <div class="mt-1 space-y-1 text-xs">
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span><span>16 Available</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span><span>8 Busy</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span><span>10 Not Available</span></div>
+            </div>
+          </div>
+          <div class="relative flex justify-center w-full h-10 bg-indigo-200" title="Not Available"></div>
+          <div class="relative flex justify-center w-full h-8 bg-indigo-300" title="Busy"></div>
+          <div class="relative flex justify-center w-full h-16 bg-indigo-400" title="Available"></div>
+          <span class="absolute bottom-0 text-[10px] font-semibold">1 PM</span>
+        </div>
+        <div class="relative flex flex-col items-center flex-grow pb-5 group">
+          <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div class="text-sm font-semibold">30 PROFESSOR</div>
+            <div class="mt-1 space-y-1 text-xs">
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span><span>16 Available</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span><span>6 Busy</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span><span>8 Not Available</span></div>
+            </div>
+          </div>
+          <div class="relative flex justify-center w-full h-8 bg-indigo-200" title="Not Available"></div>
+          <div class="relative flex justify-center w-full h-6 bg-indigo-300" title="Busy"></div>
+          <div class="relative flex justify-center w-full h-16 bg-indigo-400" title="Available"></div>
+          <span class="absolute bottom-0 text-[10px] font-semibold">2 PM</span>
+        </div>
+        <div class="relative flex flex-col items-center flex-grow pb-5 group">
+          <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div class="text-sm font-semibold">28 PROFESSOR</div>
+            <div class="mt-1 space-y-1 text-xs">
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span><span>16 Available</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span><span>6 Busy</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span><span>6 Not Available</span></div>
+            </div>
+          </div>
+          <div class="relative flex justify-center w-full h-6 bg-indigo-200" title="Not Available"></div>
+          <div class="relative flex justify-center w-full h-6 bg-indigo-300" title="Busy"></div>
+          <div class="relative flex justify-center w-full h-16 bg-indigo-400" title="Available"></div>
+          <span class="absolute bottom-0 text-[10px] font-semibold">3 PM</span>
+        </div>
+        <div class="relative flex flex-col items-center flex-grow pb-5 group">
+          <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div class="text-sm font-semibold">22 PROFESSOR</div>
+            <div class="mt-1 space-y-1 text-xs">
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span><span>12 Available</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span><span>4 Busy</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span><span>6 Not Available</span></div>
+            </div>
+          </div>
+          <div class="relative flex justify-center w-full h-6 bg-indigo-200" title="Not Available"></div>
+          <div class="relative flex justify-center w-full h-4 bg-indigo-300" title="Busy"></div>
+          <div class="relative flex justify-center w-full h-12 bg-indigo-400" title="Available"></div>
+          <span class="absolute bottom-0 text-[10px] font-semibold">4 PM</span>
+        </div>
+        <div class="relative flex flex-col items-center flex-grow pb-5 group">
+          <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div class="text-sm font-semibold">18 PROFESSOR</div>
+            <div class="mt-1 space-y-1 text-xs">
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span><span>10 Available</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span><span>4 Busy</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span><span>4 Not Available</span></div>
+            </div>
+          </div>
+          <div class="relative flex justify-center w-full h-4 bg-indigo-200" title="Not Available"></div>
+          <div class="relative flex justify-center w-full h-4 bg-indigo-300" title="Busy"></div>
+          <div class="relative flex justify-center w-full h-10 bg-indigo-400" title="Available"></div>
+          <span class="absolute bottom-0 text-[10px] font-semibold">5 PM</span>
+        </div>
+        <div class="relative flex flex-col items-center flex-grow pb-5 group">
+          <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div class="text-sm font-semibold">20 PROFESSOR</div>
+            <div class="mt-1 space-y-1 text-xs">
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span><span>12 Available</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span><span>4 Busy</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span><span>4 Not Available</span></div>
+            </div>
+          </div>
+          <div class="relative flex justify-center w-full h-4 bg-indigo-200" title="Not Available"></div>
+          <div class="relative flex justify-center w-full h-4 bg-indigo-300" title="Busy"></div>
+          <div class="relative flex justify-center w-full h-12 bg-indigo-400" title="Available"></div>
+          <span class="absolute bottom-0 text-[10px] font-semibold">6 PM</span>
+        </div>
+      </div>
+      
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { Chart, registerables } from 'chart.js'
-
-// Register all Chart.js components
-Chart.register(...registerables)
-
-const chartCanvas = ref(null)
-const chartInstance = ref(null)
-const chartOpacity = ref(0)
-
-// Simple test data
-const chartData = {
-  labels: ['8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM', '4PM', '5PM'],
-  datasets: [
-    {
-      label: 'Available Professors',
-      data: [12, 15, 18, 22, 25, 20, 18, 16, 14, 10],
-      backgroundColor: 'rgba(59, 130, 246, 0.2)',
-      borderColor: 'rgba(59, 130, 246, 1)',
-      borderWidth: 2,
-      fill: true,
-      tension: 0.4,
-      pointRadius: 4,
-      pointBackgroundColor: 'rgba(59, 130, 246, 1)',
-      pointBorderColor: '#ffffff',
-      pointBorderWidth: 2,
-    }
-  ]
-}
-
-// Simple options
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  layout: {
-    padding: {
-      top: 5,
-      bottom: 5,
-      left: 5,
-      right: 5
-    }
-  },
-  animation: {
-    duration: 2000,
-    easing: 'easeInOutQuart',
-    delay: (context) => {
-      return context.dataIndex * 150
-    }
-  },
-  plugins: {
-    legend: {
-      display: false
-    },
-    tooltip: {
-      backgroundColor: 'rgba(0, 0, 0, 0.9)',
-      titleColor: 'white',
-      bodyColor: 'white',
-      borderColor: 'rgba(59, 130, 246, 0.8)',
-      borderWidth: 2,
-      cornerRadius: 8,
-      padding: 10,
-      titleFont: {
-        family: 'Poppins, sans-serif',
-        size: 13,
-        weight: '600'
-      },
-      bodyFont: {
-        family: 'Poppins, sans-serif',
-        size: 12,
-        weight: '400'
-      },
-      callbacks: {
-        title: function(context) {
-          return `${context[0].label}`
-        },
-        label: function(context) {
-          return `Available: ${context.parsed.y} professors`
-        }
-      }
-    }
-  },
-  scales: {
-    x: {
-      grid: {
-        display: false
-      },
-      ticks: {
-        color: '#ffffff',
-        font: {
-          family: 'Poppins, sans-serif',
-          size: 12,
-          weight: '500'
-        }
-      }
-    },
-    y: {
-      beginAtZero: true,
-      grid: {
-        color: 'rgba(255, 255, 255, 0.1)'
-      },
-      ticks: {
-        color: '#ffffff',
-        font: {
-          family: 'Poppins, sans-serif',
-          size: 12,
-          weight: '500'
-        }
-      }
-    }
-  }
-}
-
-// Initialize chart
-onMounted(() => {
-  console.log('Chart component mounted')
-  console.log('Canvas element:', chartCanvas.value)
-  console.log('Chart.js available:', typeof Chart)
-  
-  setTimeout(() => {
-    if (chartCanvas.value) {
-      try {
-        console.log('Creating simple chart...')
-        
-        chartInstance.value = new Chart(chartCanvas.value, {
-          type: 'line',
-          data: chartData,
-          options: chartOptions
-        })
-        
-        console.log('Chart created successfully:', chartInstance.value)
-        
-        // Trigger fade-in animation
-        setTimeout(() => {
-          chartOpacity.value = 1
-        }, 100)
-      } catch (error) {
-        console.error('Error creating chart:', error)
-        console.error('Error details:', error.message)
-      }
-    } else {
-      console.error('Canvas element not found')
-    }
-  }, 200)
-})
+// Design-only static chart markup
 </script>
 
 <style scoped>
-.chart-container {
-  position: relative;
-  height: 100%;
-  width: 100%;
-  max-height: 240px;
-  overflow: hidden;
-}
-
-.chart-fade-in {
-  width: 100%;
-  height: 100%;
-  max-height: 240px;
-  transition: opacity 1.5s ease-in-out, transform 1.5s ease-in-out;
-  transform: translateY(20px);
-}
-
-.chart-visible {
-  transform: translateY(0);
-}
-
-.chart-loading {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #ffffff;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
+.group:hover .group-hover\:block {
+  display: block;
 }
 </style>

@@ -1,7 +1,6 @@
 import StudentLayout from '@/layouts/StudentLayout.vue'
-import Dashboard from '@/views/student/Dashboard.vue'
+import Dashboard from '@/views/student/StudentDashboard.vue'
 import LocateProfessor from '@/views/student/LocateProfessor.vue'
-import Messages from '@/views/student/Messages.vue'
 import Notifications from '@/views/student/Notifications.vue'
 import Profile from '@/views/student/Profile.vue'
 
@@ -23,11 +22,6 @@ const studentRoutes = [
         path: 'locate-professor',
         name: 'student-locate-professor',
         component: LocateProfessor,
-      },
-      {
-        path: 'messages',
-        name: 'student-messages',
-        component: Messages,
       },
       {
         path: 'notifications',

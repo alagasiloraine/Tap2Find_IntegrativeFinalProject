@@ -53,23 +53,6 @@
           Locate Professor
         </router-link>
 
-        <!-- Messages -->
-        <router-link
-          to="/student/messages"
-          class="group flex items-center px-4 py-3 text-base font-normal rounded-lg transition-colors leading-none"
-          :class="[
-            $route.path === '/student/messages'
-              ? 'bg-[#cbd5f1]/20 text-white'
-              : 'text-gray-400 hover:bg-gray-50 hover:text-[#102A71]'
-          ]"
-        >
-          <iconify-icon 
-            :icon="$route.path === '/student/messages' ? 'mingcute:message-3-fill' : 'mingcute:message-3-line'" 
-            class="mr-2 text-xl" 
-          />
-          Inquiries
-        </router-link>
-
         <!-- Notifications -->
         <router-link
           to="/student/notifications"

@@ -27,14 +27,7 @@
       </button>
 
       <!-- Notifications Dropdown -->
-      <transition
-        enter-active-class="transition ease-out duration-200"
-        enter-from-class="opacity-0 scale-95"
-        enter-to-class="opacity-100 scale-100"
-        leave-active-class="transition ease-in duration-150"
-        leave-from-class="opacity-100 scale-100"
-        leave-to-class="opacity-0 scale-95"
-      >
+      <Transition name="dropdown">
         <div
           v-if="showNotifications"
           class="absolute right-0 mt-2 w-[420px] bg-white rounded-lg shadow-lg border border-gray-200 z-50"
@@ -44,51 +37,73 @@
           <h3 class="text-xl font-bold text-gray-900">Notification</h3>
         </div>
         
-        <!-- Notifications List -->
-        <div :class="notifications.length > 5 ? 'max-h-96 overflow-y-auto' : 'max-h-none overflow-visible'">
-          <div
-            v-for="notification in notifications"
-            :key="notification.id"
-            class="px-6 py-4 bg-white last:border-b-0"
-          >
-            <div class="flex items-center">
-              <!-- Avatar -->
-              <div class="flex-shrink-0 mr-4">
-                <div class="w-12 h-12 bg-[#102A71] rounded-full flex items-center justify-center overflow-hidden">
-                  <span class="text-white text-sm font-bold">PA</span>
+        <!-- Notifications List (matches Notifications.vue content) -->
+        <div class="max-h-96 overflow-y-auto px-6 py-2">
+          <!-- Today -->
+          <section class="mb-4">
+            <h2 class="text-sm font-semibold text-gray-800">Today</h2>
+            <ul class="mt-1">
+              <li class="flex items-start gap-3 py-3">
+                <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
+                <div class="flex-1">
+                  <p class="text-gray-900">Professor Alvarez is <span class="font-semibold">Available.</span></p>
+                  <p class="text-xs text-gray-500">30mins</p>
                 </div>
-              </div>
-              
-              <!-- Content -->
-              <div class="flex-1 min-w-0">
-                <p class="font-bold text-gray-900 text-sm">{{ notification.title }}</p>
-                <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
-              </div>
-              
-              <!-- Timestamp -->
-              <div class="flex-shrink-0 ml-4">
-                <p class="text-xs text-gray-500">{{ notification.time }}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div v-if="notifications.length === 0" class="px-6 py-8 text-center text-gray-500">
-            No notifications
-          </div>
+              </li>
+              <hr class="border-gray-200" />
+              <li class="flex items-start gap-3 py-3">
+                <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
+                <div class="flex-1">
+                  <p class="text-gray-900">You successfully edit your profile picture.</p>
+                  <p class="text-xs text-gray-500">1hr ago</p>
+                </div>
+              </li>
+              <hr class="border-gray-200" />
+              <li class="flex items-start gap-3 py-3">
+                <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
+                <div class="flex-1">
+                  <p class="text-gray-900">You successfully sent a message to Prof. Lopez.</p>
+                  <p class="text-xs text-gray-500">1hr ago</p>
+                </div>
+              </li>
+              <hr class="border-gray-200" />
+              <li class="flex items-start gap-3 py-3">
+                <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
+                <div class="flex-1">
+                  <p class="text-gray-900">Sir Elmer sent a message.</p>
+                  <p class="text-xs text-gray-500">1hr ago</p>
+                </div>
+              </li>
+            </ul>
+          </section>
+
+          <!-- Yesterday -->
+          <section>
+            <h2 class="text-sm font-semibold text-gray-800">Yesterday</h2>
+            <ul class="mt-1">
+              <li class="flex items-start gap-3 py-3">
+                <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
+                <div class="flex-1">
+                  <p class="text-gray-900">You successfully sent a message to Prof. Lopez.</p>
+                  <p class="text-xs text-gray-500">1hr ago</p>
+                </div>
+              </li>
+            </ul>
+          </section>
         </div>
         <!-- Footer -->
         <div v-if="notifications.length >= 5" class="px-6 py-3 border-t border-gray-100 text-right bg-white rounded-b-lg">
           <router-link to="/student/notifications" class="text-sm text-[#102A71] hover:underline">View all</router-link>
         </div>
         </div>
-      </transition>
+      </Transition>
     </div>
 
     <!-- Profile -->
     <div class="relative">
       <button
         @click="toggleProfileMenu"
-        class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+        class="flex items-center space-x-3 p-2  rounded-lg transition-colors"
       >
         <!-- Profile Picture -->
         <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center overflow-hidden">
@@ -106,14 +121,7 @@
       </button>
 
       <!-- Profile Dropdown Menu -->
-      <transition
-        enter-active-class="transition ease-out duration-200"
-        enter-from-class="opacity-0 scale-95"
-        enter-to-class="opacity-100 scale-100"
-        leave-active-class="transition ease-in duration-150"
-        leave-from-class="opacity-100 scale-100"
-        leave-to-class="opacity-0 scale-95"
-      >
+      <Transition name="dropdown">
         <div
           v-if="showProfileMenu"
           class="absolute right-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-50"
@@ -258,3 +266,26 @@ const getStatusIcon = (status) => {
   return 'lucide:circle'
 }
 </script>
+
+<style scoped>
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all 0.3s ease;
+}
+.dropdown-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+.dropdown-enter-to {
+  opacity: 1;
+  transform: translateY(0);
+}
+.dropdown-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+</style>

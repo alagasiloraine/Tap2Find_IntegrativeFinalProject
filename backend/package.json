@@ -8,7 +8,8 @@
     "xian": "nodemon index.js",
     "migrate": "node migrate.js",
     "create:model": "node create.js model",
-    "create:controller": "node create.js controller"
+    "create:controller": "node create.js controller",
+    "seed:users": "node scripts/seedUsers.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.0",

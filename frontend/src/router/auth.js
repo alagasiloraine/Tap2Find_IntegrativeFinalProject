@@ -14,6 +14,7 @@ const authRoutes = [
       {
         path: '',
         name: 'login',
+        name: 'login',
         component: Login,
       },
     ],
@@ -25,6 +26,7 @@ const authRoutes = [
       {
         path: '',
         name: 'register',
+        name: 'register',
         component: Register,
       },
     ],
@@ -35,6 +37,7 @@ const authRoutes = [
     children: [
       {
         path: '',
+        name: 'forgot-password',
         name: 'forgot-password',
         component: ForgotPassword,
       },

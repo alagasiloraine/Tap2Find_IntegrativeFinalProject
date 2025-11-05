@@ -1,9 +1,9 @@
 <template>
-  <div class="p-4">
-    <h1 class="text-2xl font-semibold text-gray-900 mb-4">Set Availability Status</h1>
-    <p class="text-gray-600">Update your current availability for students.</p>
+  <div class="bg-white min-h-screen pb-20 md:pb-8 p-4 md:p-4">
+    <div class="px-4 md:px-6 py-4 min-h-0">
+    </div>
   </div>
-</template>
+ </template>
 
 <script setup>
 </script>

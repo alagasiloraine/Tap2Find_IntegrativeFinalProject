@@ -72,25 +72,3 @@
     </section>
   </div>
 </template>
-
-<script setup>
-import { ref } from 'vue'
-
-const features = ref([
-  {
-    icon: '⚡',
-    title: 'Lightning Fast',
-    description: 'Find what you need in seconds with our optimized search algorithms.'
-  },
-  {
-    icon: '🛡️',
-    title: 'Secure & Reliable',
-    description: 'Your data is protected with enterprise-grade security measures.'
-  },
-  {
-    icon: '❤️',
-    title: 'User Friendly',
-    description: 'Intuitive design that makes complex tasks simple and enjoyable.'
-  }
-])
-</script>

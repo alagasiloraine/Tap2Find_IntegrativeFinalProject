@@ -1,9 +1,11 @@
 <template>
-  <div class="p-4">
-    <h1 class="text-2xl font-semibold text-gray-900 mb-4">Profile Page</h1>
-    <p class="text-gray-600">Manage your profile information and preferences.</p>
+  <div class="bg-white min-h-screen pb-20 md:pb-8 p-4 md:p-4">
+    <ProfessorTopNav />
+    <div class="px-4 md:px-6 py-4 min-h-0">
+    </div>
   </div>
-</template>
+ </template>
 
 <script setup>
+import ProfessorTopNav from '@/components/ProfessorTopNav.vue'
 </script>

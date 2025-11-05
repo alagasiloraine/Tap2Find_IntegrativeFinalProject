@@ -256,7 +256,7 @@
         <button
           type="submit"
           :disabled="isLoading"
-          class="w-full bg-[#F5C400] text-white py-2 px-4 rounded-xl hover:bg-[#e8bc09] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors relative"
+          class="w-full bg-[#F5C400] text-white py-2 px-4 rounded-full hover:bg-[#e8bc09] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors relative"
           :class="isLoading ? 'opacity-70 cursor-not-allowed hover:bg-[#F5C400]' : ''"
         >
           <span :class="isLoading ? 'opacity-0' : ''">Create Account</span>

@@ -35,7 +35,7 @@
               type="text"
               maxlength="1"
               :disabled="isVerifying"
-              class="w-12 h-12 text-center text-xl font-semibold border-2 border-gray-300 rounded-md focus:border-[#102A71] focus:ring-1 focus:ring-[#102A71] focus:ring-opacity-100 transition-colors"
+              class="w-12 h-12 text-center text-xl font-semibold bg-gray-50 rounded-md text-[#102A71] focus:border-[#102A71] focus:ring-1 focus:ring-[#102A71] focus:ring-opacity-100 transition-colors"
               :class="isVerifying ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''"
               @input="handleOTPInput(index, $event)"
               @keydown="handleKeyDown(index, $event)"

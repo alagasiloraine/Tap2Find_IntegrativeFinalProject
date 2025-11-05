@@ -1,9 +1,9 @@
 <template>
-  <div class="p-4">
-    <h1 class="text-2xl font-semibold text-gray-900 mb-4">Upload New/Edit Teaching Schedule</h1>
-    <p class="text-gray-600">Upload a new schedule or edit your existing teaching schedule.</p>
+  <div class="bg-white min-h-screen pb-20 md:pb-8 p-4 md:p-4">
+    <ProfessorTopNav />
   </div>
-</template>
+ </template>
 
 <script setup>
+import ProfessorTopNav from '@/components/ProfessorTopNav.vue'
 </script>

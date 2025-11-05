@@ -1,6 +1,8 @@
 import LandingLayout from '@/layouts/LandingLayout.vue'
 import Home from '@/views/landing/Home.vue'
 import About from '@/views/landing/About.vue'
+import Features from '@/views/landing/Features.vue'
+import Contact from '@/views/landing/Contact.vue'
 
 const landingRoutes = [
   {
@@ -16,6 +18,16 @@ const landingRoutes = [
         path: 'about',
         name: 'about',
         component: About,
+      },
+      {
+        path: 'features',
+        name: 'features',
+        component: Features,
+      },
+      {
+        path: 'contact',
+        name: 'contact',
+        component: Contact,
       },
     ],
   },

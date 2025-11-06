@@ -13,6 +13,7 @@ import authRoutes from "./routes/authRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import professorRoutes from "./routes/professorRoutes.js";
 import inquiryRoutes from "./routes/inquiryRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 dotenv.config();
 
@@ -95,6 +96,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/professors", professorRoutes);
 app.use("/api/inquiries", inquiryRoutes);
+app.use("/api/notification", notificationRoutes);
 
 export default app;
 

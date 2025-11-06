@@ -14,9 +14,9 @@
             <div class="relative flex gap-2">
               <div class="relative">
                 <iconify-icon icon="fluent:search-16-filled" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              v-model="searchQuery"
+                <input
+                  type="text"
+                  v-model="searchQuery"
                   @focus="showSearchDropdown = true"
                   @blur="hideSearchDropdown"
                   placeholder="Search professor name..."
@@ -36,33 +36,33 @@
                   v-if="showSearchDropdown && searchQuery && searchResults.length > 0"
                   class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
                 >
-                <div
-                  v-for="professor in searchResults"
-                  :key="professor.id"
-                  @click="selectProfessor(professor)"
-                  class="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                >
-                  <!-- Profile Picture -->
-                  <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mr-3">
-                    <span class="text-white text-sm font-bold">{{ professor.name.split(' ').map(n => n[0]).join('') }}</span>
-          </div>
-                  
-                  <!-- Professor Info -->
-          <div class="flex-1">
-                    <p class="font-medium text-gray-900">{{ professor.name }}</p>
-                    <p class="text-sm text-gray-600">{{ professor.department }}</p>
+                  <div
+                    v-for="professor in searchResults"
+                    :key="professor.id"
+                    @click="selectProfessor(professor)"
+                    class="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                  >
+                    <!-- Profile Picture -->
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mr-3">
+                      <span class="text-white text-sm font-bold">{{ professor.name.split(' ').map(n => n[0]).join('') }}</span>
+                    </div>
+                    
+                    <!-- Professor Info -->
+                    <div class="flex-1">
+                      <p class="font-medium text-gray-900">{{ professor.name }}</p>
+                      <p class="text-sm text-gray-600">{{ professor.department }}</p>
+                    </div>
+                    
+                    <!-- Status Indicator -->
+                    <div class="ml-2">
+                      <span class="w-2 h-2 rounded-full"
+                        :class="professor.available === 'available' ? 'bg-green-500' : professor.available === 'busy' ? 'bg-red-500' : 'bg-gray-500'"
+                      ></span>
+                    </div>
                   </div>
-                  
-                  <!-- Status Indicator -->
-                  <div class="ml-2">
-                    <span class="w-2 h-2 rounded-full"
-                      :class="professor.available === 'available' ? 'bg-green-500' : professor.available === 'busy' ? 'bg-red-500' : 'bg-gray-500'"
-                    ></span>
-                  </div>
-                </div>
                 </div>
               </transition>
-              </div>
+            </div>
               
               <!-- Filter Icon -->
               <div class="flex items-center">
@@ -73,7 +73,7 @@
                   :class="(showFilterSlider || selectedYearLevel !== '' || selectedStatus !== null) ? 'text-[#102A71]' : 'text-gray-600'"
                 ></iconify-icon>
               </div>
-          </div>
+            </div>
           </div>
         </div>
       </div>
@@ -153,10 +153,10 @@
 
               </div>
             </div>
-            </div>
-            </div>
-            </div>
           </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Overlay Background -->
     <transition
@@ -280,58 +280,58 @@
           leave-to-class="opacity-0 scale-95 transform translate-y-4"
         >
           <div class="bg-white rounded-xl w-full max-w-md">
-        <!-- Modal Header -->
-        <div class="bg-white border-b border-gray-200 rounded-t-xl px-6 py-4 flex items-center justify-between">
-          <h3 class="text-xl font-bold text-gray-900">Send Inquiry</h3>
-        </div>
-
-        <!-- Modal Body -->
-        <div class="px-6 py-4">
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">To:</label>
-            <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg">
-              <p class="font-medium text-gray-900">{{ selectedProfessor?.name }}</p>
-              <p class="text-sm text-gray-600">{{ selectedProfessor?.department }}</p>
+            <!-- Modal Header -->
+            <div class="bg-white border-b border-gray-200 rounded-t-xl px-6 py-4 flex items-center justify-between">
+              <h3 class="text-xl font-bold text-gray-900">Send Inquiry</h3>
             </div>
-          </div>
 
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Subject:</label>
-            <input
-              v-model="inquiryForm.subject"
-              type="text"
-              placeholder="Enter subject..."
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+            <!-- Modal Body -->
+            <div class="px-6 py-4">
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">To:</label>
+                <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg">
+                  <p class="font-medium text-gray-900">{{ selectedProfessor?.name }}</p>
+                  <p class="text-sm text-gray-600">{{ selectedProfessor?.department }}</p>
+                </div>
+              </div>
 
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Message:</label>
-            <textarea
-              v-model="inquiryForm.message"
-              rows="5"
-              placeholder="Type your message here..."
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            ></textarea>
-          </div>
-        </div>
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Subject:</label>
+                <input
+                  v-model="inquiryForm.subject"
+                  type="text"
+                  placeholder="Enter subject..."
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
 
-        <!-- Modal Footer -->
-        <div class="px-6 py-4  flex justify-end space-x-3">
-          <button
-            @click="closeInquiryModal"
-            class="bg-gray-50 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            @click="submitInquiry"
-            class="px-4 py-2 bg-[#102A71] text-white rounded-lg hover:bg-[#102A71]/90 transition-colors flex items-center"
-          >
-            <iconify-icon icon="lucide:send" class="mr-2 h-4 w-4" />
-            Send Inquiry
-          </button>
-      </div>
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Message:</label>
+                <textarea
+                  v-model="inquiryForm.message"
+                  rows="5"
+                  placeholder="Type your message here..."
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4  flex justify-end space-x-3">
+              <button
+                @click="closeInquiryModal"
+                class="bg-gray-50 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                @click="submitInquiry"
+                class="px-4 py-2 bg-[#102A71] text-white rounded-lg hover:bg-[#102A71]/90 transition-colors flex items-center"
+              >
+                <iconify-icon icon="lucide:send" class="mr-2 h-4 w-4" />
+                Send Inquiry
+              </button>
+            </div>
           </div>
         </transition>
       </div>
@@ -497,21 +497,12 @@ const closeInquiryModal = () => {
 
 const submitInquiry = async () => {
   try {
-    // 🧠 Get the selected professor and logged-in student
     const professor = selectedProfessor.value
     const userData = JSON.parse(localStorage.getItem("user"))
 
-    if (!userData) {
-      alert("No user logged in.")
-      return
-    }
+    if (!userData) return alert("No user logged in.")
+    if (!professor) return alert("No professor selected.")
 
-    if (!professor) {
-      alert("No professor selected.")
-      return
-    }
-
-    // 🧩 Handle all possible ID formats
     const professorId =
       professor.id ||
       professor._id ||
@@ -520,28 +511,12 @@ const submitInquiry = async () => {
 
     const studentId = userData.id || userData._id || userData._id?.$oid || null
 
-    // 🧠 Debug log before sending
-    console.log("🎯 Selected Professor Object:", professor)
-    console.log("👩‍🎓 Logged-in Student:", userData)
-    console.log("📤 Inquiry Data (before validation):", {
-      professorId,
-      studentId,
-      subject: inquiryForm.value.subject,
-      message: inquiryForm.value.message
-    })
+    if (!professorId || !studentId)
+      return alert("Missing required professor or student ID.")
 
-    // 🛑 Validate all required fields
-    if (!professorId || !studentId) {
-      alert("Missing required professor or student ID.")
-      return
-    }
+    if (!inquiryForm.value.subject.trim() || !inquiryForm.value.message.trim())
+      return alert("Please enter both subject and message.")
 
-    if (!inquiryForm.value.subject.trim() || !inquiryForm.value.message.trim()) {
-      alert("Please enter both subject and message.")
-      return
-    }
-
-    // 📨 Prepare inquiry data payload
     const inquiryData = {
       professorId,
       studentId,
@@ -555,6 +530,18 @@ const submitInquiry = async () => {
     if (response.data.success) {
       console.log("✅ Inquiry sent successfully:", response.data)
       alert("✅ Inquiry sent successfully!")
+
+      // 🧠 Send notification to the professor
+      await api.post("/notification/add-notification", {
+        title: "New Inquiry Received",
+        message: `${userData.name || "A student"} sent you an inquiry: “${inquiryForm.value.subject}”`,
+        professorId: professorId, // ✅ send to the professor
+        isGeneral: false,
+        read: false,
+        createdAt: new Date(),
+      })
+
+      console.log("📢 Notification sent to professor:", professorId)
 
       // Reset form & close modal
       inquiryForm.value.subject = ''

@@ -14,19 +14,47 @@ export const getAllProfessors = async (req, res) => {
         office: 1,
         status: 1,
         emailAddress: 1,
+        isVerified: 1,
       })
       .toArray();
 
-    const formatted = professors.map(p => ({
-      id: p._id.toString(),
-      name: `${p.firstName} ${p.lastName}`,
-      department: p.department || "Unknown Department",
-      office: p.office || "No office assigned",
-      email: p.emailAddress,
-      available: p.status ? p.status.toLowerCase() : "not-available"
-    }));
+    // Check if it's weekend
+    const now = new Date();
+    const isWeekend = now.getDay() === 0 || now.getDay() === 6; // 0 = Sunday, 6 = Saturday
 
-    res.status(200).json({ success: true, professors: formatted });
+    const formatted = professors.map(p => {
+      // Determine availability status
+      let availabilityStatus = "not-available";
+      
+      if (!isWeekend) {
+        // On weekdays, use the professor's actual status
+        if (p.status && p.isVerified !== false) {
+          availabilityStatus = p.status.toLowerCase();
+        } else {
+          availabilityStatus = "not-available";
+        }
+      } else {
+        // On weekends, always mark as not available
+        availabilityStatus = "not-available";
+      }
+
+      return {
+        id: p._id.toString(),
+        name: `${p.firstName} ${p.lastName}`,
+        department: p.department || "Unknown Department",
+        office: p.office || "No office assigned",
+        email: p.emailAddress,
+        available: availabilityStatus,
+        isWeekend: isWeekend // Optional: include weekend info for frontend
+      };
+    });
+
+    res.status(200).json({ 
+      success: true, 
+      professors: formatted,
+      isWeekend: isWeekend, // Include weekend status in response
+      currentDay: now.toLocaleDateString('en-US', { weekday: 'long' })
+    });
 
   } catch (error) {
     console.error("Error fetching professors:", error);

@@ -127,3 +127,129 @@ export const getStudentDashboard = async (req, res) => {
   }
 };
 
+export const getProfessorAvailability = async (req, res) => {
+  try {
+    const db = getDB("tap2find_db");
+    const schedulesColl = db.collection("professor_schedules");
+    const usersColl = db.collection("users");
+
+    // Get current day and time
+    const now = new Date();
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }); // Monday, Tuesday, etc.
+    const currentHour = now.getHours();
+    
+    // Check if it's weekend
+    const isWeekend = now.getDay() === 0 || now.getDay() === 6; // 0 = Sunday, 6 = Saturday
+
+    // Get all professors
+    const professors = await usersColl.find(
+      { $expr: { $eq: [ { $toLower: { $trim: { input: "$role" } } }, "professor" ] } },
+      { projection: { _id: 1, firstName: 1, lastName: 1, isVerified: 1 } }
+    ).toArray();
+
+    // Get all professor schedules
+    const professorSchedules = await schedulesColl.find({
+      scheduleType: 'manual'
+    }).toArray();
+
+    // Initialize availability data for each hour (8 AM to 8 PM)
+    const hours = Array.from({ length: 13 }, (_, i) => i + 8); // 8 to 20 (8 PM)
+    const availabilityData = {};
+
+    hours.forEach(hour => {
+      availabilityData[hour] = {
+        available: 0,
+        busy: 0,
+        notAvailable: 0,
+        total: professors.length
+      };
+    });
+
+    // If it's weekend, all professors are not available
+    if (isWeekend) {
+      hours.forEach(hour => {
+        availabilityData[hour] = {
+          available: 0,
+          busy: 0,
+          notAvailable: professors.length,
+          total: professors.length
+        };
+      });
+      
+      res.status(200).json({
+        success: true,
+        data: {
+          hourlyData: availabilityData,
+          overallStats: {
+            available: 0,
+            busy: 0,
+            notAvailable: professors.length,
+            total: professors.length
+          },
+          currentDay,
+          currentHour,
+          totalProfessors: professors.length,
+          isWeekend: true
+        }
+      });
+      return;
+    }
+
+    // Calculate availability for each professor (only on weekdays)
+    professors.forEach(professor => {
+      const professorSchedule = professorSchedules.find(s => 
+        s.professorId.toString() === professor._id.toString()
+      );
+
+      // If professor is not verified, mark as not available for all hours
+      if (!professor.isVerified) {
+        hours.forEach(hour => {
+          availabilityData[hour].notAvailable++;
+        });
+        return;
+      }
+
+      // Get today's schedule for this professor
+      const todaysSchedule = professorSchedule?.schedule?.filter(
+        s => s.day === currentDay
+      ) || [];
+
+      hours.forEach(hour => {
+        // Check if professor has schedule at this hour
+        const hasSchedule = todaysSchedule.some(schedule => 
+          hour >= schedule.startTime && hour < schedule.endTime
+        );
+
+        if (hasSchedule) {
+          availabilityData[hour].busy++;
+        } else {
+          availabilityData[hour].available++;
+        }
+      });
+    });
+
+    // Calculate overall stats
+    const overallStats = {
+      available: availabilityData[currentHour]?.available || 0,
+      busy: availabilityData[currentHour]?.busy || 0,
+      notAvailable: availabilityData[currentHour]?.notAvailable || 0,
+      total: professors.length
+    };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        hourlyData: availabilityData,
+        overallStats,
+        currentDay,
+        currentHour,
+        totalProfessors: professors.length,
+        isWeekend: false
+      }
+    });
+
+  } catch (err) {
+    console.error("Error calculating professor availability:", err);
+    return res.status(500).json({ success: false, message: "Failed to calculate availability" });
+  }
+};

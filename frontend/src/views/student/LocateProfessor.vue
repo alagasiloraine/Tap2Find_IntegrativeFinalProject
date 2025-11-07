@@ -56,7 +56,7 @@
                     <!-- Status Indicator -->
                     <div class="ml-2">
                       <span class="w-2 h-2 rounded-full"
-                        :class="professor.available === 'available' ? 'bg-green-500' : professor.available === 'busy' ? 'bg-red-500' : 'bg-gray-500'"
+                        :class="getStatusDotClass(professor)"
                       ></span>
                     </div>
                   </div>
@@ -122,14 +122,10 @@
               
               <!-- Status Badge -->
               <span class="px-2 py-1 rounded-lg text-xs font-medium w-fit inline-flex items-center gap-1"
-                :class="professor.available === 'available' 
-                  ? 'bg-green-100 text-green-700' 
-                  : professor.available === 'busy' 
-                  ? 'bg-pink-100 text-pink-700' 
-                  : 'bg-gray-100 text-gray-700'"
+                :class="getStatusBadgeClass(professor)"
               >
-                <iconify-icon :icon="getStatusIcon(professor.available)" class="h-3 w-3" />
-                <span>{{ getStatusText(professor.available) }}</span>
+                <iconify-icon :icon="getStatusIcon(professor)" class="h-3 w-3" />
+                <span>{{ getStatusDisplayText(professor) }}</span>
               </span>
               
               <!-- Location and Send Inquiry Button -->
@@ -140,15 +136,15 @@
                 </div>
                 
                 <button
-                  @click="professor.available !== 'not available' && contactProfessor(professor)"
-                  :disabled="professor.available === 'not available'"
+                  @click="contactProfessor(professor)"
+                  :disabled="!isProfessorAvailable(professor)"
                   class="py-2 px-4 rounded-lg text-sm flex items-center justify-center flex-shrink-0 transition-all"
-                  :class="professor.available === 'not available'
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-[#102A71] text-white hover:bg-[#102A71]/80'"
+                  :class="isProfessorAvailable(professor)
+                    ? 'bg-[#102A71] text-white hover:bg-[#102A71]/80'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
                 >
                   <iconify-icon icon="lucide:send" class="mr-2 h-4 w-4" />
-                  Send Inquiry
+                  {{ isProfessorAvailable(professor) ? 'Send Inquiry' : 'Not Available' }}
                 </button>
 
               </div>
@@ -383,6 +379,7 @@ const selectedProfessor = ref(null)
 const showSearchDropdown = ref(false)
 const showYearLevelDropdown = ref(false)
 const showFilterSlider = ref(false)
+const isWeekend = ref(false)
 
 const inquiryForm = ref({
   subject: '',
@@ -429,8 +426,6 @@ const filteredProfessors = computed(() => {
     return matchesSearch && matchesYearLevel && matchesStatus
   })
 })
-
-// No special feature flags required
 
 // Methods
 const searchProfessors = () => {
@@ -484,6 +479,10 @@ const filterByStatus = (status) => {
 }
 
 const contactProfessor = (professor) => {
+  if (!isProfessorAvailable(professor)) {
+    return // Don't open modal if professor is not available
+  }
+  
   console.log("🧠 Selected professor:", professor)
   selectedProfessor.value = professor
   showInquiryModal.value = true
@@ -584,16 +583,58 @@ const viewProfile = (professor) => {
   console.log('Viewing profile:', professor.name)
 }
 
+// Updated status methods to handle weekend display
+const getStatusDisplayText = (professor) => {
+  if (professor.isWeekend) {
+    return "Not Available (It's Weekend)"
+  }
+  if (professor.available === 'available') return 'Available'
+  if (professor.available === 'busy') return 'Busy'
+  return 'Not Available'
+}
+
 const getStatusText = (status) => {
   if (status === 'available') return 'Available'
   if (status === 'busy') return 'Busy'
   return 'Not Available'
 }
 
-const getStatusIcon = (status) => {
-  if (status === 'available') return 'lucide:circle-check'
-  if (status === 'busy') return 'lucide:clock'
+const getStatusIcon = (professor) => {
+  if (professor.isWeekend) return 'lucide:calendar-x'
+  if (professor.available === 'available') return 'lucide:circle-check'
+  if (professor.available === 'busy') return 'lucide:clock'
   return 'lucide:circle-x'
+}
+
+const getStatusBadgeClass = (professor) => {
+  if (professor.isWeekend) {
+    return 'bg-gray-100 text-gray-700'
+  }
+  if (professor.available === 'available') {
+    return 'bg-green-100 text-green-700'
+  }
+  if (professor.available === 'busy') {
+    return 'bg-pink-100 text-pink-700'
+  }
+  return 'bg-gray-100 text-gray-700'
+}
+
+const getStatusDotClass = (professor) => {
+  if (professor.isWeekend) {
+    return 'bg-gray-500'
+  }
+  if (professor.available === 'available') {
+    return 'bg-green-500'
+  }
+  if (professor.available === 'busy') {
+    return 'bg-red-500'
+  }
+  return 'bg-gray-500'
+}
+
+const isProfessorAvailable = (professor) => {
+  // Professor is only available if it's not weekend AND their status is 'available'
+  return !professor.isWeekend && professor.available === 'available'
 }
 
 onMounted(async () => {
@@ -602,6 +643,10 @@ onMounted(async () => {
 
     if (res.data.success) {
       professors.value = res.data.professors;
+      isWeekend.value = res.data.isWeekend || false;
+      
+      console.log('Loaded professors:', professors.value.length)
+      console.log('Is weekend:', isWeekend.value)
     }
   } catch (err) {
     console.error("Error loading professors:", err);
@@ -609,4 +654,3 @@ onMounted(async () => {
 });
 
 </script>
-

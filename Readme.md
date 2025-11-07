@@ -15,7 +15,13 @@ Oct. 27 Monday 10:25 ->
 ℹ: Added guard function to prevent unauthorized access to the page for other roles. 
 ℹ: Added error folder with Unauthorized.vue file.
 
-Oct. 29 15:52 ->
+Oct. 29 15:52 -> ???
 i: Modify the database configuration
 i: Update controller
+i: [undocumented]
 
+
+Nov. 7 Friday 10:56 PM -> Nov. 8 Saturday 12:33 AM
+i: fixed professor schedule adding
+i: student dashboard chart based on the professor's time schedule
+i: fixed logic for professor status when it's weekend

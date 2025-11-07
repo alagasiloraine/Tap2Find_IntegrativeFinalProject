@@ -15,6 +15,7 @@ import professorRoutes from "./routes/professorRoutes.js";
 import inquiryRoutes from "./routes/inquiryRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js"
+import attendanceRoutes from "./routes/attendanceRoutes.js";
 
 dotenv.config();
 
@@ -99,6 +100,7 @@ app.use("/api/professors", professorRoutes);
 app.use("/api/inquiries", inquiryRoutes);
 app.use("/api/notification", notificationRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/rfid", attendanceRoutes);
 
 export default app;
 

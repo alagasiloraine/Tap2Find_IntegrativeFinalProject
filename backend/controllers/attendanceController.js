@@ -1,134 +1,334 @@
 import { getDB } from "../db.js";
 import { ObjectId } from "mongodb";
 
-// 🎯 Create attendance record (used by ESP32)
-export const createAttendance = async (req, res) => {
-  try {
-    const { uid, name, status, timestamp } = req.body;
+// 🎯 Handle RFID tap from ESP32 (RFID UID only)
+// export const handleRfidTap = async (req, res) => {
+//   try {
+//     const { uid } = req.body;
 
-    // Validate required fields
-    if (!uid || !name || !status || !timestamp) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Missing required fields: uid, name, status, timestamp" 
-      });
-    }
+//     // Validate required field - only UID is required now
+//     if (!uid) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         message: "Missing required field: uid" 
+//       });
+//     }
 
-    // Validate status
-    const upperStatus = status.toUpperCase();
-    if (!['IN', 'OUT'].includes(upperStatus)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Status must be either 'IN' or 'OUT'" 
-      });
-    }
+//     const db = getDB();
+//     const users = db.collection("users");
+//     const rfidLogs = db.collection("rfid_logs");
 
-    // Parse and validate timestamp
-    const recordTimestamp = new Date(timestamp);
-    if (isNaN(recordTimestamp.getTime())) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Invalid timestamp format" 
-      });
-    }
-
-    const db = getDB();
-    const attendance = db.collection("attendance");
-
-    // Create attendance record
-    const record = {
-      uid: uid.toUpperCase().trim(),
-      name: name.trim(),
-      status: upperStatus,
-      timestamp: recordTimestamp,
-      receivedAt: new Date()
-    };
-
-    // Insert into MongoDB
-    const result = await attendance.insertOne(record);
-
-    // Log the attendance
-    console.log(`✅ [ATTENDANCE] ${record.name} (${record.uid}) ${record.status} at ${timestamp}`);
-
-    res.status(201).json({
-      success: true,
-      message: "Attendance recorded successfully",
-      data: {
-        id: result.insertedId,
-        ...record
-      }
-    });
-
-  } catch (error) {
-    console.error("❌ Error creating attendance record:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-};
-
-// 🎯 Get all attendance records with filtering
-export const getAttendance = async (req, res) => {
-  try {
-    const { page = 1, limit = 50, uid, name, date, status } = req.query;
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-
-    const db = getDB();
-    const attendance = db.collection("attendance");
-
-    // Build query
-    let query = {};
+//     // Normalize UID
+//     const normalizedUid = uid.toUpperCase().trim();
     
-    if (uid) {
-      query.uid = { $regex: uid.toUpperCase(), $options: 'i' };
-    }
-    
-    if (name) {
-      query.name = { $regex: name, $options: 'i' };
-    }
-    
-    if (date) {
-      const startDate = new Date(date);
-      const endDate = new Date(date);
-      endDate.setDate(endDate.getDate() + 1);
+//     // Generate timestamp on the server side
+//     const timestamp = new Date();
+
+//     console.log(`🔔 Processing RFID: ${normalizedUid} at ${timestamp}`);
+
+//     // Check if this RFID is assigned to a professor (using idNumber field)
+//     const professor = await users.findOne({ 
+//       idNumber: normalizedUid,
+//       role: 'professor'
+//     });
+
+//     if (professor) {
+//       // 🎯 PROFESSOR FOUND - toggle availability
+//       const newAvailability = !professor.available;
       
-      query.timestamp = {
-        $gte: startDate,
-        $lt: endDate
-      };
+//       // Update professor availability
+//       await users.updateOne(
+//         { _id: professor._id },
+//         { 
+//           $set: { 
+//             available: newAvailability,
+//             lastStatusChange: timestamp
+//           } 
+//         }
+//       );
+
+//       // Log the professor status change
+//       const statusLog = {
+//         uid: normalizedUid,
+//         name: `${professor.firstName} ${professor.lastName}`,
+//         previousStatus: professor.available ? 'available' : 'not available',
+//         newStatus: newAvailability ? 'available' : 'not available',
+//         timestamp: timestamp,
+//         receivedAt: new Date(),
+//         type: 'professor_availability_toggle'
+//       };
+
+//       await rfidLogs.insertOne(statusLog);
+
+//       // Log to console
+//       console.log(`✅ [PROFESSOR] ${professor.firstName} ${professor.lastName} (${normalizedUid}) changed from ${statusLog.previousStatus} to ${statusLog.newStatus}`);
+
+//       return res.status(200).json({
+//         success: true,
+//         message: `Professor ${professor.firstName} ${professor.lastName} is now ${newAvailability ? 'available' : 'not available'}`,
+//         data: {
+//           userType: 'professor',
+//           professor: {
+//             id: professor._id,
+//             name: professor.firstName + ' ' + professor.lastName,
+//             available: newAvailability,
+//             status: newAvailability ? 'AVAILABLE' : 'NOT_AVAILABLE'
+//           },
+//           action: 'availability_toggled'
+//         }
+//       });
+
+//     } else {
+//       // 🎯 NOT A PROFESSOR - check if it's any registered user (using idNumber field)
+//       const otherUser = await users.findOne({ idNumber: normalizedUid });
+      
+//       if (otherUser) {
+//         // Regular user (student/staff) - just log the tap
+//         const userLog = {
+//           uid: normalizedUid,
+//           name: `${otherUser.firstName} ${otherUser.lastName}`,
+//           role: otherUser.role,
+//           timestamp: timestamp,
+//           receivedAt: new Date(),
+//           type: 'user_tap',
+//           action: 'logged_only'
+//         };
+
+//         await rfidLogs.insertOne(userLog);
+
+//         console.log(`📝 [USER TAP] ${otherUser.firstName} ${otherUser.lastName} (${normalizedUid}) - ${otherUser.role}`);
+
+//         return res.status(200).json({
+//           success: true,
+//           message: `${otherUser.role} ${otherUser.firstName} ${otherUser.lastName} tap recorded`,
+//           data: {
+//             userType: otherUser.role,
+//             user: {
+//               id: otherUser._id,
+//               name: otherUser.firstName + ' ' + otherUser.lastName,
+//               role: otherUser.role
+//             },
+//             action: 'tap_logged'
+//           }
+//         });
+
+//       } else {
+//         // 🎯 UNKNOWN RFID - send to frontend via WebSocket
+//         console.log(`🔔 [UNKNOWN RFID] ${normalizedUid} detected - sending to frontend via WebSocket`);
+
+//         // Log the unknown RFID
+//         const unknownLog = {
+//           uid: normalizedUid,
+//           timestamp: timestamp,
+//           receivedAt: new Date(),
+//           type: 'unknown_rfid',
+//           processed: false
+//         };
+
+//         await rfidLogs.insertOne(unknownLog);
+
+//         // Broadcast to all connected WebSocket clients
+//         try {
+//           const rfidWebSocketServer = req.app.get('rfidWebSocketServer');
+//           if (rfidWebSocketServer) {
+//             const clientCount = rfidWebSocketServer.broadcastToClients({
+//               type: 'unknown_rfid',
+//               rfid: normalizedUid,
+//               timestamp: timestamp.toISOString(),
+//               message: 'New RFID detected - needs assignment'
+//             });
+//             console.log(`📢 WebSocket broadcast sent to ${clientCount} clients`);
+//           } else {
+//             console.log('❌ WebSocket server not available');
+//           }
+//         } catch (wsError) {
+//           console.error('❌ WebSocket broadcast error:', wsError);
+//         }
+
+//         return res.status(200).json({
+//           success: true,
+//           message: "Unknown RFID detected - needs assignment",
+//           data: {
+//             userType: 'unknown',
+//             rfid: normalizedUid,
+//             timestamp: timestamp.toISOString(),
+//             needsAssignment: true,
+//             frontendAction: 'show_assignment_modal'
+//           }
+//         });
+//       }
+//     }
+
+//   } catch (error) {
+//     console.error("❌ Error handling RFID tap:", error);
+//     res.status(500).json({ 
+//       success: false, 
+//       message: "Server error",
+//       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+//     });
+//   }
+// };
+
+export const handleRfidTap = async (req, res) => {
+  try {
+    const { uid } = req.body;
+
+    // Validate required field - only UID is required now
+    if (!uid) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Missing required field: uid" 
+      });
     }
+
+    const db = getDB();
+    const users = db.collection("users");
+    const rfidLogs = db.collection("rfid_logs");
+
+    // Normalize UID
+    const normalizedUid = uid.toUpperCase().trim();
     
-    if (status) {
-      query.status = status.toUpperCase();
-    }
+    // Generate timestamp on the server side
+    const timestamp = new Date();
 
-    // Get total count
-    const total = await attendance.countDocuments(query);
+    console.log(`🔔 Processing RFID: ${normalizedUid} at ${timestamp}`);
 
-    // Get paginated results
-    const data = await attendance
-      .find(query)
-      .sort({ timestamp: -1 })
-      .limit(limitNum)
-      .skip((pageNum - 1) * limitNum)
-      .toArray();
-
-    res.json({
-      success: true,
-      data,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        pages: Math.ceil(total / limitNum)
-      }
+    // Check if this RFID is assigned to a professor (using idNumber field)
+    const professor = await users.findOne({ 
+      idNumber: normalizedUid,
+      role: 'professor'
     });
 
+    if (professor) {
+      // 🎯 PROFESSOR FOUND - toggle status between "AVAILABLE" and "NOT_AVAILABLE"
+      const currentStatus = professor.status || 'not-vailable';
+      const newStatus = currentStatus === 'available' ? 'not-available' : 'available';
+      
+      // Update professor status
+      await users.updateOne(
+        { _id: professor._id },
+        { 
+          $set: { 
+            status: newStatus,
+            lastStatusChange: timestamp
+          } 
+        }
+      );
+
+      // Log the professor status change
+      const statusLog = {
+        uid: normalizedUid,
+        name: `${professor.firstName} ${professor.lastName}`,
+        previousStatus: currentStatus,
+        newStatus: newStatus,
+        timestamp: timestamp,
+        receivedAt: new Date(),
+        type: 'professor_status_toggle'
+      };
+
+      await rfidLogs.insertOne(statusLog);
+
+      // Log to console
+      console.log(`✅ [PROFESSOR] ${professor.firstName} ${professor.lastName} (${normalizedUid}) changed from ${currentStatus} to ${newStatus}`);
+
+      return res.status(200).json({
+        success: true,
+        message: `Professor ${professor.firstName} ${professor.lastName} is now ${newStatus === 'available' ? 'available' : 'not-available'}`,
+        data: {
+          userType: 'professor',
+          professor: {
+            id: professor._id,
+            name: professor.firstName + ' ' + professor.lastName,
+            status: newStatus,
+            available: newStatus === 'available' // Keep available field for compatibility if needed
+          },
+          action: 'status_toggled'
+        }
+      });
+
+    } else {
+      // 🎯 NOT A PROFESSOR - check if it's any registered user (using idNumber field)
+      const otherUser = await users.findOne({ idNumber: normalizedUid });
+      
+      if (otherUser) {
+        // Regular user (student/staff) - just log the tap
+        const userLog = {
+          uid: normalizedUid,
+          name: `${otherUser.firstName} ${otherUser.lastName}`,
+          role: otherUser.role,
+          timestamp: timestamp,
+          receivedAt: new Date(),
+          type: 'user_tap',
+          action: 'logged_only'
+        };
+
+        await rfidLogs.insertOne(userLog);
+
+        console.log(`📝 [USER TAP] ${otherUser.firstName} ${otherUser.lastName} (${normalizedUid}) - ${otherUser.role}`);
+
+        return res.status(200).json({
+          success: true,
+          message: `${otherUser.role} ${otherUser.firstName} ${otherUser.lastName} tap recorded`,
+          data: {
+            userType: otherUser.role,
+            user: {
+              id: otherUser._id,
+              name: otherUser.firstName + ' ' + otherUser.lastName,
+              role: otherUser.role
+            },
+            action: 'tap_logged'
+          }
+        });
+
+      } else {
+        // 🎯 UNKNOWN RFID - send to frontend via WebSocket
+        console.log(`🔔 [UNKNOWN RFID] ${normalizedUid} detected - sending to frontend via WebSocket`);
+
+        // Log the unknown RFID
+        const unknownLog = {
+          uid: normalizedUid,
+          timestamp: timestamp,
+          receivedAt: new Date(),
+          type: 'unknown_rfid',
+          processed: false
+        };
+
+        await rfidLogs.insertOne(unknownLog);
+
+        // Broadcast to all connected WebSocket clients
+        try {
+          const rfidWebSocketServer = req.app.get('rfidWebSocketServer');
+          if (rfidWebSocketServer) {
+            const clientCount = rfidWebSocketServer.broadcastToClients({
+              type: 'unknown_rfid',
+              rfid: normalizedUid,
+              timestamp: timestamp.toISOString(),
+              message: 'New RFID detected - needs assignment'
+            });
+            console.log(`📢 WebSocket broadcast sent to ${clientCount} clients`);
+          } else {
+            console.log('❌ WebSocket server not available');
+          }
+        } catch (wsError) {
+          console.error('❌ WebSocket broadcast error:', wsError);
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: "Unknown RFID detected - needs assignment",
+          data: {
+            userType: 'unknown',
+            rfid: normalizedUid,
+            timestamp: timestamp.toISOString(),
+            needsAssignment: true,
+            frontendAction: 'show_assignment_modal'
+          }
+        });
+      }
+    }
+
   } catch (error) {
-    console.error("❌ Error fetching attendance records:", error);
+    console.error("❌ Error handling RFID tap:", error);
     res.status(500).json({ 
       success: false, 
       message: "Server error",
@@ -137,194 +337,120 @@ export const getAttendance = async (req, res) => {
   }
 };
 
-// 🎯 Get attendance records by UID
-export const getAttendanceByUid = async (req, res) => {
+export const assignRfidToUser = async (req, res) => {
   try {
-    const { uid } = req.params;
-    const { limit = 100 } = req.query;
+    const { rfid, userId, userRole } = req.body;
+
+    if (!rfid || !userId || !userRole) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: rfid, userId, userRole"
+      });
+    }
 
     const db = getDB();
-    const attendance = db.collection("attendance");
+    const users = db.collection("users");
+    const rfidLogs = db.collection("rfid_logs");
 
-    const data = await attendance
-      .find({ uid: uid.toUpperCase() })
-      .sort({ timestamp: -1 })
-      .limit(parseInt(limit))
-      .toArray();
-
-    res.json({
-      success: true,
-      data,
-      total: data.length
+    // Check if RFID is already assigned to another user (using idNumber field)
+    const existingUser = await users.findOne({ 
+      idNumber: rfid.toUpperCase().trim() 
     });
-
-  } catch (error) {
-    console.error("❌ Error fetching attendance by UID:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error" 
-    });
-  }
-};
-
-// 🎯 Get today's attendance statistics
-export const getTodayStats = async (req, res) => {
-  try {
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-
-    const db = getDB();
-    const attendance = db.collection("attendance");
-
-    // Get today's records
-    const todayRecords = await attendance
-      .find({
-        timestamp: {
-          $gte: startOfDay,
-          $lt: endOfDay
-        }
-      })
-      .toArray();
-
-    // Calculate statistics
-    const data = {
-      total: todayRecords.length,
-      ins: todayRecords.filter(r => r.status === 'IN').length,
-      outs: todayRecords.filter(r => r.status === 'OUT').length,
-      uniqueUsers: [...new Set(todayRecords.map(r => r.uid))].length
-    };
-
-    res.json({
-      success: true,
-      data
-    });
-
-  } catch (error) {
-    console.error("❌ Error fetching today stats:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error" 
-    });
-  }
-};
-
-// 🎯 Get statistics for date range
-export const getStatsByRange = async (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
     
-    if (!startDate || !endDate) {
+    if (existingUser && existingUser._id.toString() !== userId) {
       return res.status(400).json({
         success: false,
-        message: "startDate and endDate query parameters are required"
+        message: `RFID already assigned to ${existingUser.firstName} ${existingUser.lastName}`
       });
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setDate(end.getDate() + 1); // Include the entire end date
-
-    const db = getDB();
-    const attendance = db.collection("attendance");
-
-    const records = await attendance
-      .find({
-        timestamp: {
-          $gte: start,
-          $lt: end
-        }
-      })
-      .toArray();
-
-    const data = {
-      total: records.length,
-      ins: records.filter(r => r.status === 'IN').length,
-      outs: records.filter(r => r.status === 'OUT').length,
-      uniqueUsers: [...new Set(records.map(r => r.uid))].length,
-      dateRange: {
-        start: startDate,
-        end: endDate
-      }
-    };
-
-    res.json({
-      success: true,
-      data
-    });
-
-  } catch (error) {
-    console.error("❌ Error fetching range stats:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error" 
-    });
-  }
-};
-
-// 🎯 Get latest attendance records
-export const getLatestAttendance = async (req, res) => {
-  try {
-    const { limit = 20 } = req.query;
-
-    const db = getDB();
-    const attendance = db.collection("attendance");
-
-    const data = await attendance
-      .find()
-      .sort({ timestamp: -1 })
-      .limit(parseInt(limit))
-      .toArray();
-
-    res.json({
-      success: true,
-      data,
-      total: data.length
-    });
-
-  } catch (error) {
-    console.error("❌ Error fetching latest attendance:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error" 
-    });
-  }
-};
-
-// 🎯 Delete attendance record (admin only)
-export const deleteAttendance = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: "Attendance ID is required"
-      });
-    }
-
-    const db = getDB();
-    const attendance = db.collection("attendance");
-
-    const result = await attendance.deleteOne({ _id: new ObjectId(id) });
-
-    if (result.deletedCount === 0) {
+    // Get user details
+    const userToAssign = await users.findOne({ _id: new ObjectId(userId) });
+    if (!userToAssign) {
       return res.status(404).json({
         success: false,
-        message: "Attendance record not found"
+        message: "User not found"
       });
     }
 
+    // Update user with RFID (using idNumber field)
+    await users.updateOne(
+      { _id: new ObjectId(userId) },
+      { 
+        $set: { 
+          idNumber: rfid.toUpperCase().trim(),
+          rfidAssignedAt: new Date(),
+          available: userRole === 'professor' ? true : undefined // Default professors to available
+        } 
+      }
+    );
+
+    // Mark the RFID log as assigned
+    await rfidLogs.updateMany(
+      { 
+        uid: rfid.toUpperCase().trim(),
+        type: 'unknown_rfid'
+      },
+      { 
+        $set: { 
+          processed: true,
+          assignedTo: userId,
+          assignedAt: new Date(),
+          assignedName: `${userToAssign.firstName} ${userToAssign.lastName}`
+        } 
+      }
+    );
+
+    console.log(`✅ [RFID ASSIGNED] ${rfid} assigned to ${userToAssign.firstName} ${userToAssign.lastName} (${userRole})`);
+
     res.json({
       success: true,
-      message: "Attendance record deleted successfully"
+      message: `RFID successfully assigned to ${userToAssign.firstName} ${userToAssign.lastName}`
     });
 
   } catch (error) {
-    console.error("❌ Error deleting attendance record:", error);
+    console.error("❌ Error assigning RFID:", error);
     res.status(500).json({ 
       success: false, 
       message: "Server error" 
     });
   }
 };
+
+// 🎯 Get recent unknown RFIDs (for HTTP polling)
+export const getRecentUnknownRfids = async (req, res) => {
+  try {
+    const db = getDB();
+    const rfidLogs = db.collection("rfid_logs");
+    
+    // Get RFIDs from the last 2 minutes
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    
+    const unknownLogs = await rfidLogs
+      .find({ 
+        type: 'unknown_rfid',
+        timestamp: { $gte: twoMinutesAgo }
+      })
+      .sort({ timestamp: -1 })
+      .limit(5)
+      .toArray();
+
+    const recentRfids = unknownLogs.map(log => ({
+      uid: log.uid,
+      timestamp: log.timestamp
+    }));
+
+    res.json({
+      success: true,
+      data: recentRfids
+    });
+
+  } catch (error) {
+    console.error("❌ Error fetching recent unknown RFIDs:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error" 
+    });
+  }
+};
+

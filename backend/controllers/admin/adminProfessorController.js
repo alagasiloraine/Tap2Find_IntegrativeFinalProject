@@ -1,6 +1,119 @@
 import { getDB } from "../../db.js";
 import { ObjectId, GridFSBucket } from "mongodb";
 import { Readable } from "stream";
+import bcrypt from "bcryptjs";
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: "perjescykean35@gmail.com",
+    pass: "tvuo wqip iyxs jens",
+  },
+});
+
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+export const addProfessor = async (req, res) => {
+  try {
+    const db = getDB("tap2find_db");
+    const users = db.collection("users");
+    const rfidLogs = db.collection("rfid_logs"); // Add rfid_logs collection
+
+    const { role, emailAddress, password, firstName, middleName, lastName, idNumber, contactNumber, facultyPosition, program, yearLevel, section, avatarUrl, coverUrl } = req.body;
+
+    const existingUser = await users.findOne({ emailAddress });
+    if (existingUser)
+      return res.status(400).json({ message: "Email already registered" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const otp = generateOTP();
+    const otpExpires = Date.now() + 5 * 60 * 1000; 
+
+    const newUser = {
+      role,
+      emailAddress,
+      password: hashedPassword,
+      firstName,
+      middleName: middleName || '',
+      lastName,
+      idNumber: idNumber ? idNumber.toUpperCase().trim() : '', // Normalize RFID if provided
+      contactNumber,
+      facultyPosition,
+      program: program || '',
+      yearLevel: yearLevel || '',
+      section: section || '',
+      avatarUrl: avatarUrl || '',
+      coverUrl: coverUrl || '',
+      otp,
+      otpExpires,
+      isVerified: false,
+      status: role === 'professor' ? 'not-available' : undefined, // Set initial status for professors
+      rfidAssignedAt: idNumber ? new Date() : undefined // Set assignment date if RFID provided
+    };
+
+    const result = await users.insertOne(newUser);
+    const userId = result.insertedId;
+
+    // ✅ NEW: Update RFID logs if user registered with an RFID
+    if (idNumber) {
+      const normalizedRfid = idNumber.toUpperCase().trim();
+      
+      // Check if there are any unknown RFID logs for this RFID
+      const updateResult = await rfidLogs.updateMany(
+        { 
+          uid: normalizedRfid,
+          type: 'unknown_rfid',
+          processed: { $ne: true } // Only update unprocessed logs
+        },
+        { 
+          $set: { 
+            processed: true,
+            assignedTo: userId.toString(),
+            assignedAt: new Date(),
+            assignedName: `${firstName} ${lastName}`,
+            assignedRole: role,
+            registrationType: 'user_registration'
+          } 
+        }
+      );
+
+      if (updateResult.modifiedCount > 0) {
+        console.log(`✅ [RFID AUTO-ASSIGNED] ${normalizedRfid} assigned to ${firstName} ${lastName} (${role}) during registration`);
+        console.log(`📝 Updated ${updateResult.modifiedCount} RFID log entries`);
+      } else {
+        console.log(`ℹ️  No unknown RFID logs found for ${normalizedRfid} during registration`);
+      }
+    }
+
+    // ✉️ Send OTP Email
+    await transporter.sendMail({
+      from: `"Tap2Find Authentication" <${process.env.EMAIL_USER}>`,
+      to: emailAddress,
+      subject: "Your Tap2Find Verification Code",
+      html: `
+        <h2>Welcome to Tap2Find</h2>
+        <p>Your email verification code is:</p>
+        <h1>${otp}</h1>
+        <p>This code will expire in <b>5 minutes</b>.</p>
+      `,
+    });
+
+    res.status(201).json({
+      message: "User registered successfully. Please check your email for the OTP verification code.",
+      userId: userId,
+      hasRfid: !!idNumber
+    });
+
+  } catch (error) {
+    console.error("Register error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 
 // Get professor's manual schedule
 export const getProfessorSchedule = async (req, res) => {

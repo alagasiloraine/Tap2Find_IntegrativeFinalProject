@@ -4,13 +4,14 @@
     <div class="px-4 md:px-6 py-4 min-h-0">
       <div class="space-y-6">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-xl bg-gray-50  p-5 ">
-          <div class="space-y-1">
-            <div :class="['flex items-center gap-2 font-semibold text-2xl', statusTextClass]">
-              <span :class="['inline-block w-2.5 h-2.5 rounded-full', statusDotClass]"></span>
-              <span>You are {{ user.status.toLowerCase() }}</span>
-            </div>
-            <div class="text-gray-500 text-sm">Available for student consultations</div>
-          </div>
+           <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2">
+      <div class="w-3 h-3 rounded-full" :class="statusDotClass"></div>
+      <span class="text-sm font-medium" :class="statusTextClass">
+        {{ statusDisplayText }}
+      </span>
+    </div>
+  </div>
           <!-- Removed change status dropdown -->
         </div>
 
@@ -102,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import ProfessorTopNav from '@/components/ProfessorTopNav.vue'
 import api from '@/utils/api'
@@ -113,7 +114,7 @@ const recentConcerns = ref([])
 const loading = ref(false)
 
 const user = ref({
-  _id: '',
+  id: '',
   firstName: '',
   lastName: '',
   role: '',
@@ -130,17 +131,52 @@ const statistics = ref({
 // Status computed properties
 const statusTextClass = computed(() => {
   const currentStatus = user.value.status
-  if (currentStatus === 'Available') return 'text-green-700'
-  if (currentStatus === 'Busy') return 'text-orange-700'
+  if (currentStatus === 'available') return 'text-green-700'
+  if (currentStatus === 'busy') return 'text-orange-700'
   return 'text-red-700'
 })
 
 const statusDotClass = computed(() => {
   const currentStatus = user.value.status
-  if (currentStatus === 'Available') return 'bg-green-500'
-  if (currentStatus === 'Busy') return 'bg-orange-500'
+  if (currentStatus === 'available') return 'bg-green-500'
+  if (currentStatus === 'busy') return 'bg-orange-500'
   return 'bg-red-500'
 })
+
+const statusDisplayText = computed(() => {
+  const currentStatus = user.value.status
+  if (currentStatus === 'available') return 'Available'
+  if (currentStatus === 'busy') return 'Busy'
+  if (currentStatus === 'not-available') return 'Not Available'
+  return 'Unknown'
+})
+
+// Fetch current user status from backend
+const fetchCurrentUserStatus = async () => {
+  try {
+    const storedUser = localStorage.getItem('user')
+    if (!storedUser) {
+      console.error('No user found in localStorage')
+      return
+    }
+
+    const parsedUser = JSON.parse(storedUser)
+    const response = await api.get(`/professors/${parsedUser.id}/status`)
+    
+    if (response.data.success) {
+      // Update the user status with real-time data
+      user.value.status = response.data.data.status
+      
+      // Also update localStorage with the latest status
+      const updatedUser = { ...parsedUser, status: response.data.data.status }
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+      
+      console.log('✅ Updated user status:', response.data.data.status)
+    }
+  } catch (error) {
+    console.error('Error fetching user status:', error)
+  }
+}
 
 // Fetch statistics for the professor
 const fetchStatistics = async () => {
@@ -205,6 +241,15 @@ const fetchRecentConcerns = async () => {
     console.error('Error fetching recent concerns:', error)
     console.error('Error details:', error.response?.data)
   }
+}
+
+// Real-time status polling
+let statusPollingInterval = null
+const startStatusPolling = () => {
+  // Poll every 5 seconds for status updates
+  statusPollingInterval = setInterval(() => {
+    fetchCurrentUserStatus()
+  }, 5000)
 }
 
 // Helper functions for display text
@@ -288,12 +333,24 @@ onMounted(async () => {
     user.value = JSON.parse(storedUser)
     console.log('Dashboard - User loaded:', user.value)
     
+    // Fetch initial status from backend
+    await fetchCurrentUserStatus()
+    
     // Fetch data after user is loaded
     await fetchStatistics()
     await fetchRecentConcerns()
+    
+    // Start real-time status polling
+    startStatusPolling()
   } else {
     console.error('Dashboard - No user found in localStorage')
   }
+})
 
+// Clean up polling when component unmounts
+onUnmounted(() => {
+  if (statusPollingInterval) {
+    clearInterval(statusPollingInterval)
+  }
 })
 </script>

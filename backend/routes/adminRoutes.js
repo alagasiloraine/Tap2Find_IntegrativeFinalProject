@@ -8,7 +8,8 @@ import {
   getProfessorScheduleMeta,
   getProfessorSchedule,
   saveProfessorSchedule,
-  getProfessorFullSchedule 
+  getProfessorFullSchedule,
+  addProfessor
 } from "../controllers/admin/adminProfessorController.js";
 import { getConcerns, getConcernById, updateConcernStatus, archiveConcern, deleteConcern } from "../controllers/admin/adminConcernsController.js";
 import { getReportsSummary } from "../controllers/admin/adminReportController.js";
@@ -28,6 +29,7 @@ router.delete("/users/:id", deleteUser);
 
 // Professors
 router.get("/professors", getProfessors);
+router.post("/add-professor", addProfessor);
 
 // Manual Schedule Routes (NEW)
 router.get("/professors/:id/schedule/manual", getProfessorSchedule);

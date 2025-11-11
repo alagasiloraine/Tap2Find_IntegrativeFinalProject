@@ -6,7 +6,8 @@ import {
     getAllConcerns,
     updateConcernStatus,
     replyToConcern,
-    getConcernDetail
+    getConcernDetail,
+    getProfessorStatus
  } from "../controllers/professorController.js";
 
 const router = express.Router();
@@ -20,5 +21,6 @@ router.get("/concerns", getAllConcerns);
 router.get("/concerns/:id", getConcernDetail);
 router.patch("/concerns/:id", updateConcernStatus);
 router.post("/concerns/:id/reply", replyToConcern);
+router.get("/:id/status", getProfessorStatus); 
 
 export default router;

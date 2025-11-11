@@ -1,13 +1,99 @@
 <template>
   <div class="p-6">
+    <!-- Real-time RFID Notification -->
+    <div v-if="showRfidNotification" class="fixed top-4 right-4 z-50">
+      <div class="bg-blue-500 text-white px-6 py-4 rounded-lg shadow-lg max-w-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold">New RFID Detected</h3>
+          <button @click="closeRfidNotification" class="text-white hover:text-blue-200">
+            ✖
+          </button>
+        </div>
+        <p class="text-sm mb-3">RFID: <strong class="font-mono">{{ detectedRfid }}</strong></p>
+        <p class="text-xs opacity-90 mb-3">This RFID is not assigned to any professor.</p>
+        <div class="flex gap-2">
+          <button 
+            @click="assignDetectedRfid"
+            class="flex-1 bg-white text-blue-600 py-2 px-3 rounded text-sm font-medium hover:bg-blue-50"
+          >
+            Assign Now
+          </button>
+          <button 
+            @click="useInCurrentForm"
+            class="flex-1 bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700"
+          >
+            Use in Form
+          </button>
+          <button 
+            @click="closeRfidNotification"
+            class="flex-1 bg-gray-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-gray-700"
+          >
+            Later
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assign RFID Modal -->
+    <div v-if="showAssignModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-md">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-lg font-medium text-gray-900">Assign RFID to Professor</h3>
+          <button class="text-gray-400 hover:text-gray-600" @click="closeAssignModal">✖</button>
+        </div>
+        <div class="px-6 py-4">
+          <p class="text-sm text-gray-700 mb-4">
+            Assign RFID <strong class="font-mono">{{ detectedRfid }}</strong> to:
+          </p>
+          <select 
+            v-model="selectedProfessorForAssignment"
+            class="w-full border rounded px-3 py-2 text-sm mb-4"
+          >
+            <option value="">Select a professor...</option>
+            <option 
+              v-for="prof in professorsWithoutRfid" 
+              :key="prof._id" 
+              :value="prof._id"
+            >
+              {{ prof.firstName }} {{ prof.lastName }} - {{ prof.department || 'No department' }}
+            </option>
+          </select>
+          <div v-if="selectedProfessorForAssignment" class="p-3 bg-blue-50 rounded">
+            <p class="text-sm text-blue-700">
+              Will assign to: <strong>{{ getProfessorName(selectedProfessorForAssignment) }}</strong>
+            </p>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+          <button class="px-4 py-2 rounded border" @click="closeAssignModal">Cancel</button>
+          <button 
+            class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            @click="confirmRfidAssignment"
+            :disabled="!selectedProfessorForAssignment"
+          >
+            Assign RFID
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-semibold text-gray-900">Professor Management</h1>
-      <button
-        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        @click="openAddModal"
-      >
-        <span class="mr-2">➕</span> Add Professor
-      </button>
+      <div class="flex items-center gap-3">
+        <!-- Connection Status -->
+        <div class="flex items-center gap-2 px-3 py-1 rounded-full text-sm"
+             :class="connectionStatus.class">
+          <div class="w-2 h-2 rounded-full" :class="connectionStatus.dotClass"></div>
+          {{ connectionStatus.text }}
+        </div>
+        
+        <button
+          class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          @click="openAddModal"
+        >
+          <span class="mr-2">➕</span> Add Professor
+        </button>
+      </div>
     </div>
 
     <div class="bg-white shadow rounded-lg overflow-hidden">
@@ -54,7 +140,8 @@
                 {{ p.facultyPosition || p.department || '-' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ p.rfidId || p.rfid || p.idNumber || '-' }}
+                <span v-if="p.idNumber" class="font-mono bg-gray-100 px-2 py-1 rounded">{{ p.idNumber }}</span>
+                <span v-else class="text-gray-400 italic">Not assigned</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ p.emailAddress }}
@@ -134,7 +221,26 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-600 mb-1">RFID ID</label>
-              <input v-model="form.rfidId" type="text" class="w-full border rounded px-3 py-2 text-sm" />
+              <div class="flex gap-2">
+                <input 
+                  v-model="form.rfidId" 
+                  type="text" 
+                  class="flex-1 border rounded px-3 py-2 text-sm font-mono"
+                  :class="detectedRfid ? 'bg-blue-50 border-blue-300' : ''"
+                  placeholder="Tap RFID card or enter manually"
+                />
+                <button 
+                  v-if="detectedRfid && !editTarget"
+                  type="button"
+                  @click="useDetectedRfid"
+                  class="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 whitespace-nowrap"
+                >
+                  Use Detected
+                </button>
+              </div>
+              <p v-if="detectedRfid" class="text-xs text-blue-600 mt-1">
+                RFID <strong>{{ detectedRfid }}</strong> detected and ready for assignment
+              </p>
             </div>
             <div v-if="!editTarget">
               <label class="block text-xs text-gray-600 mb-1">Password</label>
@@ -328,7 +434,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api from "@/utils/api"
 
 // Reactive data
@@ -340,6 +446,17 @@ const showModal = ref(false)
 const editTarget = ref(null)
 const deleteTarget = ref(null)
 const scheduleTarget = ref(null)
+
+// RFID Real-time Detection
+const showRfidNotification = ref(false)
+const detectedRfid = ref('')
+const showAssignModal = ref(false)
+const selectedProfessorForAssignment = ref('')
+
+// Connection status
+let pollingInterval = null
+const isConnected = ref(true) // HTTP polling is always "connected"
+const lastPollTime = ref('')
 
 // Schedule management data
 const currentSchedule = ref([])
@@ -376,6 +493,15 @@ const form = ref({
   password: "",
 })
 
+// Connection status
+const connectionStatus = computed(() => {
+  return {
+    text: 'Connected (Polling)',
+    class: 'bg-green-100 text-green-800',
+    dotClass: 'bg-green-500'
+  }
+})
+
 // Computed properties
 const filteredProfessors = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -394,13 +520,151 @@ const filteredProfessors = computed(() => {
   return list
 })
 
+const professorsWithoutRfid = computed(() => {
+  return professors.value.filter(prof => !prof.idNumber)
+})
+
 const isValidSchedule = computed(() => {
   return newSchedule.value.startTime < newSchedule.value.endTime && 
          newSchedule.value.subject.trim() !== '' &&
          newSchedule.value.room.trim() !== ''
 })
 
-// Methods
+// HTTP Polling for RFID Detection
+const startPolling = () => {
+  console.log('🔄 Starting RFID polling every 3 seconds...')
+  
+  // Poll immediately first time
+  pollForNewRfids()
+  
+  // Then set up interval
+  pollingInterval = setInterval(() => {
+    pollForNewRfids()
+  }, 3000) // Poll every 3 seconds
+}
+
+const pollForNewRfids = async () => {
+  try {
+    const response = await api.get('/rfid/recent-unknown')
+    if (response.data.success && response.data.data) {
+      const recentRfids = response.data.data
+      if (recentRfids.length > 0) {
+        const latestRfid = recentRfids[0]
+        // Only process if it's a new RFID we haven't seen
+        if (latestRfid.uid !== detectedRfid.value) {
+          console.log('📨 Polling found new RFID:', latestRfid.uid)
+          handleUnknownRfid(latestRfid.uid)
+        }
+      }
+      lastPollTime.value = new Date().toLocaleTimeString()
+    }
+  } catch (error) {
+    console.error('❌ Polling error:', error)
+  }
+}
+
+// Manual RFID test function
+const testRfidDetection = async () => {
+  try {
+    console.log('🧪 Testing RFID detection...')
+    
+    // Send a test RFID to the backend
+    const testRfid = 'TEST' + Date.now().toString().slice(-6)
+    const response = await api.post('/rfid/attendance/rfid-tap', {
+      uid: testRfid
+    })
+    
+    console.log('✅ Test RFID sent:', testRfid)
+    console.log('Backend response:', response.data)
+    
+    // The polling should pick this up automatically
+  } catch (error) {
+    console.error('❌ Test failed:', error)
+  }
+}
+
+const handleUnknownRfid = (rfid) => {
+  console.log('🔔 Unknown RFID detected:', rfid)
+  detectedRfid.value = rfid
+  showRfidNotification.value = true
+  
+  // Auto-hide notification after 15 seconds
+  setTimeout(() => {
+    if (showRfidNotification.value) {
+      closeRfidNotification()
+    }
+  }, 15000)
+}
+
+const closeRfidNotification = () => {
+  showRfidNotification.value = false
+}
+
+const assignDetectedRfid = () => {
+  showRfidNotification.value = false
+  showAssignModal.value = true
+  selectedProfessorForAssignment.value = ''
+}
+
+const useInCurrentForm = () => {
+  if (showModal.value) {
+    // If add/edit modal is open, auto-fill the RFID field
+    form.value.rfidId = detectedRfid.value
+  } else {
+    // If no modal is open, open the add modal with the RFID pre-filled
+    openAddModal()
+    form.value.rfidId = detectedRfid.value
+  }
+  showRfidNotification.value = false
+}
+
+const useDetectedRfid = () => {
+  form.value.rfidId = detectedRfid.value
+}
+
+const closeAssignModal = () => {
+  showAssignModal.value = false
+  selectedProfessorForAssignment.value = ''
+}
+
+const getProfessorName = (professorId) => {
+  const professor = professors.value.find(p => p._id === professorId)
+  return professor ? `${professor.firstName} ${professor.lastName}` : ''
+}
+
+const confirmRfidAssignment = async () => {
+  try {
+    if (!selectedProfessorForAssignment.value) {
+      alert('Please select a professor')
+      return
+    }
+
+    const payload = {
+      rfid: detectedRfid.value,
+      userId: selectedProfessorForAssignment.value,
+      userRole: 'professor'
+    }
+
+    await api.post('/rfid/assign', payload)
+    
+    // Refresh professors list
+    await fetchProfessors()
+    
+    // Clear detected RFID
+    detectedRfid.value = ''
+    
+    showAssignModal.value = false
+    selectedProfessorForAssignment.value = ''
+    
+    alert('RFID assigned successfully!')
+    
+  } catch (error) {
+    console.error('Error assigning RFID:', error)
+    alert(error.response?.data?.message || 'Failed to assign RFID')
+  }
+}
+
+// Existing methods
 const fetchProfessors = async () => {
   try {
     loading.value = true
@@ -420,7 +684,7 @@ const openAddModal = () => {
     lastName: "",
     emailAddress: "",
     department: "",
-    rfidId: "",
+    rfidId: detectedRfid.value || "", // Pre-fill with detected RFID
     password: "",
   }
   showModal.value = true
@@ -433,7 +697,7 @@ const openEditModal = (p) => {
     lastName: p.lastName || "",
     emailAddress: p.emailAddress || "",
     department: p.facultyPosition || p.department || "",
-    rfidId: p.rfidId || p.rfid || p.idNumber || "",
+    rfidId: p.idNumber || "", // Use idNumber field from database
     password: "",
   }
   showModal.value = true
@@ -502,7 +766,7 @@ const submitProfessor = async () => {
       contactNumber: "",
       facultyPosition: form.value.department,
     }
-    await api.post("/auth/register", payload)
+    await api.post("/admin/add-professor", payload)
     showModal.value = false
     await fetchProfessors()
     alert("Professor created. A verification code has been sent to their email.")
@@ -512,7 +776,7 @@ const submitProfessor = async () => {
   }
 }
 
-// Schedule management methods
+// Schedule management methods (keep your existing methods)
 const formatTimeDisplay = (hour) => {
   if (hour === 12) return '12:00 PM'
   if (hour > 12) return `${hour - 12}:00 PM`
@@ -710,5 +974,12 @@ const resetPassword = async (p) => {
 // Lifecycle
 onMounted(() => {
   fetchProfessors()
+  startPolling() // Use HTTP polling instead of WebSocket
+})
+
+onUnmounted(() => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval)
+  }
 })
 </script>

@@ -47,6 +47,50 @@ import { ObjectId } from "mongodb";
     }
   };
 
+  // 🎯 Get professor status by ID
+export const getProfessorStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Missing professor ID" 
+      });
+    }
+
+    const db = getDB();
+    const users = db.collection("users");
+
+    const professor = await users.findOne({ 
+      _id: new ObjectId(id),
+      role: 'professor'
+    });
+
+    if (!professor) {
+      return res.status(404).json({
+        success: false,
+        message: "Professor not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        status: professor.status || 'NOT_AVAILABLE',
+        lastStatusChange: professor.lastStatusChange
+      }
+    });
+
+  } catch (error) {
+    console.error("❌ Error fetching professor status:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error" 
+    });
+  }
+};
+
   export const getRecentConcerns = async (req, res) => {
     try {
       const { professorId } = req.query;

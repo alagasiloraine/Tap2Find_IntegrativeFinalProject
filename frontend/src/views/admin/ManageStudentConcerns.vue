@@ -17,8 +17,14 @@
           <option value="pending">Pending</option>
           <option value="resolved">Resolved</option>
         </select>
-        <button class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700" @click="exportCSV">
-          ⬇️ Export CSV
+        <button class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700" @click="exportExcel">
+          ⬇️ Export Excel
+        </button>
+        <button class="inline-flex items-center px-3 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900" @click="exportPDF">
+          Export PDF
+        </button>
+        <button class="inline-flex items-center px-3 py-2 border rounded-md" @click="printConcerns">
+          Print
         </button>
       </div>
     </div>
@@ -46,7 +52,7 @@
         </div>
         <div class="mt-2">Showing {{ filteredConcerns.length }} of {{ concerns.length }} concerns</div>
       </div>
-      <div class="overflow-x-auto">
+      <div id="concerns-table-wrapper" class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
@@ -132,6 +138,7 @@
 
 <script>
 import api from "@/plugin/axios.js";
+import * as XLSX from "xlsx";
 
 export default {
   name: "ManageStudentConcerns",
@@ -280,6 +287,51 @@ export default {
       a.click();
       URL.revokeObjectURL(url);
     },
+    exportExcel() {
+      const data = [
+        ["Student Name","Professor Concerned","Concern Message","Status","Date Submitted"],
+        ...this.filteredConcerns.map((c) => [
+          this.displayStudent(c),
+          this.displayProfessor(c),
+          (c.message || c.concern || "").replace(/\r?\n/g, " "),
+          this.capitalize(c.status || "pending"),
+          this.formatDate(c.createdAt || c.timestamp || c.date),
+        ]),
+      ];
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, "Student Concerns");
+      const filename = `student_concerns_${new Date().toISOString().slice(0,10)}.xlsx`;
+      XLSX.writeFile(wb, filename);
+    },
+    printConcerns() {
+      const el = document.getElementById('concerns-table-wrapper');
+      if (!el) return;
+      const w = window.open('', '', 'height=800,width=1000');
+      w.document.write('<html><head><title>Student Concerns</title>');
+      w.document.write('<style>body{font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial} table{width:100%;border-collapse:collapse} th,td{border:1px solid #e5e7eb;padding:6px 10px} th{background:#f9fafb} thead th:last-child, tbody td:last-child{display:none}</style>');
+      w.document.write('</head><body>');
+      w.document.write(el.innerHTML);
+      w.document.write('</body></html>');
+      w.document.close();
+      w.focus();
+      w.print();
+      w.close();
+    },
+    exportPDF() {
+      const el = document.getElementById('concerns-table-wrapper');
+      if (!el) return;
+      const w = window.open('', '', 'height=800,width=1000');
+      w.document.write('<html><head><title>Student Concerns</title>');
+      w.document.write('<style>body{font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial} table{width:100%;border-collapse:collapse} th,td{border:1px solid #e5e7eb;padding:6px 10px} th{background:#f9fafb} thead th:last-child, tbody td:last-child{display:none}</style>');
+      w.document.write('</head><body>');
+      w.document.write(el.innerHTML);
+      w.document.write('</body></html>');
+      w.document.close();
+      w.focus();
+      w.print();
+      w.close();
+    }
   },
 };
 </script>

@@ -38,7 +38,7 @@
           <thead class="bg-gray-50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RFID ID</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -46,7 +46,7 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="p in filteredProfessors" :key="p._id">
+            <tr v-for="p in filteredProfessors" :key="p._id" class="hover:bg-gray-50 cursor-pointer" @click="openViewModal(p)">
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {{ (p.firstName || '') + ' ' + (p.lastName || '') }}
               </td>
@@ -69,25 +69,25 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-right space-x-2">
                 <button class="px-3 py-1.5 rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
-                        @click="openScheduleModal(p)">
-                  {{ scheduleMeta[p._id] ? '📄 View Schedule' : '📅 Upload Schedule' }}
+                        @click.stop="openScheduleModal(p)">
+                  📅 Manage Schedule
                 </button>
                 <button class="px-3 py-1.5 rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100"
-                        @click="openEditModal(p)">
+                        @click.stop="openEditModal(p)">
                   ✏️ Edit
                 </button>
                 <button class="px-3 py-1.5 rounded-md text-red-700 bg-red-50 hover:bg-red-100"
-                        @click="confirmDelete(p)">
+                        @click.stop="confirmDelete(p)">
                   🗑️ Delete
                 </button>
                 <button class="px-3 py-1.5 rounded-md text-yellow-700 bg-yellow-50 hover:bg-yellow-100"
-                        @click="resetPassword(p)">
+                        @click.stop="resetPassword(p)">
                   🔑 Reset Password
                 </button>
                 <button
                   class="px-3 py-1.5 rounded-md"
                   :class="p.isVerified ? 'text-gray-700 bg-gray-100 hover:bg-gray-200' : 'text-green-700 bg-green-50 hover:bg-green-100'"
-                  @click="toggleDisable(p)"
+                  @click.stop="toggleDisable(p)"
                 >
                   {{ p.isVerified ? 'Disable' : 'Enable' }}
                 </button>
@@ -114,32 +114,54 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-600 mb-1">First Name</label>
-              <input v-model="form.firstName" type="text" required class="w-full border rounded px-3 py-2 text-sm" />
+              <input v-model="form.firstName" type="text" required class="w-full border rounded px-3 py-2 text-sm" @input="form.firstName = toTitleCase(form.firstName)" />
             </div>
             <div>
               <label class="block text-xs text-gray-600 mb-1">Last Name</label>
-              <input v-model="form.lastName" type="text" required class="w-full border rounded px-3 py-2 text-sm" />
+              <input v-model="form.lastName" type="text" required class="w-full border rounded px-3 py-2 text-sm" @input="form.lastName = toTitleCase(form.lastName)" />
             </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-600 mb-1">Email</label>
-              <input v-model="form.emailAddress" type="email" required class="w-full border rounded px-3 py-2 text-sm" />
+              <input v-model="form.emailAddress" type="email" required class="w-full border rounded px-3 py-2 text-sm" @input="form.emailAddress = (form.emailAddress || '').toLowerCase()" />
             </div>
             <div>
               <label class="block text-xs text-gray-600 mb-1">Department</label>
-              <input v-model="form.department" type="text" class="w-full border rounded px-3 py-2 text-sm" />
+              <input v-model="form.department" type="text" class="w-full border rounded px-3 py-2 text-sm bg-gray-50" disabled />
             </div>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-600 mb-1">Faculty Position</label>
+            <input v-model="form.facultyPosition" type="text" class="w-full border rounded px-3 py-2 text-sm" @input="form.facultyPosition = toTitleCase(form.facultyPosition)" />
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-600 mb-1">RFID ID</label>
               <input v-model="form.rfidId" type="text" class="w-full border rounded px-3 py-2 text-sm" />
             </div>
-            <div v-if="!editTarget">
-              <label class="block text-xs text-gray-600 mb-1">Password</label>
-              <input v-model="form.password" type="password" required class="w-full border rounded px-3 py-2 text-sm" />
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Contact Number</label>
+              <input v-model="form.contactNumber" type="tel" class="w-full border rounded px-3 py-2 text-sm" />
             </div>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-600 mb-1">Address</label>
+            <textarea v-model="form.address" rows="2" class="w-full border rounded px-3 py-2 text-sm" @input="form.address = toTitleCase(form.address)"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Birthdate</label>
+              <input v-model="form.birthdate" type="date" class="w-full border rounded px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Age</label>
+              <input :value="computedAge" type="number" class="w-full border rounded px-3 py-2 text-sm bg-gray-50" disabled />
+            </div>
+          </div>
+          <div v-if="!editTarget">
+            <label class="block text-xs text-gray-600 mb-1">Password</label>
+            <input v-model="form.password" type="password" required class="w-full border rounded px-3 py-2 text-sm" />
           </div>
           <div class="pt-2 flex items-center justify-end gap-3">
             <button type="button" class="px-4 py-2 rounded border" @click="closeModal">Cancel</button>
@@ -151,44 +173,283 @@
       </div>
     </div>
 
-    <!-- Upload Schedule Modal (placeholder) -->
-    <div v-if="scheduleTarget" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+    <!-- View Professor Modal -->
+    <div v-if="showViewModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
       <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
         <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-medium text-gray-900">Upload Schedule for {{ scheduleTarget.firstName }} {{ scheduleTarget.lastName }}</h3>
-          <button class="text-gray-400 hover:text-gray-600" @click="scheduleTarget = null">✖</button>
+          <h3 class="text-lg font-medium text-gray-900">Professor Details</h3>
+          <button class="text-gray-400 hover:text-gray-600" @click="closeViewModal">✖</button>
         </div>
-        <div class="px-6 py-4 space-y-4">
-          <div v-if="scheduleTarget && scheduleMeta[scheduleTarget._id]" class="space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-gray-700">Current schedule preview</span>
-              <a
-                class="text-sm text-indigo-600 hover:underline"
-                :href="scheduleUrl(scheduleTarget._id, { download: true })"
-                target="_blank"
-                rel="noopener"
-              >
-                Download
-              </a>
+        <div class="px-6 py-4 space-y-4 text-sm">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="text-gray-500">First Name</div>
+              <div class="font-medium">{{ viewTarget?.firstName || '-' }}</div>
             </div>
-            <iframe
-              class="w-full border rounded"
-              style="height: 420px;"
-              :key="scheduleMeta[scheduleTarget._id]?.fileId || scheduleTarget._id"
-              :src="scheduleUrl(scheduleTarget._id)"
-            ></iframe>
+            <div>
+              <div class="text-gray-500">Last Name</div>
+              <div class="font-medium">{{ viewTarget?.lastName || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Email</div>
+              <div class="font-medium break-all">{{ viewTarget?.emailAddress || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Status</div>
+              <div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium"
+                      :class="viewTarget?.isVerified ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
+                  {{ viewTarget?.isVerified ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+            </div>
+            <div>
+              <div class="text-gray-500">Department</div>
+              <div class="font-medium">{{ viewTarget?.department || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Faculty Position</div>
+              <div class="font-medium">{{ viewTarget?.facultyPosition || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">RFID / ID Number</div>
+              <div class="font-medium">{{ viewTarget?.rfidId || viewTarget?.rfid || viewTarget?.idNumber || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Contact Number</div>
+              <div class="font-medium">{{ viewTarget?.contactNumber || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Birthdate</div>
+              <div class="font-medium">{{ viewTarget?.birthdate ? new Date(viewTarget.birthdate).toLocaleDateString() : '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Age</div>
+              <div class="font-medium">{{ viewTarget?.age ?? '-' }}</div>
+            </div>
+            <div class="col-span-2">
+              <div class="text-gray-500">Address</div>
+              <div class="font-medium">{{ viewTarget?.address || '-' }}</div>
+            </div>
           </div>
-          <div class="space-y-2">
-            <div class="text-sm text-gray-600">{{ scheduleMeta[scheduleTarget?._id] ? 'Upload a new file to replace the current schedule' : 'Upload a schedule file' }}</div>
-            <input ref="scheduleFileInput" type="file" @change="onScheduleFile" class="w-full text-sm" />
-          </div>
-          <div class="flex items-center justify-end gap-3">
-            <button class="px-4 py-2 rounded border" @click="scheduleTarget = null">Cancel</button>
 
-            <button class="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700" @click="uploadSchedule">
-              {{ scheduleMeta[scheduleTarget?._id] ? 'Replace' : 'Upload' }}
-            </button>
+          <div class="pt-2">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-sm font-medium text-gray-900">Schedule</h4>
+              <span class="text-xs text-gray-500" v-if="viewScheduleLoading">Loading...</span>
+              <button class="text-xs text-blue-600 hover:underline" @click="reloadViewSchedule" v-if="!viewScheduleLoading">Refresh</button>
+            </div>
+            <div v-if="viewSchedule.length === 0 && !viewScheduleLoading" class="text-xs text-gray-500">No schedule found.</div>
+            <div v-else class="space-y-1 max-h-40 overflow-y-auto">
+              <div v-for="(s, idx) in viewSchedule" :key="idx" class="flex items-center justify-between text-xs border rounded px-2 py-1 bg-gray-50">
+                <div class="flex items-center gap-3">
+                  <span class="font-medium text-gray-700 w-20">{{ s.day }}</span>
+                  <span class="text-gray-600 w-32">{{ formatTimeDisplay(s.startTime) }} - {{ formatTimeDisplay(s.endTime) }}</span>
+                  <span class="text-blue-700">{{ s.subject }}</span>
+                </div>
+                <div class="text-gray-500">{{ s.room }}</div>
+              </div>
+            </div>
           </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end bg-gray-50">
+          <button class="px-4 py-2 rounded border" @click="closeViewModal">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OTP Verification Modal -->
+    <div v-if="showOtpModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-md">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-lg font-medium text-gray-900">Verify Email</h3>
+          <button class="text-gray-400 hover:text-gray-600" @click="showOtpModal = false">✖</button>
+        </div>
+        <div class="px-6 py-4 space-y-3">
+          <p class="text-sm text-gray-600">We sent a 6-digit verification code to <b>{{ otpEmail }}</b>. Enter it below to activate the account.</p>
+          <input
+            v-model="otpCode"
+            type="text"
+            maxlength="6"
+            placeholder="Enter 6-digit code"
+            class="w-full border rounded px-3 py-2 text-sm tracking-widest text-center"
+          />
+          <div v-if="otpError" class="text-sm text-red-600">{{ otpError }}</div>
+          <div class="flex items-center justify-between pt-2">
+            <button class="px-4 py-2 rounded border" @click="showOtpModal = false">Cancel</button>
+            <div class="flex items-center gap-2">
+              <button
+                class="px-3 py-2 rounded text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+                :disabled="resendIn > 0 || resendBusy"
+                @click="resendOtp"
+              >
+                Resend Code <span v-if="resendIn > 0">({{ resendIn }})</span>
+              </button>
+              <button
+                class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                :disabled="verifying || otpCode.length !== 6"
+                @click="verifyOtp"
+              >
+                {{ verifying ? 'Verifying...' : 'Verify' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual Schedule Modal -->
+    <div v-if="scheduleTarget" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-lg font-medium text-gray-900">
+            Set Schedule for {{ scheduleTarget.firstName }} {{ scheduleTarget.lastName }}
+          </h3>
+          <button class="text-gray-400 hover:text-gray-600" @click="closeScheduleModal">✖</button>
+        </div>
+        
+        <div class="px-6 py-4 overflow-auto" style="max-height: calc(90vh - 120px)">
+          <!-- Schedule Builder Form -->
+          <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+            <h4 class="text-lg font-medium text-gray-900 mb-4">Add Schedule Entry</h4>
+            <div class="grid grid-cols-5 gap-4">
+              <div>
+                <label class="block text-xs text-gray-600 mb-1 font-medium">Day</label>
+                <select v-model="newSchedule.day" class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="Monday">Monday</option>
+                  <option value="Tuesday">Tuesday</option>
+                  <option value="Wednesday">Wednesday</option>
+                  <option value="Thursday">Thursday</option>
+                  <option value="Friday">Friday</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-xs text-gray-600 mb-1 font-medium">Start Time</label>
+                <select v-model="newSchedule.startTime" class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option v-for="time in timeOptions" :key="'start-' + time.value" :value="time.value">
+                    {{ time.label }}
+                  </option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-xs text-gray-600 mb-1 font-medium">End Time</label>
+                <select v-model="newSchedule.endTime" class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option v-for="time in timeOptions" :key="'end-' + time.value" :value="time.value">
+                    {{ time.label }}
+                  </option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-xs text-gray-600 mb-1 font-medium">Subject</label>
+                <input v-model="newSchedule.subject" type="text" 
+                       class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                       placeholder="e.g., Mathematics">
+              </div>
+              
+              <div>
+                <label class="block text-xs text-gray-600 mb-1 font-medium">Room</label>
+                <input v-model="newSchedule.room" type="text" 
+                       class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                       placeholder="e.g., Room 101">
+              </div>
+            </div>
+            
+            <div class="mt-4 flex items-center justify-between">
+              <div class="text-sm text-gray-600">
+                <span class="font-medium">Duration:</span> {{ calculateDuration() }}
+              </div>
+              <button @click="addScheduleEntry" 
+                      :disabled="!isValidSchedule"
+                      class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium">
+                Add to Schedule
+              </button>
+            </div>
+          </div>
+
+          <!-- Current Schedule List -->
+          <div v-if="currentSchedule.length > 0" class="mb-6">
+            <h4 class="text-lg font-medium text-gray-900 mb-3">Current Schedule Entries</h4>
+            <div class="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+              <div v-for="(schedule, index) in currentSchedule" :key="schedule.id" 
+                   class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50">
+                <div class="flex items-center gap-6">
+                  <span class="text-sm font-medium text-gray-700 w-24">{{ schedule.day }}</span>
+                  <span class="text-sm text-gray-600 w-32">{{ formatTimeDisplay(schedule.startTime) }} - {{ formatTimeDisplay(schedule.endTime) }}</span>
+                  <span class="text-sm text-blue-600 font-medium">{{ schedule.subject }}</span>
+                  <span class="text-sm text-gray-500">{{ schedule.room }}</span>
+                  <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                    {{ schedule.endTime - schedule.startTime }} hour{{ schedule.endTime - schedule.startTime > 1 ? 's' : '' }}
+                  </span>
+                </div>
+                <button @click="removeScheduleItem(index)" 
+                        class="text-red-600 hover:text-red-800 text-sm font-medium">
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Weekly Schedule Grid -->
+          <div class="border rounded-lg overflow-hidden bg-white">
+            <h4 class="text-lg font-medium text-gray-900 mb-4 p-4 border-b">Weekly Schedule Overview</h4>
+            <div class="relative">
+              <!-- Time labels -->
+              <div class="flex">
+                <div class="w-24 flex-shrink-0"></div>
+                <div v-for="day in days" :key="day" class="flex-1 text-center py-3 text-sm font-medium text-gray-700 border-b">
+                  {{ day }}
+                </div>
+              </div>
+              
+              <!-- Schedule grid -->
+              <div class="flex">
+                <!-- Time column -->
+                <div class="w-24 flex-shrink-0 border-r">
+                  <div v-for="time in timeOptions" :key="time.value" 
+                       class="h-16 border-b text-xs text-gray-500 flex items-center justify-center">
+                    {{ time.label }}
+                  </div>
+                </div>
+                
+                <!-- Days columns -->
+                <div v-for="day in days" :key="day" class="flex-1 relative border-r last:border-r-0">
+                  <!-- Time slots background -->
+                  <div v-for="time in timeOptions" :key="time.value" 
+                       class="h-16 border-b hover:bg-gray-50 cursor-pointer"
+                       @click="selectTimeSlot(day, time.value)">
+                  </div>
+                  
+                  <!-- Schedule blocks -->
+                  <div v-for="schedule in getSchedulesForDay(day)" 
+                       :key="schedule.id"
+                       class="absolute left-1 right-1 rounded-lg border-2 p-2 shadow-sm"
+                       :class="getScheduleBlockClass(schedule)"
+                       :style="getScheduleBlockStyle(schedule)">
+                    <div class="text-xs font-medium truncate">{{ schedule.subject }}</div>
+                    <div class="text-xs truncate">{{ schedule.room }}</div>
+                    <div class="text-xs opacity-75">
+                      {{ formatTimeDisplay(schedule.startTime) }}-{{ formatTimeDisplay(schedule.endTime) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3 bg-gray-50">
+          <button class="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 font-medium" 
+                  @click="closeScheduleModal">
+            Cancel
+          </button>
+          <button class="px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 font-medium" 
+                  @click="saveSchedule"
+                  :disabled="currentSchedule.length === 0">
+            {{ currentSchedule.length === 0 ? 'No Schedule Entries' : 'Save Schedule' }}
+          </button>
         </div>
       </div>
     </div>
@@ -213,221 +474,508 @@
   </div>
 </template>
 
-<script>
-import api from "@/plugin/axios.js";
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import api from "@/utils/api"
 
-export default {
-  name: "ProfessorManagement",
-  data() {
-    return {
-      professors: [],
-      loading: false,
-      query: "",
-      statusFilter: "",
-      showModal: false,
-      editTarget: null,
-      deleteTarget: null,
-      scheduleTarget: null,
-      scheduleFile: null,
-      scheduleMeta: {},
-      form: {
-        firstName: "",
-        lastName: "",
-        emailAddress: "",
-        department: "",
-        rfidId: "",
-        password: "",
-      },
-    };
-  },
-  computed: {
-    filteredProfessors() {
-      const q = this.query.trim().toLowerCase();
-      let list = this.professors.filter((p) => {
-        const name = ((p.firstName || "") + " " + (p.lastName || "")).toLowerCase();
-        const email = (p.emailAddress || "").toLowerCase();
-        const dept = (p.facultyPosition || p.department || "").toLowerCase();
-        return name.includes(q) || email.includes(q) || dept.includes(q);
-      });
-      if (this.statusFilter === "active") {
-        list = list.filter((p) => !!p.isVerified);
-      } else if (this.statusFilter === "inactive") {
-        list = list.filter((p) => !p.isVerified);
+const toTitleCase = (s) => {
+  if (!s) return ""
+  return String(s).replace(/\b\w+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+}
+
+// Reactive data
+const professors = ref([])
+const loading = ref(false)
+const query = ref("")
+const statusFilter = ref("")
+const showModal = ref(false)
+const editTarget = ref(null)
+const deleteTarget = ref(null)
+const scheduleTarget = ref(null)
+const showViewModal = ref(false)
+const viewTarget = ref(null)
+const viewSchedule = ref([])
+const viewScheduleLoading = ref(false)
+const showOtpModal = ref(false)
+const otpEmail = ref("")
+const otpCode = ref("")
+const otpError = ref("")
+const verifying = ref(false)
+const resendBusy = ref(false)
+const resendIn = ref(0)
+let resendTimerId = null
+
+// Schedule management data
+const currentSchedule = ref([])
+const newSchedule = ref({
+  day: 'Monday',
+  startTime: 7,
+  endTime: 8,
+  subject: '',
+  room: ''
+})
+
+const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+
+// Generate time options from 7:00 AM to 6:00 PM
+const timeOptions = computed(() => {
+  const options = []
+  for (let hour = 7; hour <= 18; hour++) {
+    options.push({
+      value: hour,
+      label: hour === 12 ? '12:00 PM' : 
+             hour > 12 ? `${hour - 12}:00 PM` : `${hour}:00 AM`
+    })
+  }
+  return options
+})
+
+// Form data
+const form = ref({
+  firstName: "",
+  lastName: "",
+  emailAddress: "",
+  department: "CSS",
+  facultyPosition: "",
+  rfidId: "",
+  contactNumber: "",
+  address: "",
+  birthdate: "",
+  password: "",
+})
+
+// Computed properties
+const computedAge = computed(() => {
+  if (!form.value.birthdate) return ''
+  const d = new Date(form.value.birthdate)
+  if (isNaN(d.getTime())) return ''
+  const today = new Date()
+  let a = today.getFullYear() - d.getFullYear()
+  const m = today.getMonth() - d.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) a--
+  return a
+})
+
+const filteredProfessors = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  let list = professors.value.filter((p) => {
+    const name = ((p.firstName || "") + " " + (p.lastName || "")).toLowerCase()
+    const email = (p.emailAddress || "").toLowerCase()
+    const dept = (p.facultyPosition || p.department || "").toLowerCase()
+    return name.includes(q) || email.includes(q) || dept.includes(q)
+  })
+  
+  if (statusFilter.value === "active") {
+    list = list.filter((p) => !!p.isVerified)
+  } else if (statusFilter.value === "inactive") {
+    list = list.filter((p) => !p.isVerified)
+  }
+  return list
+})
+
+const isValidSchedule = computed(() => {
+  return newSchedule.value.startTime < newSchedule.value.endTime && 
+         newSchedule.value.subject.trim() !== '' &&
+         newSchedule.value.room.trim() !== ''
+})
+
+// Methods
+const fetchProfessors = async () => {
+  try {
+    loading.value = true
+    const res = await api.get("/admin/professors")
+    professors.value = res.data.professors || []
+  } catch (e) {
+    console.error("Failed to fetch professors", e)
+  } finally {
+    loading.value = false
+  }
+}
+
+const openAddModal = () => {
+  editTarget.value = null
+  form.value = {
+    firstName: "",
+    lastName: "",
+    emailAddress: "",
+    department: "CSS",
+    facultyPosition: "",
+    rfidId: "",
+    contactNumber: "",
+    address: "",
+    birthdate: "",
+    password: "",
+  }
+  showModal.value = true
+}
+
+const openEditModal = (p) => {
+  editTarget.value = p
+  form.value = {
+    firstName: toTitleCase(p.firstName || ""),
+    lastName: toTitleCase(p.lastName || ""),
+    emailAddress: (p.emailAddress || "").toLowerCase(),
+    department: "CSS",
+    facultyPosition: toTitleCase(p.facultyPosition || ""),
+    rfidId: p.rfidId || p.rfid || p.idNumber || "",
+    contactNumber: p.contactNumber || "",
+    address: toTitleCase(p.address || ""),
+    birthdate: p.birthdate ? new Date(p.birthdate).toISOString().slice(0,10) : "",
+    password: "",
+  }
+  showModal.value = true
+}
+
+const openViewModal = async (p) => {
+  viewTarget.value = p
+  showViewModal.value = true
+  await reloadViewSchedule()
+}
+
+const closeViewModal = () => {
+  showViewModal.value = false
+  viewTarget.value = null
+  viewSchedule.value = []
+}
+
+const openScheduleModal = async (p) => {
+  scheduleTarget.value = p
+  currentSchedule.value = []
+  
+  try {
+    // Load existing manual schedule if any - UPDATED ENDPOINT
+    const response = await api.get(`/admin/professors/${p._id}/schedule/manual`)
+    if (response.data.schedule) {
+      currentSchedule.value = response.data.schedule
+    }
+  } catch (e) {
+    // If 404, it means no schedule exists yet - that's fine
+    if (e?.response?.status !== 404) {
+      console.error('Failed to load schedule:', e)
+    }
+  }
+}
+
+const closeScheduleModal = () => {
+  scheduleTarget.value = null
+  currentSchedule.value = []
+  resetNewSchedule()
+}
+
+const closeModal = () => {
+  showModal.value = false
+}
+
+const resetNewSchedule = () => {
+  newSchedule.value = {
+    day: 'Monday',
+    startTime: 7,
+    endTime: 8,
+    subject: '',
+    room: ''
+  }
+}
+
+const submitProfessor = async () => {
+  try {
+    if (editTarget.value) {
+      const payload = {
+        firstName: toTitleCase(form.value.firstName.trim()),
+        lastName: toTitleCase(form.value.lastName.trim()),
+        emailAddress: (form.value.emailAddress || '').trim().toLowerCase(),
+        idNumber: (form.value.rfidId || '').trim(),
+        contactNumber: (form.value.contactNumber || '').trim(),
+        address: toTitleCase((form.value.address || '').trim()),
+        facultyPosition: toTitleCase((form.value.facultyPosition || '').trim()),
+        department: 'CSS',
+        birthdate: form.value.birthdate || '',
       }
-      return list;
-    },
-    backendBase() {
-      try {
-        const base = (api && api.defaults && api.defaults.baseURL) ? api.defaults.baseURL : "/api";
-        return base || "/api";
-      } catch {
-        return "/api";
-      }
-    },
-  },
-  mounted() {
-    this.fetchProfessors();
-  },
-  methods: {
-    async fetchProfessors() {
-      try {
-        this.loading = true;
-        const res = await api.get("/admin/professors");
-        this.professors = res.data.professors || [];
-        await this.loadScheduleMetaForList();
-      } catch (e) {
-        console.error("Failed to fetch professors", e);
-      } finally {
-        this.loading = false;
-      }
-    },
-    openAddModal() {
-      this.editTarget = null;
-      this.form = {
-        firstName: "",
-        lastName: "",
-        emailAddress: "",
-        department: "",
-        rfidId: "",
-        password: "",
-      };
-      this.showModal = true;
-    },
-    openEditModal(p) {
-      this.editTarget = p;
-      this.form = {
-        firstName: p.firstName || "",
-        lastName: p.lastName || "",
-        emailAddress: p.emailAddress || "",
-        department: p.facultyPosition || p.department || "",
-        rfidId: p.rfidId || p.rfid || p.idNumber || "",
-        password: "",
-      };
-      this.showModal = true;
-    },
-    async openScheduleModal(p) {
-      this.scheduleTarget = p;
-      this.scheduleFile = null;
-      await this.fetchScheduleMeta(p._id);
-    },
-    closeModal() {
-      this.showModal = false;
-    },
-    async submitProfessor() {
-      try {
-        if (this.editTarget) {
-          // Allowed PATCH fields on backend: firstName, lastName, idNumber, emailAddress, isVerified, contactNumber, section
-          const payload = {
-            firstName: this.form.firstName,
-            lastName: this.form.lastName,
-            emailAddress: this.form.emailAddress,
-            idNumber: this.form.rfidId, // use idNumber for RFID ID storage
-          };
-          await api.patch(`/admin/users/${this.editTarget._id}`, payload);
-          this.showModal = false;
-          await this.fetchProfessors();
-          return;
-        }
-        // Create professor via existing register endpoint
-        const payload = {
-          role: "professor",
-          emailAddress: this.form.emailAddress,
-          password: this.form.password,
-          firstName: this.form.firstName,
-          lastName: this.form.lastName,
-          idNumber: this.form.rfidId, // store RFID in idNumber
-          contactNumber: "",
-          facultyPosition: this.form.department, // store Department here
-        };
-        await api.post("/auth/register", payload);
-        this.showModal = false;
-        await this.fetchProfessors();
-        alert("Professor created. A verification code has been sent to their email.");
-      } catch (e) {
-        console.error("Failed to submit professor", e);
-        alert("Failed to submit professor");
-      }
-    },
-    async uploadSchedule() {
-      if (!this.scheduleTarget || !this.scheduleFile) {
-        alert("Please select a file.");
-        return;
-      }
-      try {
-        const formData = new FormData();
-        formData.append("file", this.scheduleFile);
-        await api.post(`/admin/professors/${this.scheduleTarget._id}/schedule`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        alert("Schedule uploaded successfully!");
-        this.scheduleFile = null;
-        if (this.$refs && this.$refs.scheduleFileInput) {
-          this.$refs.scheduleFileInput.value = null;
-        }
-        await this.fetchScheduleMeta(this.scheduleTarget._id);
-      } catch (e) {
-        console.error("Upload failed:", e);
-        alert(e?.response?.data?.message || "Failed to upload schedule");
-      }
-    },
-    async fetchScheduleMeta(id) {
-      try {
-        const r = await api.get(`/admin/professors/${id}/schedule/meta`);
-        this.$set ? this.$set(this.scheduleMeta, id, r.data.file) : (this.scheduleMeta[id] = r.data.file);
-      } catch (e) {
-        if (e?.response?.status === 404) {
-          this.$set ? this.$set(this.scheduleMeta, id, null) : (this.scheduleMeta[id] = null);
-        } else {
-          console.error("Failed to load schedule meta", e);
-        }
-      }
-    },
-    async loadScheduleMetaForList() {
-      const ids = (this.professors || []).map(p => p._id);
-      await Promise.all(ids.map(id => this.fetchScheduleMeta(id)));
-    },
-    scheduleUrl(id, opts = {}) {
-      const base = this.backendBase;
-      const meta = this.scheduleMeta[id];
-      const v = meta && meta.uploadDate ? new Date(meta.uploadDate).getTime() : Date.now();
-      if (opts.download) return `${base}/admin/professors/${id}/schedule?download=1`;
-      return `${base}/admin/professors/${id}/schedule?v=${v}`;
-    },
-    confirmDelete(p) {
-      this.deleteTarget = p;
-    },
-    async performDelete() {
-      try {
-        if (!this.deleteTarget) return;
-        await api.delete(`/admin/users/${this.deleteTarget._id}`);
-        this.deleteTarget = null;
-        await this.fetchProfessors();
-      } catch (e) {
-        console.error("Failed to delete professor", e);
-        alert("Failed to delete professor");
-      }
-    },
-    async toggleDisable(p) {
-      try {
-        await api.patch(`/admin/users/${p._id}`, { isVerified: !p.isVerified });
-        await this.fetchProfessors();
-      } catch (e) {
-        console.error("Failed to toggle account state", e);
-        alert("Failed to update account state");
-      }
-    },
-    async resetPassword(p) {
-      try {
-        await api.post('/auth/forgot-password', { emailAddress: p.emailAddress });
-        alert('Password reset email has been sent to ' + p.emailAddress + '.');
-      } catch (e) {
-        console.error('Failed to request password reset', e);
-        alert(e?.response?.data?.message || 'Failed to request password reset');
-      }
-    },
-    onScheduleFile(e) {
-      this.scheduleFile = e.target.files?.[0] || null;
-    },
-  },
-};
+      await api.patch(`/admin/users/${editTarget.value._id}`, payload)
+      showModal.value = false
+      await fetchProfessors()
+      return
+    }
+    
+    const payload = {
+      role: "professor",
+      emailAddress: (form.value.emailAddress || '').trim().toLowerCase(),
+      password: form.value.password,
+      firstName: toTitleCase(form.value.firstName.trim()),
+      lastName: toTitleCase(form.value.lastName.trim()),
+      idNumber: (form.value.rfidId || '').trim(),
+      contactNumber: (form.value.contactNumber || '').trim(),
+      address: toTitleCase((form.value.address || '').trim()),
+      facultyPosition: toTitleCase((form.value.facultyPosition || '').trim()),
+      department: 'CSS',
+      birthdate: form.value.birthdate || '',
+    }
+    await api.post("/auth/register", payload)
+    showModal.value = false
+    otpEmail.value = form.value.emailAddress
+    otpCode.value = ""
+    otpError.value = ""
+    showOtpModal.value = true
+    startResendTimer(30)
+  } catch (e) {
+    console.error("Failed to submit professor", e)
+    alert("Failed to submit professor")
+  }
+}
+
+// Schedule management methods
+const formatTimeDisplay = (hour) => {
+  if (hour === 12) return '12:00 PM'
+  if (hour > 12) return `${hour - 12}:00 PM`
+  return `${hour}:00 AM`
+}
+
+const calculateDuration = () => {
+  const duration = newSchedule.value.endTime - newSchedule.value.startTime
+  return `${duration} hour${duration > 1 ? 's' : ''}`
+}
+
+const addScheduleEntry = () => {
+  if (!isValidSchedule.value) {
+    alert('Please fill in all fields and ensure end time is after start time.')
+    return
+  }
+  
+  // Validate time range
+  if (newSchedule.value.startTime < 7 || newSchedule.value.endTime > 19) {
+    alert('Schedule time must be between 7:00 AM and 6:00 PM.')
+    return
+  }
+
+  // Validate duration (max 4 hours per session)
+  const duration = newSchedule.value.endTime - newSchedule.value.startTime;
+  if (duration > 4) {
+    alert('Schedule duration cannot exceed 4 hours per session.');
+    return;
+  }
+
+  // Check for overlapping schedules on the same day
+  const hasOverlap = currentSchedule.value.some(schedule => {
+    if (schedule.day !== newSchedule.value.day) return false;
+    
+    return (
+      (newSchedule.value.startTime >= schedule.startTime && newSchedule.value.startTime < schedule.endTime) ||
+      (newSchedule.value.endTime > schedule.startTime && newSchedule.value.endTime <= schedule.endTime) ||
+      (newSchedule.value.startTime <= schedule.startTime && newSchedule.value.endTime >= schedule.endTime)
+    );
+  });
+  
+  if (hasOverlap) {
+    alert('This time slot overlaps with an existing schedule on the same day!');
+    return;
+  }
+  
+  const scheduleEntry = {
+    id: Date.now() + Math.random(),
+    day: newSchedule.value.day,
+    startTime: newSchedule.value.startTime,
+    endTime: newSchedule.value.endTime,
+    subject: newSchedule.value.subject.trim(),
+    room: newSchedule.value.room.trim()
+  };
+  
+  currentSchedule.value.push(scheduleEntry);
+  // Sort schedules by day and time for better organization
+  currentSchedule.value.sort((a, b) => {
+    const dayOrder = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5 };
+    if (dayOrder[a.day] !== dayOrder[b.day]) {
+      return dayOrder[a.day] - dayOrder[b.day];
+    }
+    return a.startTime - b.startTime;
+  });
+  
+  resetNewSchedule();
+}
+
+const removeScheduleItem = (index) => {
+  currentSchedule.value.splice(index, 1)
+}
+
+const getSchedulesForDay = (day) => {
+  return currentSchedule.value.filter(schedule => schedule.day === day)
+}
+
+const getScheduleBlockStyle = (schedule) => {
+  const startHour = schedule.startTime
+  const endHour = schedule.endTime
+  const duration = endHour - startHour
+  const top = (startHour - 7) * 64 // 64px per hour (4rem)
+  const height = duration * 64 // 64px per hour
+  
+  return {
+    top: `${top}px`,
+    height: `${height}px`
+  }
+}
+
+const getScheduleBlockClass = (schedule) => {
+  const colors = [
+    'bg-blue-100 border-blue-300 text-blue-800',
+    'bg-green-100 border-green-300 text-green-800',
+    'bg-purple-100 border-purple-300 text-purple-800',
+    'bg-orange-100 border-orange-300 text-orange-800',
+    'bg-pink-100 border-pink-300 text-pink-800'
+  ]
+  const index = currentSchedule.value.findIndex(s => s.id === schedule.id) % colors.length
+  return colors[index]
+}
+
+const selectTimeSlot = (day, hour) => {
+  newSchedule.value.day = day
+  newSchedule.value.startTime = hour
+  newSchedule.value.endTime = hour + 1
+  // Auto-focus on subject input for better UX
+  setTimeout(() => {
+    const subjectInput = document.querySelector('input[placeholder*="Mathematics"]')
+    if (subjectInput) subjectInput.focus()
+  }, 100)
+}
+
+const saveSchedule = async () => {
+  try {
+    if (!scheduleTarget.value) return;
+    
+    // Validate schedule entries
+    if (currentSchedule.value.length === 0) {
+      alert('Please add at least one schedule entry before saving.');
+      return;
+    }
+
+    // Prepare data for API - remove temporary IDs
+    const scheduleData = currentSchedule.value.map(schedule => ({
+      day: schedule.day,
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      subject: schedule.subject,
+      room: schedule.room
+    }));
+
+    console.log('Saving schedule data:', scheduleData);
+
+    // UPDATED ENDPOINT - using manual schedule endpoint
+    const response = await api.post(`/admin/professors/${scheduleTarget.value._id}/schedule/manual`, {
+      schedule: scheduleData
+    });
+
+    if (response.data.success) {
+      alert(`Schedule saved successfully! ${response.data.scheduleCount} entries added.`);
+      closeScheduleModal();
+    } else {
+      alert(response.data.message || 'Failed to save schedule');
+    }
+    
+  } catch (e) {
+    console.error('Failed to save schedule:', e);
+    
+    if (e.response?.data?.message) {
+      alert(e.response.data.message);
+    } else if (e.code === 'NETWORK_ERROR' || !navigator.onLine) {
+      alert('Network error. Please check your connection and try again.');
+    } else {
+      alert('Failed to save schedule. Please try again.');
+    }
+  }
+}
+
+const confirmDelete = (p) => {
+  deleteTarget.value = p
+}
+
+const performDelete = async () => {
+  try {
+    if (!deleteTarget.value) return
+    await api.delete(`/admin/users/${deleteTarget.value._id}`)
+    deleteTarget.value = null
+    await fetchProfessors()
+  } catch (e) {
+    console.error("Failed to delete professor", e)
+    alert("Failed to delete professor")
+  }
+}
+
+const toggleDisable = async (p) => {
+  try {
+    await api.patch(`/admin/users/${p._id}`, { isVerified: !p.isVerified })
+    await fetchProfessors()
+  } catch (e) {
+    console.error("Failed to toggle account state", e)
+    alert("Failed to update account state")
+  }
+}
+
+const resetPassword = async (p) => {
+  try {
+    await api.post('/auth/forgot-password', { emailAddress: p.emailAddress })
+    alert('Password reset email has been sent to ' + p.emailAddress + '.')
+  } catch (e) {
+    console.error('Failed to request password reset', e)
+    alert(e?.response?.data?.message || 'Failed to request password reset')
+  }
+}
+
+// Lifecycle
+const verifyOtp = async () => {
+  try {
+    verifying.value = true
+    otpError.value = ""
+    await api.post("/auth/verify-otp", { emailAddress: otpEmail.value, otp: otpCode.value })
+    showOtpModal.value = false
+    await fetchProfessors()
+  } catch (e) {
+    otpError.value = e?.response?.data?.message || "Invalid or expired code"
+  } finally {
+    verifying.value = false
+  }
+}
+
+const resendOtp = async () => {
+  try {
+    if (resendIn.value > 0 || resendBusy.value) return
+    resendBusy.value = true
+    await api.post("/auth/resend-otp", { emailAddress: otpEmail.value })
+    startResendTimer(30)
+  } catch (e) {
+    otpError.value = e?.response?.data?.message || "Failed to resend code"
+  } finally {
+    resendBusy.value = false
+  }
+}
+
+const startResendTimer = (seconds) => {
+  resendIn.value = seconds
+  if (resendTimerId) clearInterval(resendTimerId)
+  resendTimerId = setInterval(() => {
+    if (resendIn.value > 0) resendIn.value -= 1
+    if (resendIn.value <= 0 && resendTimerId) {
+      clearInterval(resendTimerId)
+      resendTimerId = null
+    }
+  }, 1000)
+}
+
+const reloadViewSchedule = async () => {
+  try {
+    if (!viewTarget.value) return
+    viewScheduleLoading.value = true
+    viewSchedule.value = []
+    const res = await api.get(`/admin/professors/${viewTarget.value._id}/schedule/manual`)
+    viewSchedule.value = res.data?.schedule || []
+  } catch (e) {
+    // 404 means none yet; ignore
+    if (e?.response?.status !== 404) {
+      console.error('Failed to load professor schedule', e)
+    }
+    viewSchedule.value = []
+  } finally {
+    viewScheduleLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchProfessors()
+})
 </script>

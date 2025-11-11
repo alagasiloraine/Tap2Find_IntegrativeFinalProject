@@ -1,6 +1,73 @@
 import { getDB } from "../../db.js";
 import { ObjectId } from "mongodb";
 
+// Get daily concerns counts for last N days
+export const getConcernsDailyCounts = async (req, res) => {
+  try {
+    const daysRaw = Number(req.query.days || 14);
+    const days = Math.max(1, Math.min(365, isNaN(daysRaw) ? 14 : daysRaw));
+
+    const db = getDB("tap2find_db");
+    const concerns = db.collection("inquiries");
+
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    const start = new Date(end);
+    start.setDate(start.getDate() - (days - 1));
+    start.setHours(0, 0, 0, 0);
+
+    const pipeline = [
+      {
+        $addFields: {
+          _stamp: {
+            $ifNull: [
+              "$createdAt",
+              { $ifNull: ["$timestamp", "$date"] }
+            ]
+          }
+        }
+      },
+      { $match: { _stamp: { $gte: start, $lte: end } } },
+      {
+        $addFields: {
+          _day: { $dateToString: { format: "%Y-%m-%d", date: "$_stamp" } }
+        }
+      },
+      { $group: { _id: "$_day", count: { $sum: 1 } } },
+      { $project: { _id: 0, day: "$_id", count: 1 } },
+      { $sort: { day: 1 } }
+    ];
+
+    const agg = await concerns.aggregate(pipeline).toArray();
+
+    // Build continuous series with zeros
+    const series = [];
+    const map = new Map(agg.map(r => [r.day, r.count]));
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      const key = cursor.toISOString().slice(0, 10);
+      series.push({ day: key, count: map.get(key) || 0 });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const total = series.reduce((s, p) => s + p.count, 0);
+    const max = series.reduce((m, p) => Math.max(m, p.count), 0);
+
+    return res.status(200).json({
+      success: true,
+      days,
+      from: start.toISOString(),
+      to: end.toISOString(),
+      daily: series,
+      total,
+      max,
+    });
+  } catch (err) {
+    console.error("Error aggregating daily concerns:", err);
+    return res.status(500).json({ success: false, message: "Failed to aggregate daily concerns" });
+  }
+};
+
 // Get concerns list with optional filters
 export const getConcerns = async (req, res) => {
   try {

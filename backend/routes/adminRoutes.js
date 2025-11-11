@@ -2,8 +2,9 @@ import express from "express";
 import { getDashboardStats } from "../controllers/admin/adminDashboardController.js";
 import { getUsers, getUserById, updateUser, deleteUser } from "../controllers/admin/adminUsersController.js";
 import { getProfessors, uploadProfessorSchedule, downloadProfessorSchedule, getProfessorScheduleMeta } from "../controllers/admin/adminProfessorController.js";
-import { getConcerns, getConcernById, updateConcernStatus, archiveConcern, deleteConcern } from "../controllers/admin/adminConcernsController.js";
+import { getConcerns, getConcernById, updateConcernStatus, archiveConcern, deleteConcern, getConcernsDailyCounts } from "../controllers/admin/adminConcernsController.js";
 import { getReportsSummary } from "../controllers/admin/adminReportController.js";
+import { getAdminProfile, updateAdminProfile, uploadAdminPhoto } from "../controllers/admin/adminProfileController.js";
 import multer from "multer";
 
 const router = express.Router();
@@ -29,10 +30,16 @@ router.get("/professors/:id/schedule/meta", getProfessorScheduleMeta);
 
 // Concerns
 router.get("/concerns", getConcerns);
+router.get("/concerns/daily", getConcernsDailyCounts);
 router.get("/concerns/:id", getConcernById);
 router.patch("/concerns/:id/status", updateConcernStatus);
 router.patch("/concerns/:id/archive", archiveConcern);
 router.delete("/concerns/:id", deleteConcern);
+
+// Admin profile
+router.get("/profile/:id", getAdminProfile);
+router.patch("/profile/:id", updateAdminProfile);
+router.post("/profile/:id/photo", upload.single("file"), uploadAdminPhoto);
 
 // Reports
 router.get("/reports/summary", getReportsSummary);

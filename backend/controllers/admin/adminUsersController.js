@@ -47,11 +47,38 @@ export const updateUser = async (req, res) => {
     const db = getDB("tap2find_db");
     const users = db.collection("users");
 
-    const allowed = ["firstName", "lastName", "section", "idNumber", "emailAddress", "isVerified", "contactNumber"];
+    const allowed = ["firstName", "lastName", "section", "idNumber", "emailAddress", "isVerified", "contactNumber", "address", "program", "yearLevel", "birthdate", "age"];
     const $set = {};
     for (const key of allowed) {
       if (Object.prototype.hasOwnProperty.call(req.body, key)) {
         $set[key] = req.body[key];
+      }
+    }
+
+    const toTitle = (s) => !s ? "" : String(s).replace(/\b\w+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    if (Object.prototype.hasOwnProperty.call($set, 'emailAddress') && typeof $set.emailAddress === 'string') {
+      $set.emailAddress = $set.emailAddress.trim().toLowerCase();
+    }
+    if (Object.prototype.hasOwnProperty.call($set, 'firstName') && typeof $set.firstName === 'string') {
+      $set.firstName = toTitle($set.firstName.trim());
+    }
+    if (Object.prototype.hasOwnProperty.call($set, 'lastName') && typeof $set.lastName === 'string') {
+      $set.lastName = toTitle($set.lastName.trim());
+    }
+    if (Object.prototype.hasOwnProperty.call($set, 'section') && typeof $set.section === 'string') {
+      $set.section = toTitle(($set.section || '').trim());
+    }
+
+    // compute age if birthdate provided
+    if (Object.prototype.hasOwnProperty.call($set, 'birthdate')) {
+      const d = new Date($set.birthdate);
+      if (!isNaN(d.getTime())) {
+        const today = new Date();
+        let a = today.getFullYear() - d.getFullYear();
+        const m = today.getMonth() - d.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < d.getDate())) a--;
+        $set.age = a;
+        $set.birthdate = d.toISOString();
       }
     }
 

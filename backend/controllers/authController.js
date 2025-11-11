@@ -25,7 +25,7 @@ export const registerUser = async (req, res) => {
     const db = getDB("tap2find_db");
     const users = db.collection("users");
 
-    const { role, emailAddress, password, firstName, lastName, idNumber, contactNumber, facultyPosition } = req.body;
+    const { role, emailAddress, password, firstName, lastName, idNumber, contactNumber, facultyPosition, department,section, address, program, yearLevel, birthdate } = req.body;
 
     const existingUser = await users.findOne({ emailAddress });
     if (existingUser)
@@ -35,15 +35,41 @@ export const registerUser = async (req, res) => {
     const otp = generateOTP();
     const otpExpires = Date.now() + 5 * 60 * 1000; 
 
+    // Normalize birthdate and compute age if provided
+    let age = undefined;
+    let birthdateISO = undefined;
+    if (birthdate) {
+      const d = new Date(birthdate);
+      if (!isNaN(d.getTime())) {
+        birthdateISO = d.toISOString();
+        const today = new Date();
+        let a = today.getFullYear() - d.getFullYear();
+        const m = today.getMonth() - d.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < d.getDate())) a--;
+        age = a;
+      }
+    }
+
+    // Normalize casing for consistent storage
+    const toTitle = (s) => !s ? "" : String(s).replace(/\b\w+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    const normalizedEmail = (emailAddress || '').trim().toLowerCase();
+
     const newUser = {
       role,
-      emailAddress,
+      emailAddress: normalizedEmail,
       password: hashedPassword,
-      firstName,
-      lastName,
+      firstName: toTitle(firstName),
+      lastName: toTitle(lastName),
       idNumber,
       contactNumber,
       facultyPosition,
+      department,
+      section: toTitle(section),
+      address: toTitle(address || ""),
+      program: program || "BSIT",
+      yearLevel: yearLevel || "",
+      birthdate: birthdateISO,
+      age,
       otp,
       otpExpires,
       isVerified: false,

@@ -2,12 +2,6 @@
   <div class="p-6">
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-semibold text-gray-900">Manage Student Accounts</h1>
-      <button
-        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        @click="openAddModal"
-      >
-        <span class="mr-2">➕</span> Add New Student
-      </button>
     </div>
 
     <div class="bg-white shadow rounded-lg overflow-hidden">
@@ -39,18 +33,22 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Id</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="u in filteredStudents" :key="u._id">
+            <tr v-for="u in filteredStudents" :key="u._id" class="hover:bg-gray-50 cursor-pointer" @click="openViewModal(u)">
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {{ (u.firstName || '') + ' ' + (u.lastName || '') }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ u.section || '-' }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ u.idNumber || '-' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ u.emailAddress }}
@@ -66,20 +64,20 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
                 <button
                   class="inline-flex items-center px-3 py-1.5 rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 mr-2"
-                  @click="openEditModal(u)"
+                  @click.stop="openEditModal(u)"
                 >
                   ✏️ Edit
                 </button>
                 <button
                   class="inline-flex items-center px-3 py-1.5 rounded-md text-red-700 bg-red-50 hover:bg-red-100"
-                  @click="confirmDelete(u)"
+                  @click.stop="confirmDelete(u)"
                 >
                   🗑️ Delete
                 </button>
               </td>
             </tr>
             <tr v-if="filteredStudents.length === 0">
-              <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">No students found.</td>
+              <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">No students found.</td>
             </tr>
           </tbody>
         </table>
@@ -94,7 +92,7 @@
       <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
         <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h3 class="text-lg font-medium text-gray-900">
-            {{ editTarget ? 'Edit Student' : 'Add New Student' }}
+            {{ editTarget ? 'Edit Student' : 'Edit Student' }}
           </h3>
           <button class="text-gray-400 hover:text-gray-600" @click="closeModal">✖</button>
         </div>
@@ -102,38 +100,146 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-600 mb-1">First Name</label>
-              <input v-model="form.firstName" type="text" required class="w-full border rounded px-3 py-2 text-sm" />
+              <input v-model="form.firstName" type="text" required class="w-full border rounded px-3 py-2 text-sm" @input="form.firstName = toTitleCase(form.firstName)" />
             </div>
             <div>
               <label class="block text-xs text-gray-600 mb-1">Last Name</label>
-              <input v-model="form.lastName" type="text" required class="w-full border rounded px-3 py-2 text-sm" />
+              <input v-model="form.lastName" type="text" required class="w-full border rounded px-3 py-2 text-sm" @input="form.lastName = toTitleCase(form.lastName)" />
             </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-600 mb-1">Section</label>
-              <input v-model="form.section" type="text" class="w-full border rounded px-3 py-2 text-sm" />
+              <input v-model="form.section" type="text" class="w-full border rounded px-3 py-2 text-sm" @input="form.section = toTitleCase(form.section)" />
             </div>
             <div>
               <label class="block text-xs text-gray-600 mb-1">ID Number</label>
-              <input v-model="form.idNumber" type="text" class="w-full border rounded px-3 py-2 text-sm" />
+              <div class="flex">
+                <span class="inline-flex items-center px-3 border border-r-0 rounded-l text-sm bg-gray-50 text-gray-700">MCC</span>
+                <input
+                  v-model="idNumberTail"
+                  type="text"
+                  class="w-full border rounded-r px-3 py-2 text-sm"
+                  placeholder="YYYY-NNNN"
+                  @input="onIdTailInput"
+                />
+              </div>
             </div>
           </div>
           <div>
             <label class="block text-xs text-gray-600 mb-1">Email</label>
-            <input v-model="form.emailAddress" type="email" required class="w-full border rounded px-3 py-2 text-sm" />
+            <input v-model="form.emailAddress" type="email" required class="w-full border rounded px-3 py-2 text-sm" @input="form.emailAddress = (form.emailAddress || '').toLowerCase()" />
+            <div v-if="errors.emailAddress" class="text-sm text-red-600">{{ errors.emailAddress }}</div>
           </div>
-          <div v-if="!editTarget">
-            <label class="block text-xs text-gray-600 mb-1">Password</label>
-            <input v-model="form.password" type="password" required class="w-full border rounded px-3 py-2 text-sm" />
+          <div>
+            <label class="block text-xs text-gray-600 mb-1">Contact Number</label>
+            <input v-model="form.contactNumber" type="tel" required class="w-full border rounded px-3 py-2 text-sm" />
+            <div v-if="errors.contactNumber" class="text-sm text-red-600">{{ errors.contactNumber }}</div>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-600 mb-1">Address</label>
+            <textarea v-model="form.address" rows="2" class="w-full border rounded px-3 py-2 text-sm" @input="form.address = toTitleCase(form.address)"></textarea>
+          </div>
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Program</label>
+              <input v-model="form.program" type="text" class="w-full border rounded px-3 py-2 text-sm bg-gray-50" disabled />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Year Level</label>
+              <select v-model="form.yearLevel" class="w-full border rounded px-3 py-2 text-sm">
+                <option value="">Select</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Birthdate</label>
+              <input v-model="form.birthdate" type="date" class="w-full border rounded px-3 py-2 text-sm" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-600 mb-1">Age</label>
+            <input :value="computedAge" type="number" class="w-full border rounded px-3 py-2 text-sm bg-gray-50" disabled />
           </div>
           <div class="pt-2 flex items-center justify-end gap-3">
             <button type="button" class="px-4 py-2 rounded border" @click="closeModal">Cancel</button>
             <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
-              {{ editTarget ? 'Save Changes' : 'Create Student' }}
+              Save Changes
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- View Student Modal -->
+    <div v-if="showViewModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-lg font-medium text-gray-900">Student Details</h3>
+          <button class="text-gray-400 hover:text-gray-600" @click="closeViewModal">✖</button>
+        </div>
+        <div class="px-6 py-4 space-y-3 text-sm">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="text-gray-500">First Name</div>
+              <div class="font-medium">{{ viewTarget?.firstName || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Last Name</div>
+              <div class="font-medium">{{ viewTarget?.lastName || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Email</div>
+              <div class="font-medium break-all">{{ viewTarget?.emailAddress || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Status</div>
+              <div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium" :class="viewTarget?.isVerified ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
+                  {{ viewTarget?.isVerified ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+            </div>
+            <div>
+              <div class="text-gray-500">Section</div>
+              <div class="font-medium">{{ viewTarget?.section || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Program</div>
+              <div class="font-medium">BSIT</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Year Level</div>
+              <div class="font-medium">{{ viewTarget?.yearLevel || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">ID Number</div>
+              <div class="font-medium break-all">{{ viewTarget?.idNumber || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Contact Number</div>
+              <div class="font-medium">{{ viewTarget?.contactNumber || '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Birthdate</div>
+              <div class="font-medium">{{ viewTarget?.birthdate ? new Date(viewTarget.birthdate).toLocaleDateString() : '-' }}</div>
+            </div>
+            <div>
+              <div class="text-gray-500">Age</div>
+              <div class="font-medium">{{ viewTarget?.age ?? '-' }}</div>
+            </div>
+            <div class="col-span-2">
+              <div class="text-gray-500">Address</div>
+              <div class="font-medium">{{ viewTarget?.address || '-' }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end bg-gray-50">
+          <button class="px-4 py-2 rounded border" @click="closeViewModal">Close</button>
+        </div>
       </div>
     </div>
 
@@ -203,7 +309,7 @@
 </template>
 
 <script>
-import api from "@/utils/api";
+import api from "@/utils/api.js";
 
 export default {
   name: "ManageUsers",
@@ -216,6 +322,8 @@ export default {
       showModal: false,
       editTarget: null,
       deleteTarget: null,
+      showViewModal: false,
+      viewTarget: null,
       showOtpModal: false,
       otpEmail: "",
       otpCode: "",
@@ -228,13 +336,40 @@ export default {
         firstName: "",
         lastName: "",
         section: "",
+        idNumber: "MCC",
+        emailAddress: "",
+        contactNumber: "",
+        address: "",
+        program: "BSIT",
+        yearLevel: "",
+        birthdate: "",
+        password: "",
+      },
+      idNumberTail: "",
+      errors: {
+        firstName: "",
+        lastName: "",
         idNumber: "",
+        contactNumber: "",
         emailAddress: "",
         password: "",
       },
+      emailRegex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      phoneRegex: /^(09|\+639)\d{9}$/,
+      idRegex: /^MCC\d{4}-\d{4}$/,
     };
   },
   computed: {
+    computedAge() {
+      if (!this.form.birthdate) return "";
+      const d = new Date(this.form.birthdate);
+      if (isNaN(d.getTime())) return "";
+      const today = new Date();
+      let a = today.getFullYear() - d.getFullYear();
+      const m = today.getMonth() - d.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < d.getDate())) a--;
+      return a;
+    },
     filteredStudents() {
       const q = this.query.trim().toLowerCase();
       let list = this.students.filter(
@@ -254,6 +389,30 @@ export default {
     this.fetchStudents();
   },
   methods: {
+    toTitleCase(s) {
+      if (!s) return "";
+      return String(s).replace(/\b\w+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    },
+    onIdTailInput() {
+      const tail = (this.idNumberTail || "").toUpperCase().replace(/\s+/g, "");
+      this.idNumberTail = tail;
+      this.form.idNumber = "MCC" + tail;
+    },
+    validateForm() {
+      // reset
+      this.errors = { firstName:"", lastName:"", idNumber:"", contactNumber:"", emailAddress:"", password:"" };
+      let ok = true;
+      if (!this.form.firstName.trim()) { this.errors.firstName = 'First name is required'; ok = false; }
+      if (!this.form.lastName.trim()) { this.errors.lastName = 'Last name is required'; ok = false; }
+      if (!this.idRegex.test(this.form.idNumber.trim())) { this.errors.idNumber = 'Use MCCYYYY-NNNN (e.g., MCC2025-0001)'; ok = false; }
+      if (!this.phoneRegex.test(this.form.contactNumber.trim())) { this.errors.contactNumber = 'Use 09XXXXXXXXX or +639XXXXXXXXX'; ok = false; }
+      if (!this.emailRegex.test(this.form.emailAddress.trim())) { this.errors.emailAddress = 'Invalid email'; ok = false; }
+      if (!this.editTarget && (this.form.password || '').length < 6) { this.errors.password = 'Password must be at least 6 characters'; ok = false; }
+      if (!ok) {
+        alert('Please fix the highlighted errors before submitting.');
+      }
+      return ok;
+    },
     async fetchStudents() {
       try {
         this.loading = true;
@@ -266,69 +425,60 @@ export default {
         this.loading = false;
       }
     },
-    openAddModal() {
-      this.editTarget = null;
-      this.form = {
-        firstName: "",
-        lastName: "",
-        section: "",
-        idNumber: "",
-        emailAddress: "",
-        password: "",
-      };
-      this.showModal = true;
-    },
     openEditModal(u) {
       this.editTarget = u;
       this.form = {
-        firstName: u.firstName || "",
-        lastName: u.lastName || "",
-        section: u.section || "",
-        idNumber: u.idNumber || "",
-        emailAddress: u.emailAddress || "",
+        firstName: this.toTitleCase(u.firstName || ""),
+        lastName: this.toTitleCase(u.lastName || ""),
+        section: this.toTitleCase(u.section || ""),
+        idNumber: u.idNumber || "MCC",
+        emailAddress: (u.emailAddress || "").toLowerCase(),
+        contactNumber: u.contactNumber || "",
+        address: this.toTitleCase(u.address || ""),
+        program: "BSIT",
+        yearLevel: (u.yearLevel ?? "").toString(),
+        birthdate: u.birthdate ? new Date(u.birthdate).toISOString().slice(0,10) : "",
         password: "", // not editable here
       };
+      const raw = (this.form.idNumber || "").toUpperCase().replace(/\s+/g, "");
+      this.idNumberTail = raw.replace(/^MCC/, "");
       this.showModal = true;
+    },
+    openViewModal(u) {
+      this.viewTarget = u;
+      this.showViewModal = true;
     },
     closeModal() {
       this.showModal = false;
     },
+    closeViewModal() {
+      this.showViewModal = false;
+      this.viewTarget = null;
+    },
     async submitForm() {
       try {
+        // Basic validation aligned with Registration
+        if (!this.validateForm()) return;
+
         if (this.editTarget) {
           const payload = {
-            firstName: this.form.firstName,
-            lastName: this.form.lastName,
-            section: this.form.section,
-            idNumber: this.form.idNumber,
-            emailAddress: this.form.emailAddress,
+            firstName: this.toTitleCase(this.form.firstName.trim()),
+            lastName: this.toTitleCase(this.form.lastName.trim()),
+            section: this.toTitleCase((this.form.section || '').trim()),
+            idNumber: this.form.idNumber.trim(),
+            emailAddress: (this.form.emailAddress || '').trim().toLowerCase(),
+            contactNumber: this.form.contactNumber.trim(),
+            address: this.toTitleCase((this.form.address || '').trim()),
+            program: 'BSIT',
+            yearLevel: (this.form.yearLevel || '').trim(),
+            birthdate: this.form.birthdate || "",
           };
           await api.patch(`/admin/users/${this.editTarget._id}`, payload);
           this.showModal = false;
           await this.fetchStudents();
           return;
         }
-        // Create student via existing register endpoint
-        const payload = {
-          role: "student",
-          emailAddress: this.form.emailAddress,
-          password: this.form.password,
-          firstName: this.form.firstName,
-          lastName: this.form.lastName,
-          idNumber: this.form.idNumber,
-          contactNumber: "", // optional
-          facultyPosition: "", // not used for students
-          section: this.form.section, // stored if your schema supports it
-        };
-        await api.post("/auth/register", payload);
-        this.showModal = false;
-        // Open OTP modal for verification
-        this.otpEmail = this.form.emailAddress;
-        this.otpCode = "";
-        this.otpError = "";
-        this.showOtpModal = true;
-        // Start resend cooldown
-        this.startResendTimer(30);
+        // Adding new students is disabled from Admin Manage Users.
       } catch (e) {
         console.error("Failed to submit form", e);
         alert("Failed to submit form");

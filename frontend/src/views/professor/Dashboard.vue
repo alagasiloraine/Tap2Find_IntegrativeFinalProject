@@ -200,7 +200,8 @@ const user = ref({
   firstName: '',
   lastName: '',
   role: '',
-  emailAddress: ''
+  emailAddress: '',
+  status: ''
 })
 
 onMounted(() => {

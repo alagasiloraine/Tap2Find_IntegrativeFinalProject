@@ -168,7 +168,7 @@
                   </td>
 
                   <!-- 📌 Status -->
-                  <td class="px-6 py-4 text-sm">
+                 <td class="px-6 py-4 text-sm">
                     <span
                       class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border"
                       :class="getStatusColor(inquiry.status)"
@@ -177,7 +177,7 @@
                         class="w-2 h-2 rounded-full"
                         :class="getStatusDot(inquiry.status)"
                       ></span>
-                      {{ inquiry.status || 'Pending' }}
+                      {{ getStatusDisplayText(inquiry.status) }}
                     </span>
                   </td>
 
@@ -237,7 +237,8 @@ const statusOptions = [
   { label: 'All Status', value: 'all' },
   { label: 'Pending', value: 'pending' },
   { label: 'Replied', value: 'replied' },
-  { label: 'Unread', value: 'unread' }
+  { label: 'Unread', value: 'unread' },
+  { label: 'Resolved', value: 'resolved' }
 ]
 
 const statusCards = {
@@ -287,20 +288,49 @@ const getInitials = (name) => {
   return `${parts[0]?.[0] || ''}${parts[1]?.[0] || ''}`.toUpperCase()
 }
 
-const getStatusColor = (status) =>
-  ({
-    Replied: 'bg-green-50 text-green-700 border-green-200',
-    Pending: 'bg-amber-50 text-amber-700 border-amber-200',
-    Unread: 'bg-blue-50 text-blue-700 border-blue-200',
-    Closed: 'bg-gray-50 text-gray-700 border-gray-200'
-  }[status] || 'bg-gray-50 text-gray-700 border-gray-200')
+const getStatusColor = (status) => {
+  const statusLower = status?.toLowerCase() || 'pending';
+  
+  const colorMap = {
+    'replied': 'bg-green-50 text-green-700 border-green-200',
+    'resolved': 'bg-green-50 text-green-700 border-green-200',
+    'pending': 'bg-amber-50 text-amber-700 border-amber-200',
+    'unread': 'bg-blue-50 text-blue-700 border-blue-200',
+    'closed': 'bg-gray-50 text-gray-700 border-gray-200',
+    'in-progress': 'bg-blue-50 text-blue-700 border-blue-200'
+  };
+  
+  return colorMap[statusLower] || 'bg-gray-50 text-gray-700 border-gray-200';
+}
 
-const getStatusDot = (status) =>
-  ({
-    Replied: 'bg-green-500',
-    Pending: 'bg-amber-500',
-    Unread: 'bg-blue-500'
-  }[status] || 'bg-gray-500')
+const getStatusDot = (status) => {
+  const statusLower = status?.toLowerCase() || 'pending';
+  
+  const dotMap = {
+    'replied': 'bg-green-500',
+    'resolved': 'bg-green-500',
+    'pending': 'bg-amber-500',
+    'unread': 'bg-blue-500',
+    'in-progress': 'bg-blue-500'
+  };
+  
+  return dotMap[statusLower] || 'bg-gray-500';
+}
+
+const getStatusDisplayText = (status) => {
+  const statusLower = status?.toLowerCase() || 'pending';
+  
+  const textMap = {
+    'replied': 'Replied',
+    'resolved': 'Resolved', 
+    'pending': 'Pending',
+    'unread': 'Unread',
+    'in-progress': 'In Progress',
+    'closed': 'Closed'
+  };
+  
+  return textMap[statusLower] || 'Pending';
+}
 
 // ==============================
 // 🔹 Computed: Filter Inquiries

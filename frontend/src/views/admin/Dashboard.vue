@@ -8,205 +8,216 @@
 
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-      <!-- Total Users -->
-      <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-lg">👥</span>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-                <dd class="text-lg font-medium text-gray-900">{{ stats.totalUsers.toLocaleString() }}</dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-        <div class="bg-gray-50 px-5 py-3">
-          <div class="text-sm">
-            <span class="text-green-600 font-medium">+12%</span>
-            <span class="text-gray-500"> from last month</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Active Sessions -->
+      <!-- Total Professors -->
       <div class="bg-white overflow-hidden shadow rounded-lg">
         <div class="p-5">
           <div class="flex items-center">
             <div class="flex-shrink-0">
               <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-lg">🟢</span>
+                <span class="text-white text-lg">🎓</span>
               </div>
             </div>
             <div class="ml-5 w-0 flex-1">
               <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">Active Sessions</dt>
-                <dd class="text-lg font-medium text-gray-900">{{ stats.activeSessions.toLocaleString() }}</dd>
+                <dt class="text-sm font-medium text-gray-500 truncate">Total Professors</dt>
+                <dd class="text-lg font-medium text-gray-900">{{ stats.totalProfessors?.toLocaleString() || 0 }}</dd>
               </dl>
             </div>
           </div>
         </div>
-        <div class="bg-gray-50 px-5 py-3">
-          <div class="text-sm">
-            <span class="text-green-600 font-medium">+8%</span>
-            <span class="text-gray-500"> from last hour</span>
-          </div>
-        </div>
       </div>
 
-      <!-- Total Revenue -->
+      <!-- Total Students -->
       <div class="bg-white overflow-hidden shadow rounded-lg">
         <div class="p-5">
           <div class="flex items-center">
             <div class="flex-shrink-0">
               <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-lg">💰</span>
+                <span class="text-white text-lg">🧑‍🎓</span>
               </div>
             </div>
             <div class="ml-5 w-0 flex-1">
               <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">Total Revenue</dt>
-                <dd class="text-lg font-medium text-gray-900">${{ stats.totalRevenue.toLocaleString() }}</dd>
+                <dt class="text-sm font-medium text-gray-500 truncate">Total Students</dt>
+                <dd class="text-lg font-medium text-gray-900">{{ stats.totalStudents?.toLocaleString() || 0 }}</dd>
               </dl>
             </div>
           </div>
         </div>
-        <div class="bg-gray-50 px-5 py-3">
-          <div class="text-sm">
-            <span class="text-green-600 font-medium">+23%</span>
-            <span class="text-gray-500"> from last month</span>
-          </div>
-        </div>
       </div>
 
-      <!-- System Health -->
+      <!-- Active RFID Tap-ins Today -->
       <div class="bg-white overflow-hidden shadow rounded-lg">
         <div class="p-5">
           <div class="flex items-center">
             <div class="flex-shrink-0">
               <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-lg">⚡</span>
+                <span class="text-white text-lg">📡</span>
               </div>
             </div>
             <div class="ml-5 w-0 flex-1">
               <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">System Health</dt>
-                <dd class="text-lg font-medium text-gray-900">{{ stats.systemHealth }}%</dd>
+                <dt class="text-sm font-medium text-gray-500 truncate">Active RFID Tap-ins Today</dt>
+                <dd class="text-lg font-medium text-gray-900">{{ stats.activeRFIDTapInsToday?.toLocaleString() || 0 }}</dd>
               </dl>
             </div>
           </div>
         </div>
-        <div class="bg-gray-50 px-5 py-3">
-          <div class="text-sm">
-            <span class="text-green-600 font-medium">All systems operational</span>
+      </div>
+
+      <!-- Total Concerns Logged -->
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-lg">📝</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Total Concerns Logged</dt>
+                <dd class="text-lg font-medium text-gray-900">{{ stats.totalConcerns?.toLocaleString() || 0 }}</dd>
+              </dl>
+            </div>
           </div>
         </div>
       </div>
+
+
     </div>
 
     <!-- Charts Section -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-      <!-- User Growth Chart -->
       <div class="bg-white shadow rounded-lg p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">User Growth</h3>
-        <div class="h-64 bg-gray-50 rounded-md flex items-center justify-center">
-          <div class="text-center">
-            <span class="text-4xl mb-2 block">📈</span>
-            <p class="text-gray-500">Chart placeholder</p>
-            <p class="text-sm text-gray-400">User growth over time</p>
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Professor Availability</h3>
+        <div class="space-y-4">
+          <div class="w-full h-6 rounded-md overflow-hidden flex bg-gray-100">
+            <div class="h-full bg-green-500" :style="{ width: availability.availablePct + '%' }"></div>
+            <div class="h-full bg-yellow-500" :style="{ width: availability.busyPct + '%' }"></div>
+            <div class="h-full bg-red-500" :style="{ width: availability.notAvailablePct + '%' }"></div>
           </div>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-md px-3 py-2">
+              <span class="text-sm text-green-700">Available</span>
+              <span class="text-sm font-semibold text-green-800">{{ availability.available }} ({{ availability.availablePct }}%)</span>
+            </div>
+            <div class="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-md px-3 py-2">
+              <span class="text-sm text-yellow-700">Busy</span>
+              <span class="text-sm font-semibold text-yellow-800">{{ availability.busy }} ({{ availability.busyPct }}%)</span>
+            </div>
+            <div class="flex items-center justify-between bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              <span class="text-sm text-red-700">Not Available</span>
+              <span class="text-sm font-semibold text-red-800">{{ availability.notAvailable }} ({{ availability.notAvailablePct }}%)</span>
+            </div>
+          </div>
+          <div class="text-xs text-gray-500">Total professors: {{ availability.total }}</div>
         </div>
       </div>
 
-      <!-- Revenue Chart -->
+      <!-- Daily Student Concerns (Last 14 days) -->
       <div class="bg-white shadow rounded-lg p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Revenue Trends</h3>
-        <div class="h-64 bg-gray-50 rounded-md flex items-center justify-center">
-          <div class="text-center">
-            <span class="text-4xl mb-2 block">💹</span>
-            <p class="text-gray-500">Chart placeholder</p>
-            <p class="text-sm text-gray-400">Revenue trends over time</p>
+        <h3 class="text-lg font-medium text-gray-900 mb-1">Daily Student Concerns (Last 14 days)</h3>
+        <div class="text-xs text-gray-500 mb-4">Total: {{ dailyChart.total }}</div>
+        <div class="h-48 flex items-end gap-2 border-b border-gray-200 pb-2">
+          <div v-for="(d, idx) in dailyChart.points" :key="idx" class="flex-1 flex flex-col items-center justify-end">
+            <div class="w-full bg-blue-200 rounded-t"
+                 :style="{ height: (dailyChart.max > 0 ? Math.round((d.count / dailyChart.max) * 100) : 0) + '%', minHeight: d.count > 0 ? '6px' : '0' }"
+                 :title="d.label + ': ' + d.count"></div>
+            <div class="mt-1 text-[10px] text-gray-500 rotate-0">{{ d.label.slice(5) }}</div>
           </div>
         </div>
+        <div class="mt-2 text-xs text-gray-500">Max per day: {{ dailyChart.max }}</div>
       </div>
     </div>
 
-    <!-- Recent Activity -->
-    <div class="bg-white shadow rounded-lg">
-      <div class="px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-medium text-gray-900">Recent Activity</h3>
-      </div>
-      <div class="divide-y divide-gray-200">
-        <div v-for="activity in recentActivity" :key="activity.id" class="px-6 py-4">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                <span class="text-gray-600 text-sm">{{ activity.icon }}</span>
-              </div>
-            </div>
-            <div class="ml-4 flex-1">
-              <p class="text-sm font-medium text-gray-900">{{ activity.title }}</p>
-              <p class="text-sm text-gray-500">{{ activity.description }}</p>
-            </div>
-            <div class="ml-4 flex-shrink-0">
-              <p class="text-sm text-gray-500">{{ activity.time }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+
   </div>
 </template>
+<script>
+import api from "@/utils/api.js";
 
-<script setup>
-import { ref } from 'vue'
-
-const stats = ref({
-  totalUsers: 12543,
-  activeSessions: 892,
-  totalRevenue: 45678,
-  systemHealth: 99
-})
-
-const recentActivity = ref([
-  {
-    id: 1,
-    icon: '👤',
-    title: 'New user registered',
-    description: 'john.doe@example.com joined the platform',
-    time: '2 minutes ago'
+export default {
+  name: "AdminDashboard",
+  data() {
+    return {
+      stats: {},
+      users: [],
+      loading: true,
+      concerns: [],
+    };
   },
-  {
-    id: 2,
-    icon: '💳',
-    title: 'Payment processed',
-    description: 'Premium subscription activated for user #1234',
-    time: '5 minutes ago'
+  mounted() {
+    this.fetchDashboard();
+    this.fetchUsers();
+    this.fetchConcerns();
   },
-  {
-    id: 3,
-    icon: '🔧',
-    title: 'System maintenance',
-    description: 'Database optimization completed successfully',
-    time: '1 hour ago'
+  computed: {
+    availability() {
+      const a = this.stats?.professorAvailability || {};
+      const available = Number(a.available || 0);
+      const busy = Number(a.busy || 0);
+      const notAvailable = Number(a.notAvailable || 0);
+      const total = available + busy + notAvailable;
+      const pct = (n) => (total > 0 ? Math.round((n / total) * 100) : 0);
+      return {
+        available,
+        busy,
+        notAvailable,
+        total,
+        availablePct: pct(available),
+        busyPct: pct(busy),
+        notAvailablePct: pct(notAvailable),
+      };
+    },
+    dailyChart() {
+      const days = 14;
+      const today = new Date();
+      const labels = [];
+      const map = new Map();
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        labels.push(key);
+        map.set(key, 0);
+      }
+      for (const c of this.concerns) {
+        const stamp = c.createdAt || c.timestamp || c.date;
+        const d = stamp ? new Date(stamp) : null;
+        if (!d || isNaN(d.getTime())) continue;
+        const key = d.toISOString().slice(0, 10);
+        if (map.has(key)) map.set(key, map.get(key) + 1);
+      }
+      const points = labels.map(l => ({ label: l, count: map.get(l) || 0 }));
+      const max = points.reduce((m, p) => Math.max(m, p.count), 0);
+      const total = points.reduce((s, p) => s + p.count, 0);
+      return { points, max, total };
+    },
   },
-  {
-    id: 4,
-    icon: '📧',
-    title: 'Email campaign sent',
-    description: 'Newsletter sent to 2,543 subscribers',
-    time: '2 hours ago'
-  },
-  {
-    id: 5,
-    icon: '🛡️',
-    title: 'Security alert',
-    description: 'Suspicious login attempt blocked from IP 192.168.1.1',
-    time: '3 hours ago'
+  methods: {
+async fetchDashboard() {
+  const res = await api.get("/admin/stats");
+  this.stats = res.data.stats;
+},
+async fetchUsers() {
+  try {
+    const res = await api.get("/admin/users");
+    this.users = res.data.users;
+  } catch (error) {
+    console.error("Error fetching users:", error);
   }
-])
+},
+async fetchConcerns() {
+  try {
+    const res = await api.get('/admin/concerns');
+    this.concerns = res.data.concerns || [];
+  } catch (e) {
+    console.error('Error fetching concerns:', e);
+  }
+}
+
+  }
+};
 </script>
+

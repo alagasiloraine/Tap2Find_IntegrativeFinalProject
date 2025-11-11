@@ -1,4 +1,326 @@
 import { getDB } from "../db.js";
+import { ObjectId } from "mongodb";
+
+  export const getStatistics = async (req, res) => {
+    try {
+      const { professorId } = req.query;
+
+      if (!professorId) {
+        return res.status(400).json({ success: false, message: "Missing professorId" });
+      }
+
+      const db = getDB();
+      const inquiries = db.collection("inquiries");
+
+      const today = new Date();
+      const startOfToday = new Date(today.setHours(0, 0, 0, 0));
+      const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+
+      // Get today's inquiries count
+      const todayCount = await inquiries.countDocuments({
+        professorId: new ObjectId(professorId),
+        createdAt: { $gte: startOfToday }
+      });
+
+      // Get this week's inquiries count
+      const thisWeekCount = await inquiries.countDocuments({
+        professorId: new ObjectId(professorId),
+        createdAt: { $gte: startOfWeek }
+      });
+
+      // Get resolved inquiries count
+      const resolvedCount = await inquiries.countDocuments({
+        professorId: new ObjectId(professorId),
+        status: "resolved"
+      });
+
+      const statistics = {
+        today: todayCount,
+        thisWeek: thisWeekCount,
+        resolved: resolvedCount
+      };
+
+      res.json({ success: true, data: statistics });
+    } catch (error) {
+      console.error("❌ Error fetching statistics:", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  };
+
+  export const getRecentConcerns = async (req, res) => {
+    try {
+      const { professorId } = req.query;
+
+      if (!professorId) {
+        return res.status(400).json({ success: false, message: "Missing professorId" });
+      }
+
+      const db = getDB();
+      const inquiries = db.collection("inquiries");
+      const users = db.collection("users");
+
+      // Get recent inquiries with student details
+      const recentInquiries = await inquiries
+        .find({
+          professorId: new ObjectId(professorId)
+        })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .toArray();
+
+      // Enrich inquiries with student information
+      const enrichedInquiries = await Promise.all(
+        recentInquiries.map(async (inquiry) => {
+          const student = await users.findOne({
+            _id: new ObjectId(inquiry.studentId),
+            role: "student"
+          });
+
+          return {
+            id: inquiry._id,
+            name: student ? `${student.firstName} ${student.lastName}` : 'Unknown Student',
+            subject: inquiry.subject,
+            message: inquiry.message,
+            initials: student ? 
+              `${student.firstName?.charAt(0) || ''}${student.lastName?.charAt(0) || ''}`.toUpperCase() : 
+              'US',
+            email: student?.emailAddress || '',
+            status: inquiry.status || 'pending',
+            createdAt: inquiry.createdAt,
+            updatedAt: inquiry.updatedAt
+          };
+        })
+      );
+
+      res.json({ success: true, data: enrichedInquiries });
+    } catch (error) {
+      console.error("❌ Error fetching recent concerns:", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  };
+
+  export const getAllConcerns = async (req, res) => {
+    try {
+      const { professorId, page = 1, limit = 10, status } = req.query;
+
+      if (!professorId) {
+        return res.status(400).json({ success: false, message: "Missing professorId" });
+      }
+
+      const db = getDB();
+      const inquiries = db.collection("inquiries");
+      const users = db.collection("users");
+
+      // Build query filter
+      const filter = { professorId: new ObjectId(professorId) };
+      if (status && status !== 'all') {
+        filter.status = status;
+      }
+
+      // Get paginated inquiries
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      
+      const [inquiriesList, totalCount] = await Promise.all([
+        inquiries
+          .find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(parseInt(limit))
+          .toArray(),
+        inquiries.countDocuments(filter)
+      ]);
+
+      // Enrich inquiries with student information
+      const enrichedInquiries = await Promise.all(
+        inquiriesList.map(async (inquiry) => {
+          const student = await users.findOne({
+            _id: new ObjectId(inquiry.studentId),
+            role: "student"
+          });
+
+          return {
+            id: inquiry._id,
+            name: student ? `${student.firstName} ${student.lastName}` : 'Unknown Student',
+            subject: inquiry.subject,
+            message: inquiry.message,
+            initials: student ? 
+              `${student.firstName?.charAt(0) || ''}${student.lastName?.charAt(0) || ''}`.toUpperCase() : 
+              'US',
+            email: student?.emailAddress || '',
+            status: inquiry.status || 'pending',
+            createdAt: inquiry.createdAt,
+            updatedAt: inquiry.updatedAt,
+            studentId: inquiry.studentId
+          };
+        })
+      );
+
+      res.json({
+        success: true,
+        data: {
+          inquiries: enrichedInquiries,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: totalCount,
+            pages: Math.ceil(totalCount / parseInt(limit))
+          }
+        }
+      });
+    } catch (error) {
+      console.error("❌ Error fetching all concerns:", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  };
+
+  export const updateConcernStatus = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status, professorId } = req.body;
+
+      if (!professorId) {
+        return res.status(400).json({ success: false, message: "Missing professorId" });
+      }
+
+      const db = getDB();
+      const inquiries = db.collection("inquiries");
+
+      // Verify the inquiry belongs to this professor
+      const inquiry = await inquiries.findOne({
+        _id: new ObjectId(id),
+        professorId: new ObjectId(professorId)
+      });
+
+      if (!inquiry) {
+        return res.status(404).json({ success: false, message: "Inquiry not found" });
+      }
+
+      // Update the status
+      const result = await inquiries.updateOne(
+        { _id: new ObjectId(id) },
+        { 
+          $set: { 
+            status: status,
+            updatedAt: new Date()
+          } 
+        }
+      );
+
+      if (result.modifiedCount === 0) {
+        return res.status(400).json({ success: false, message: "Failed to update inquiry status" });
+      }
+
+      res.json({ success: true, message: "Inquiry status updated successfully", data: { status } });
+    } catch (error) {
+      console.error("❌ Error updating concern status:", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  };
+
+  export const replyToConcern = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { message, professorId } = req.body;
+
+      if (!professorId) {
+        return res.status(400).json({ success: false, message: "Missing professorId" });
+      }
+
+      const db = getDB();
+      const inquiries = db.collection("inquiries");
+
+      // Verify the inquiry belongs to this professor
+      const inquiry = await inquiries.findOne({
+        _id: new ObjectId(id),
+        professorId: new ObjectId(professorId)
+      });
+
+      if (!inquiry) {
+        return res.status(404).json({ success: false, message: "Inquiry not found" });
+      }
+
+      // Add reply to the inquiry
+      const reply = {
+        message,
+        repliedBy: new ObjectId(professorId),
+        repliedAt: new Date()
+      };
+
+      const result = await inquiries.updateOne(
+        { _id: new ObjectId(id) },
+        { 
+          $set: { 
+            status: "replied",
+            updatedAt: new Date()
+          },
+          $push: { replies: reply }
+        }
+      );
+
+      if (result.modifiedCount === 0) {
+        return res.status(400).json({ success: false, message: "Failed to send reply" });
+      }
+
+      res.json({ success: true, message: "Reply sent successfully", data: { reply } });
+    } catch (error) {
+      console.error("❌ Error replying to concern:", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  };
+
+  export const getConcernDetail = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { professorId } = req.query;
+
+      if (!professorId) {
+        return res.status(400).json({ success: false, message: "Missing professorId" });
+      }
+
+      const db = getDB();
+      const inquiries = db.collection("inquiries");
+      const users = db.collection("users");
+
+      // Get inquiry with professor verification
+      const inquiry = await inquiries.findOne({
+        _id: new ObjectId(id),
+        professorId: new ObjectId(professorId)
+      });
+
+      if (!inquiry) {
+        return res.status(404).json({ success: false, message: "Inquiry not found" });
+      }
+
+      // Get student details
+      const student = await users.findOne({
+        _id: new ObjectId(inquiry.studentId),
+        role: "student"
+      });
+
+      const enrichedInquiry = {
+        id: inquiry._id,
+        name: student ? `${student.firstName} ${student.lastName}` : 'Unknown Student',
+        subject: inquiry.subject,
+        message: inquiry.message,
+        initials: student ? 
+          `${student.firstName?.charAt(0) || ''}${student.lastName?.charAt(0) || ''}`.toUpperCase() : 
+          'US',
+        email: student?.emailAddress || '',
+        status: inquiry.status || 'pending',
+        createdAt: inquiry.createdAt,
+        updatedAt: inquiry.updatedAt,
+        replies: inquiry.replies || [],
+        studentId: inquiry.studentId
+      };
+
+      res.json({ success: true, data: enrichedInquiry });
+    } catch (error) {
+      console.error("❌ Error fetching concern detail:", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  };
+
+//========================================================================================================
 
 export const getAllProfessors = async (req, res) => {
   try {

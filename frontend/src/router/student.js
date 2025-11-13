@@ -3,7 +3,8 @@ import Dashboard from '@/views/student/StudentDashboard.vue'
 import LocateProfessor from '@/views/student/LocateProfessor.vue'
 import Notifications from '@/views/student/Notifications.vue'
 import Profile from '@/views/student/Profile.vue'
-// import Messages from '@/views/student/Messages.vue'
+import StudentSettings from '@/views/student/StudentSettings.vue'
+import StudentSupportAbout from '@/views/student/StudentSupportAbout.vue'
 
 const studentRoutes = [
   {
@@ -35,11 +36,16 @@ const studentRoutes = [
         name: 'student-profile',
         component: Profile,
       },
-      // {
-      //   path: 'messages',
-      //   name: 'student-messages',
-      //   component: Messages,
-      // }
+      {
+        path: 'settings',
+        name: 'student-settings',
+        component: StudentSettings,
+      },
+      {
+        path: 'support',
+        name: 'student-support-about',
+        component: StudentSupportAbout,
+      },
     ],
   },
 ]

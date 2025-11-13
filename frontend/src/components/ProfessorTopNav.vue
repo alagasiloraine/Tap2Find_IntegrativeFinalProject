@@ -5,7 +5,7 @@
       <p class="text-base text-gray-500">{{ currentPageDescription }}</p>
     </div>
 
-    <div class="flex items-center space-x-1">
+    <div v-if="!hideActions" class="flex items-center space-x-1">
       <div class="relative">
         <button @click="toggleNotifications" class="flex items-center justify-center w-12 h-12 text-2xl text-gray-600 hover:text-gray-600 relative transition-colors">
           <iconify-icon :icon="showNotifications ? 'ion:notifications' : 'ion:notifications-outline'" class="h-5 w-5" />
@@ -14,29 +14,90 @@
 
         <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
           <div v-if="showNotifications" class="absolute right-0 mt-2 w-[420px] bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-            <div class="px-6 py-4 flex justify-between items-center">
-              <h3 class="text-xl font-bold text-gray-900">Notification</h3>
-            </div>
-            <div :class="notifications.length > 5 ? 'max-h-96 overflow-y-auto' : 'max-h-none overflow-visible'">
-              <div v-for="n in notifications" :key="n.id" class="px-6 py-4 bg-white last:border-b-0">
-                <div class="flex items-center">
-                  <div class="flex-shrink-0 mr-4">
-                    <div class="w-12 h-12 bg-[#102A71] rounded-full flex items-center justify-center overflow-hidden">
-                      <span class="text-white text-sm font-bold">PA</span>
-                    </div>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="font-bold text-gray-900 text-sm">{{ n.title }}</p>
-                    <p class="text-sm text-gray-600 mt-1">{{ n.message }}</p>
-                  </div>
-                  <div class="flex-shrink-0 ml-4">
-                    <p class="text-xs text-gray-500">{{ n.time }}</p>
-                  </div>
-                </div>
+            <!-- Header with filter -->
+            <div class="px-4 py-3 flex items-start justify-between">
+              <div>
+                <h3 class="text-xl font-semibold text-gray-900">Notification</h3>
+                <p class="text-sm text-gray-500">You have <span class="text-[#F5C400]">3 notifications</span> today.</p>
               </div>
-              <div v-if="notifications.length === 0" class="px-6 py-8 text-center text-gray-500">No notifications</div>
+              <div class="relative" ref="menuRef">
+                <button class="p-2 rounded-full hover:bg-gray-100" aria-label="Filter" @click.stop="toggleMenu">
+                  <iconify-icon icon="mage:filter" class="text-xl" />
+                </button>
+                <transition name="fade">
+                  <div v-if="menuOpen" class="absolute right-0 mt-2 w-40 rounded-xl border border-gray-200 bg-white shadow-md overflow-hidden z-10">
+                    <button @click="selectFilter('today')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Today</button>
+                    <button @click="selectFilter('week')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">This Week</button>
+                    <button @click="selectFilter('month')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">This Month</button>
+                  </div>
+                </transition>
+              </div>
             </div>
-            <div v-if="notifications.length >= 5" class="px-6 py-3 border-t border-gray-100 text-right bg-white rounded-b-lg">
+
+            <!-- List -->
+            <div class="px-4 pb-4 max-h-96 overflow-y-auto">
+              <!-- Today -->
+              <section class="mb-4">
+                <h4 class="text-sm font-semibold text-gray-900">Today</h4>
+                <ul class="mt-1">
+                  <li class="flex items-start gap-3 py-3">
+                    <img src="/available.svg" alt="available" class="w-10 h-10 rounded-full object-cover" />
+                    <div class="flex-1">
+                      <p class="text-gray-900 text-sm">RFID tap recorded. Status set to <span class="font-semibold text-green-600">Available</span>. Students can now see you and send inquiries.</p>
+                      <p class="text-xs text-gray-500">10 mins ago</p>
+                    </div>
+                  </li>
+                  <hr class="border-gray-200" />
+                  <li class="flex items-start gap-3 py-3">
+                    <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
+                    <div class="flex-1">
+                      <p class="text-gray-900 text-sm">“Prof, can I ask about Chapter 3 methodology?” Tap to view the full thread and reply.</p>
+                      <p class="text-xs text-gray-500">25 mins ago</p>
+                    </div>
+                  </li>
+                  <hr class="border-gray-200" />
+                  <li class="flex items-start gap-3 py-3">
+                    <img src="/busy.svg" alt="busy" class="w-10 h-10 rounded-full object-cover" />
+                    <div class="flex-1">
+                      <p class="text-gray-900 text-sm">You switched to <span class="font-semibold text-yellow-600">Busy</span> at 11:30 AM. Students can still message you; they’ll be informed replies may be delayed. Add a Busy note if needed.</p>
+                      <p class="text-xs text-gray-500">40 mins ago</p>
+                    </div>
+                  </li>
+                </ul>
+              </section>
+
+              <!-- Yesterday -->
+              <section>
+                <h4 class="text-sm font-semibold text-gray-900">Yesterday</h4>
+                <ul class="mt-1">
+                  <li class="flex items-start gap-3 py-3">
+                    <img src="/notavailable.svg" alt="not available" class="w-10 h-10 rounded-full object-cover" />
+                    <div class="flex-1">
+                      <p class="text-gray-900 text-sm">RFID tap recorded. Status set to <span class="font-semibold text-red-600">Not Available</span>. You won’t receive new inquiries until you tap IN again.</p>
+                      <p class="text-xs text-gray-500">Yesterday • 9:05 PM</p>
+                    </div>
+                  </li>
+                  <hr class="border-gray-200" />
+                  <li class="flex items-start gap-3 py-3">
+                    <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
+                    <div class="flex-1">
+                      <p class="text-gray-900 text-sm">“Prof, can I ask about Chapter 3 methodology?” Tap to view the full thread and reply.</p>
+                      <p class="text-xs text-gray-500">Yesterday • 8:40 PM</p>
+                    </div>
+                  </li>
+                  <hr class="border-gray-200" />
+                  <li class="flex items-start gap-3 py-3">
+                    <img src="/notavailable.svg" alt="not available" class="w-10 h-10 rounded-full object-cover" />
+                    <div class="flex-1">
+                      <p class="text-gray-900 text-sm">You switched to <span class="font-semibold text-red-600">Not Available</span>. New inquiries will be paused until you tap IN.</p>
+                      <p class="text-xs text-gray-500">Yesterday • 8:30 PM</p>
+                    </div>
+                  </li>
+                </ul>
+              </section>
+            </div>
+
+            <div class="px-4 py-3 border-t border-gray-100 text-right bg-white rounded-b-lg">
               <router-link to="/professor/notifications" class="text-sm text-[#102A71] hover:underline">View all</router-link>
             </div>
           </div>
@@ -96,6 +157,10 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useNotifications } from '@/composables/useNotifications'
 
+const props = defineProps({
+  hideActions: { type: Boolean, default: false }
+})
+
 const router = useRouter()
 const route = useRoute()
 
@@ -119,6 +184,18 @@ const currentPageDescription = ref('Welcome to your professor dashboard')
 
 const { notifications, count } = useNotifications()
 notificationCount.value = count.value
+
+// Local state for dropdown filter menu (from notifications page)
+const selected = ref('today')
+const menuOpen = ref(false)
+const menuRef = ref(null)
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value
+}
+function selectFilter(val) {
+  selected.value = val
+  menuOpen.value = false
+}
 
 const toggleProfileMenu = () => {
   showProfileMenu.value = !showProfileMenu.value

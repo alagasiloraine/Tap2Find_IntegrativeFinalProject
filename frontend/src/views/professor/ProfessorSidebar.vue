@@ -1,7 +1,7 @@
 <template>
   <div class="h-full bg-[#102A71] rounded-2xl overflow-hidden flex flex-col">
     <!-- Logo Section -->
-    <div class="p-6">
+    <div class="p-12">
       <div class="flex items-center justify-center pb-5">
         <img class="h-12 w-auto" src="/t2fLogogogo.svg" alt="Tap2Find" />
         <span class="ml-2 text-3xl font-semibold">
@@ -13,7 +13,7 @@
     </div>
 
     <!-- Navigation Menu -->
-    <nav class="mt-2 px-3 flex-1">
+    <nav class=" px-3 flex-1">
       <div class="space-y-1">
         <!-- Professor Dashboard -->
         <router-link
@@ -101,10 +101,41 @@
         </router-link>
 
         <!-- Profile Page -->
-        
       </div>
     </nav>
-
+    <!-- Bottom Actions -->
+    <div class="mt-auto px-3 pb-12 space-y-1">
+      <router-link
+        to="/professor/settings"
+        class="group flex items-center px-4 py-3 text-base font-normal rounded-lg transition-colors leading-none"
+        :class="[
+          $route.path === '/professor/settings'
+            ? 'bg-white text-[#102A71] shadow'
+            : 'text-gray-300 hover:bg-[#cbd5f1]/20 hover:text-white'
+        ]"
+      >
+        <iconify-icon 
+          :icon="$route.path === '/professor/settings' ? 'lucide:settings' : 'lucide:settings'" 
+          class="mr-2 text-xl" 
+        />
+        Settings
+      </router-link>
+      <router-link
+        to="/professor/support"
+        class="group flex items-center px-4 py-3 text-base font-normal rounded-lg transition-colors leading-none"
+        :class="[
+          $route.path === '/professor/support'
+            ? 'bg-white text-[#102A71] shadow'
+            : 'text-gray-300 hover:bg-[#cbd5f1]/20 hover:text-white'
+        ]"
+      >
+        <iconify-icon 
+          :icon="$route.path === '/professor/support' ? 'lucide:info' : 'lucide:info'" 
+          class="mr-2 text-xl" 
+        />
+        Support & About
+      </router-link>
+    </div>
     
   </div>
 </template>

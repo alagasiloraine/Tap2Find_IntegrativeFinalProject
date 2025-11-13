@@ -1,132 +1,123 @@
 <template>
-  <div class="bg-white min-h-screen pb-20 md:pb-8 p-4 md:p-4">
-    <ProfessorTopNav />
-    <div class="px-4 md:px-6 pt-6 min-h-0">
-      <div class="max-w-4xl mx-auto">
-        <!-- Search -->
-        <div class="relative mb-5">
-          <iconify-icon icon="fluent:search-16-filled" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-          <input v-model="searchQuery" type="text" placeholder="Search" class="w-full pl-10 pr-4 py-2 rounded-full bg-gray-100 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#102A71]" />
-        </div>
-
-        <!-- Tabs -->
-        <div class="flex items-center justify-between border-b">
-          <div class="flex items-center gap-10">
-            <button @click="filterByType(null)" class="relative pb-3 text-base font-medium" :class="selectedType === null ? 'text-black' : 'text-gray-500 hover:text-gray-700'">
-              All
-              <span v-if="unreadCount > 0" class="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-black text-white text-[10px]">{{ unreadCount }}</span>
-              <span v-if="selectedType === null" class="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></span>
-            </button>
-            <button @click="filterByType('today')" class="relative pb-3 text-base font-medium" :class="selectedType === 'today' ? 'text-black' : 'text-gray-500 hover:text-gray-700'">
-              Today
-              <span v-if="selectedType === 'today'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></span>
-            </button>
-            <button @click="filterByType('week')" class="relative pb-3 text-base font-medium" :class="selectedType === 'week' ? 'text-black' : 'text-gray-500 hover:text-gray-700'">
-              This Week
-              <span v-if="selectedType === 'week'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></span>
-            </button>
-          </div>
-          <button @click="markAllAsRead" class="text-base text-black underline pb-3">Mark all as read</button>
-        </div>
-
-        <!-- List -->
-        <div class="mt-3 divide-y">
-          <div v-for="notification in filteredNotifications" :key="notification.id" class="py-3">
-            <div class="flex items-start justify-between gap-3">
-              <div class="flex items-start gap-3 min-w-0">
-                <img :src="notification.avatar || '/profile.svg'" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
-                <div class="min-w-0">
-                  <!-- Line 1: Student Name from Section -->
-                  <div class="font-semibold truncate">{{ displayTitle(notification) }}</div>
-                  <!-- Line 2: Message text -->
-                  <div class="text-sm text-gray-600 truncate">{{ displayMessage(notification) }}</div>
-                </div>
-              </div>
-              <!-- Right: time (e.g., now) -->
-              <div class="text-xs text-gray-500 whitespace-nowrap">{{ relativeTime(notification.createdAt) }}</div>
-            </div>
-          </div>
-
-          <div v-if="filteredNotifications.length === 0" class="text-center py-12">
-            <iconify-icon icon="mingcute:notification-off-line" class="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
-            <p class="text-gray-600">You currently have no notifications.</p>
-          </div>
-        </div>
+  <div class="bg-white min-h-screen pb-28 md:pb-16 p-6 md:p-10">
+    <!-- Header -->
+    <div class="flex items-start justify-between relative">
+      <div>
+        <h1 class="text-4xl font-semibold text-gray-900">Notification</h1>
+        <p class="text-base text-gray-500">You have <span class="text-[#F5C400]">3 notifications</span> today.</p>
       </div>
+      <div class="relative" ref="menuRef">
+        <button class="p-2 rounded-full hover:bg-gray-100" aria-label="Filter" @click="toggleMenu">
+          <iconify-icon icon="mage:filter" class="text-2xl" />
+        </button>
+        <transition name="fade">
+          <div v-if="menuOpen" class="absolute right-0 mt-2 w-44 rounded-xl border border-gray-200 bg-white shadow-md overflow-hidden z-10">
+            <button @click="selectFilter('today')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Today</button>
+            <button @click="selectFilter('week')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">This Week</button>
+            <button @click="selectFilter('month')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">This Month</button>
+          </div>
+        </transition>
+      </div>
+    </div>
+
+    <div class="mt-2"></div>
+
+    <!-- List -->
+    <div class="mt-6 space-y-6">
+      <!-- Today -->
+      <section>
+        <h2 class="text-lg font-semibold">Today</h2>
+        <ul class="mt-1">
+          <li class="flex items-start gap-3 py-3">
+            <img src="/available.svg" alt="available" class="w-10 h-10 rounded-full object-cover" />
+            <div class="flex-1">
+              <p class="text-gray-900">RFID tap recorded. Status set to <span class="font-semibold text-green-600">Available</span>. Students can now see you and send inquiries.</p>
+              <p class="text-xs text-gray-500">10 mins ago</p>
+            </div>
+          </li>
+          <hr class="border-gray-200" />
+          <li class="flex items-start gap-3 py-3">
+            <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
+            <div class="flex-1">
+              <p class="text-gray-900">“Prof, can I ask about Chapter 3 methodology?” Tap to view the full thread and reply.</p>
+              <p class="text-xs text-gray-500">25 mins ago</p>
+            </div>
+          </li>
+          <hr class="border-gray-200" />
+          <li class="flex items-start gap-3 py-3">
+            <img src="/busy.svg" alt="busy" class="w-10 h-10 rounded-full object-cover" />
+            <div class="flex-1">
+              <p class="text-gray-900">You switched to <span class="font-semibold text-yellow-600">Busy</span> at 11:30 AM. Students can still message you; they’ll be informed replies may be delayed. Add a Busy note if needed.</p>
+              <p class="text-xs text-gray-500">40 mins ago</p>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Yesterday -->
+      <section>
+        <h2 class="text-lg font-semibold">Yesterday</h2>
+        <ul class="mt-1">
+          <li class="flex items-start gap-3 py-3">
+            <img src="/notavailable.svg" alt="not available" class="w-10 h-10 rounded-full object-cover" />
+            <div class="flex-1">
+              <p class="text-gray-900">RFID tap recorded. Status set to <span class="font-semibold text-red-600">Not Available</span>. You won’t receive new inquiries until you tap IN again.</p>
+              <p class="text-xs text-gray-500">Yesterday • 9:05 PM</p>
+            </div>
+          </li>
+          <hr class="border-gray-200" />
+          <li class="flex items-start gap-3 py-3">
+            <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
+            <div class="flex-1">
+              <p class="text-gray-900">“Prof, can I ask about Chapter 3 methodology?” Tap to view the full thread and reply.</p>
+              <p class="text-xs text-gray-500">Yesterday • 8:40 PM</p>
+            </div>
+          </li>
+          <hr class="border-gray-200" />
+          <li class="flex items-start gap-3 py-3">
+            <img src="/notavailable.svg" alt="not available" class="w-10 h-10 rounded-full object-cover" />
+            <div class="flex-1">
+              <p class="text-gray-900">You switched to <span class="font-semibold text-red-600">Not Available</span>. New inquiries will be paused until you tap IN.</p>
+              <p class="text-xs text-gray-500">Yesterday • 8:30 PM</p>
+            </div>
+          </li>
+        </ul>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import ProfessorTopNav from '@/components/ProfessorTopNav.vue'
-import { useNotifications } from '@/composables/useNotifications'
+import { ref, onMounted, onUnmounted } from 'vue'
 
-const selectedType = ref(null)
-const searchQuery = ref('')
-const { notifications, markAsRead } = useNotifications()
+const selected = ref('today')
+const menuOpen = ref(false)
+const menuRef = ref(null)
 
-const isToday = (date) => {
-  const d = new Date(date)
-  const now = new Date()
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value
+}
+function selectFilter(val) {
+  selected.value = val
+  menuOpen.value = false
 }
 
-const isWithinLastDays = (date, days) => {
-  const d = new Date(date).getTime()
-  const now = Date.now()
-  return now - d <= days * 24 * 60 * 60 * 1000
-}
-
-const filteredNotifications = computed(() => {
-  let list = notifications.value
-  if (selectedType.value === 'today') list = list.filter(n => n.createdAt && isToday(n.createdAt))
-  else if (selectedType.value === 'week') list = list.filter(n => n.createdAt && isWithinLastDays(n.createdAt, 7))
-
-  if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase()
-    list = list.filter(n =>
-      (n.name && n.name.toLowerCase().includes(q)) ||
-      (n.section && n.section.toLowerCase().includes(q)) ||
-      (n.title && n.title.toLowerCase().includes(q)) ||
-      (n.message && n.message.toLowerCase().includes(q))
-    )
+function onClickOutside(e) {
+  if (!menuRef.value) return
+  if (!menuRef.value.contains(e.target)) {
+    menuOpen.value = false
   }
-  return list
+}
+
+onMounted(() => {
+  document.addEventListener('click', onClickOutside)
 })
-
-const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
-
-const filterByType = (type) => {
-  selectedType.value = type
-}
-
-const markAllAsRead = () => {
-  notifications.value.forEach(n => { if (!n.read) markAsRead(n.id) })
-}
-
-const relativeTime = (date) => {
-  if (!date) return 'now'
-  const d = new Date(date).getTime()
-  const diff = Date.now() - d
-  if (diff < 60 * 1000) return 'now'
-  const mins = Math.floor(diff / 60000)
-  if (mins < 60) return `${mins}m`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h`
-  const days = Math.floor(hrs / 24)
-  return `${days}d`
-}
-
-const displayTitle = (n) => {
-  const base = n && (n.name || n.title) ? (n.name || n.title) : ''
-  const section = n && n.section ? ` from ${n.section}` : ''
-  return `${base}${section}`.trim()
-}
-
-const displayMessage = (n) => {
-  const defaultMsg = "Prof, nakaset kayo as Busy. Okay lang po bang mag-leave ng concern? When’s a good time?"
-  return n && n.message ? n.message : defaultMsg
-}
+onUnmounted(() => {
+  document.removeEventListener('click', onClickOutside)
+})
 </script>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active { transition: opacity .15s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>

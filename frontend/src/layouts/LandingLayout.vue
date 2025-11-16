@@ -16,7 +16,7 @@
             <router-link to="/about" class="text-gray-600 hover:text-gray-900">About</router-link>
             <a href="#contact" class="text-gray-600 hover:text-gray-900">Contact</a>
             <router-link to="/auth/login" class="text-gray-600 hover:text-gray-900">Login</router-link>
-            <router-link to="/register" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Get Started</router-link>
+            <router-link to="/auth/register" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Get Started</router-link>
           </div>
           
           <!-- Mobile menu button -->
@@ -37,8 +37,8 @@
           <a href="#features" class="block px-3 py-2 text-gray-600 hover:text-gray-900">Features</a>
           <router-link to="/about" class="block px-3 py-2 text-gray-600 hover:text-gray-900" @click="mobileMenuOpen = false">About</router-link>
           <a href="#contact" class="block px-3 py-2 text-gray-600 hover:text-gray-900">Contact</a>
-          <router-link to="/login" class="block px-3 py-2 text-gray-600 hover:text-gray-900" @click="mobileMenuOpen = false">Login</router-link>
-          <router-link to="/register" class="block px-3 py-2 bg-blue-600 text-white rounded-md" @click="mobileMenuOpen = false">Get Started</router-link>
+          <router-link to="/auth/login" class="block px-3 py-2 text-gray-600 hover:text-gray-900" @click="mobileMenuOpen = false">Login</router-link>
+          <router-link to="/auth/register" class="block px-3 py-2 bg-blue-600 text-white rounded-md" @click="mobileMenuOpen = false">Get Started</router-link>
         </div>
       </div>
     </nav>

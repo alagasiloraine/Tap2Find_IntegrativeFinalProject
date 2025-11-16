@@ -72,5 +72,20 @@ const prev = () => {
     router.push(steps[currentStep.value - 1].route)
   }
 }
+<<<<<<< HEAD
  
+=======
+const go = (i) => {
+  if (i >= 0 && i < steps.length) {
+    router.push(steps[i].route)
+  }
+}
+
+const dotClass = (index) => {
+  return [
+    'inline-block h-2 rounded-full transition-all duration-300',
+    currentStep.value === index ? 'bg-[#102A71] w-6' : 'bg-gray-200 w-2'
+  ].join(' ')
+}
+>>>>>>> origin/kim
 </script>

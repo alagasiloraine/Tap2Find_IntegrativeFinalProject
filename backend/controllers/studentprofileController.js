@@ -18,6 +18,13 @@ export const me = async (req, res) => {
     }
 
     const db = getDB('tap2find_db')
+    // require active session
+    const sessId = (req.headers['x-session-id'] || '').toString()
+    if (!sessId) return res.status(401).json({ success: false, message: 'Missing session' })
+    const sessions = db.collection('sessions')
+    const sessDoc = await sessions.findOne({ _id: new ObjectId(String(sessId)), userId: new ObjectId(String(decoded.id)) })
+    if (!sessDoc) return res.status(401).json({ success: false, message: 'Session expired' })
+
     const users = db.collection('users')
     const user = await users.findOne({ _id: new ObjectId(String(decoded.id)) })
     if (!user) return res.status(404).json({ success: false, message: 'User not found' })

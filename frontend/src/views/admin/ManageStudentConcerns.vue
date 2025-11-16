@@ -17,6 +17,7 @@
           <option value="pending">Pending</option>
           <option value="resolved">Resolved</option>
         </select>
+<<<<<<< HEAD
         <button class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700" @click="exportExcel">
           ⬇️ Export Excel
         </button>
@@ -25,6 +26,10 @@
         </button>
         <button class="inline-flex items-center px-3 py-2 border rounded-md" @click="printConcerns">
           Print
+=======
+        <button class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700" @click="exportCSV">
+          ⬇️ Export CSV
+>>>>>>> origin/kim
         </button>
       </div>
     </div>
@@ -52,7 +57,11 @@
         </div>
         <div class="mt-2">Showing {{ filteredConcerns.length }} of {{ concerns.length }} concerns</div>
       </div>
+<<<<<<< HEAD
       <div id="concerns-table-wrapper" class="overflow-x-auto">
+=======
+      <div class="overflow-x-auto">
+>>>>>>> origin/kim
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
@@ -137,8 +146,12 @@
 </template>
 
 <script>
+<<<<<<< HEAD
 import api from "@/utils/api.js";
 import * as XLSX from "xlsx";
+=======
+import api from "@/plugin/axios.js";
+>>>>>>> origin/kim
 
 export default {
   name: "ManageStudentConcerns",
@@ -287,6 +300,7 @@ export default {
       a.click();
       URL.revokeObjectURL(url);
     },
+<<<<<<< HEAD
     exportExcel() {
       const data = [
         ["Student Name","Professor Concerned","Concern Message","Status","Date Submitted"],
@@ -335,3 +349,8 @@ export default {
   },
 };
 </script>
+=======
+  },
+};
+</script>
+>>>>>>> origin/kim

@@ -84,11 +84,34 @@
         </div>
       </div>
 
+<<<<<<< HEAD
+=======
+      <!-- Total Concerns Logged -->
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
+                <span class="text-white text-lg">📝</span>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Total Concerns Logged</dt>
+                <dd class="text-lg font-medium text-gray-900">{{ stats.totalConcerns?.toLocaleString() || 0 }}</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+>>>>>>> origin/kim
 
     </div>
 
     <!-- Charts Section -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+<<<<<<< HEAD
+=======
       <div class="bg-white shadow rounded-lg p-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Professor Availability</h3>
         <div class="space-y-4">
@@ -115,6 +138,34 @@
         </div>
       </div>
 
+>>>>>>> origin/kim
+      <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Professor Availability</h3>
+        <div class="space-y-4">
+          <div class="w-full h-6 rounded-md overflow-hidden flex bg-gray-100">
+            <div class="h-full bg-green-500" :style="{ width: availability.availablePct + '%' }"></div>
+            <div class="h-full bg-yellow-500" :style="{ width: availability.busyPct + '%' }"></div>
+            <div class="h-full bg-red-500" :style="{ width: availability.notAvailablePct + '%' }"></div>
+          </div>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-md px-3 py-2">
+              <span class="text-sm text-green-700">Available</span>
+              <span class="text-sm font-semibold text-green-800">{{ availability.available }} ({{ availability.availablePct }}%)</span>
+            </div>
+            <div class="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-md px-3 py-2">
+              <span class="text-sm text-yellow-700">Busy</span>
+              <span class="text-sm font-semibold text-yellow-800">{{ availability.busy }} ({{ availability.busyPct }}%)</span>
+            </div>
+            <div class="flex items-center justify-between bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              <span class="text-sm text-red-700">Not Available</span>
+              <span class="text-sm font-semibold text-red-800">{{ availability.notAvailable }} ({{ availability.notAvailablePct }}%)</span>
+            </div>
+          </div>
+          <div class="text-xs text-gray-500">Total professors: {{ availability.total }}</div>
+        </div>
+      </div>
+<<<<<<< HEAD
+
       <!-- Daily Student Concerns (Last 14 days) -->
       <div class="bg-white shadow rounded-lg p-6">
         <h3 class="text-lg font-medium text-gray-900 mb-1">Daily Student Concerns (Last 14 days)</h3>
@@ -129,13 +180,19 @@
         </div>
         <div class="mt-2 text-xs text-gray-500">Max per day: {{ dailyChart.max }}</div>
       </div>
+=======
+>>>>>>> origin/kim
     </div>
 
 
   </div>
 </template>
 <script>
+<<<<<<< HEAD
 import api from "@/utils/api.js";
+=======
+import api from "@/plugin/axios.js";
+>>>>>>> origin/kim
 
 export default {
   name: "AdminDashboard",
@@ -144,13 +201,19 @@ export default {
       stats: {},
       users: [],
       loading: true,
+<<<<<<< HEAD
       concerns: [],
+=======
+>>>>>>> origin/kim
     };
   },
   mounted() {
     this.fetchDashboard();
     this.fetchUsers();
+<<<<<<< HEAD
     this.fetchConcerns();
+=======
+>>>>>>> origin/kim
   },
   computed: {
     availability() {
@@ -170,6 +233,7 @@ export default {
         notAvailablePct: pct(notAvailable),
       };
     },
+<<<<<<< HEAD
     dailyChart() {
       const days = 14;
       const today = new Date();
@@ -194,6 +258,8 @@ export default {
       const total = points.reduce((s, p) => s + p.count, 0);
       return { points, max, total };
     },
+=======
+>>>>>>> origin/kim
   },
   methods: {
 async fetchDashboard() {
@@ -207,6 +273,7 @@ async fetchUsers() {
   } catch (error) {
     console.error("Error fetching users:", error);
   }
+<<<<<<< HEAD
 },
 async fetchConcerns() {
   try {
@@ -215,9 +282,15 @@ async fetchConcerns() {
   } catch (e) {
     console.error('Error fetching concerns:', e);
   }
+=======
+>>>>>>> origin/kim
 }
 
   }
 };
 </script>
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/kim

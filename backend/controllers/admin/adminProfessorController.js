@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { getDB } from "../../db.js";
 import { ObjectId, GridFSBucket } from "mongodb";
 import { Readable } from "stream";
@@ -274,6 +275,9 @@ const formatTime = (hour) => {
 };
 
 // Get latest schedule metadata for a professor (keep for file-based schedules)
+=======
+// Get latest schedule metadata for a professor
+>>>>>>> origin/kim
 export const getProfessorScheduleMeta = async (req, res) => {
   try {
     const { id } = req.params;
@@ -303,6 +307,13 @@ export const getProfessorScheduleMeta = async (req, res) => {
   }
 };
 
+<<<<<<< HEAD
+=======
+import { getDB } from "../../db.js";
+import { ObjectId, GridFSBucket } from "mongodb";
+import { Readable } from "stream";
+
+>>>>>>> origin/kim
 // Get professors only
 export const getProfessors = async (req, res) => {
   try {
@@ -325,7 +336,11 @@ export const getProfessors = async (req, res) => {
   }
 };
 
+<<<<<<< HEAD
 // Upload a schedule file for a professor to GridFS (keep for file-based schedules)
+=======
+// Upload a schedule file for a professor to GridFS
+>>>>>>> origin/kim
 export const uploadProfessorSchedule = async (req, res) => {
   try {
     const { id } = req.params;
@@ -398,7 +413,11 @@ export const uploadProfessorSchedule = async (req, res) => {
   }
 };
 
+<<<<<<< HEAD
 // Download latest (or specific) schedule for a professor from GridFS (keep for file-based schedules)
+=======
+// Download latest (or specific) schedule for a professor from GridFS
+>>>>>>> origin/kim
 export const downloadProfessorSchedule = async (req, res) => {
   try {
     const { id } = req.params;
@@ -434,6 +453,7 @@ export const downloadProfessorSchedule = async (req, res) => {
     console.error("Error downloading schedule:", err);
     return res.status(500).json({ success: false, message: "Failed to download schedule" });
   }
+<<<<<<< HEAD
 };
 
 // Get professor schedule with both manual and file-based data
@@ -473,4 +493,6 @@ export const getProfessorFullSchedule = async (req, res) => {
     console.error("Error getting full schedule:", err);
     return res.status(500).json({ success: false, message: "Failed to load schedule data" });
   }
+=======
+>>>>>>> origin/kim
 };

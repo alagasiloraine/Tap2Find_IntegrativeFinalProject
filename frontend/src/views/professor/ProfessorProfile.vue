@@ -1,6 +1,7 @@
 <template>
   <div class="bg-white min-h-screen pb-20 md:pb-8 p-4 md:p-4">
     <ProfessorTopNav />
+<<<<<<< HEAD
 
     <div class="px-4 md:px-6 pt-8">
       <div class="mb-4">
@@ -415,6 +416,15 @@ const goBack = () => {
 onMounted(() => {
   fetchProfile()
 })
+=======
+    <div class="px-4 md:px-6 py-4 min-h-0">
+    </div>
+  </div>
+ </template>
+
+<script setup>
+import ProfessorTopNav from '@/components/ProfessorTopNav.vue'
+>>>>>>> origin/kim
 </script>
 
 <style scoped>

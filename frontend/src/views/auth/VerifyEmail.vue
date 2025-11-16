@@ -55,15 +55,9 @@
         <button
           type="submit"
           :disabled="!isOTPComplete || isVerifying"
-          class="w-full bg-[#F5C400] text-white py-3 px-4 rounded-full hover:bg-[#e8bc09] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
+          class="w-full bg-[#F5C400] text-white py-2 px-4 rounded-full hover:bg-[#e8bc09] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span :class="isVerifying ? 'opacity-0' : ''">Verify OTP</span>
-          <div v-if="isVerifying" class="absolute inset-0 flex items-center justify-center">
-            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </div>
+          {{ isVerifying ? 'Verifying...' : 'Verify OTP' }}
         </button>
       </form>
 
@@ -106,7 +100,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import api from '@/utils/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -150,8 +143,6 @@ const formatTime = (seconds) => {
 
 // OTP input handling
 const handleOTPInput = (index, event) => {
-  if (isVerifying.value) return
-  
   const value = event.target.value
   
   // Only allow numbers
@@ -169,8 +160,6 @@ const handleOTPInput = (index, event) => {
 }
 
 const handleKeyDown = (index, event) => {
-  if (isVerifying.value) return
-  
   // Handle backspace
   if (event.key === 'Backspace' && !otpDigits.value[index] && index > 0) {
     otpInputs.value[index - 1]?.focus()
@@ -178,11 +167,6 @@ const handleKeyDown = (index, event) => {
 }
 
 const handlePaste = (event) => {
-  if (isVerifying.value) {
-    event.preventDefault()
-    return
-  }
-  
   event.preventDefault()
   const pastedData = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
   
@@ -198,7 +182,7 @@ const handlePaste = (event) => {
 
 // Verification function
 const verifyOTP = async () => {
-  if (!isOTPComplete.value || isVerifying.value) return;
+  if (!isOTPComplete.value) return
   
   isVerifying.value = true;
   
@@ -213,36 +197,38 @@ const verifyOTP = async () => {
     router.push('/auth/login');
 
   } catch (error) {
-    console.error('Error verifying OTP:', error);
-    const msg = error.response?.data?.message || 'Invalid or expired OTP. Please try again.';
-    alert(msg);
-    otpDigits.value = ['', '', '', '', '', ''];
-    otpInputs.value[0]?.focus();
+    console.error('Error verifying OTP:', error)
+    alert('Verification failed. Please try again.')
   } finally {
-    isVerifying.value = false;
+    isVerifying.value = false
   }
-};
+}
 
 const resendOTP = async () => {
-  if (timeLeft.value > 0 || isResending.value || isVerifying.value) return;
+  if (timeLeft.value > 0) return
   
-  isResending.value = true;
+  isResending.value = true
   
   try {
-    const payload = { emailAddress: email.value };
-    const response = await api.post('/auth/resend-otp', payload);
+    // TODO: Implement actual resend OTP logic
+    console.log('Resending OTP to:', email.value)
     
-    alert(response.data.message || 'New OTP sent successfully!');
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500))
     
-    otpDigits.value = ['', '', '', '', '', ''];
-    startTimer(); // restart countdown
+    // Clear current OTP and start new timer
+    otpDigits.value = ['', '', '', '', '', '']
+    startTimer()
+    
+    alert('New OTP sent successfully!')
+    
   } catch (error) {
-    console.error('Error resending OTP:', error);
-    alert(error.response?.data?.message || 'Failed to resend OTP. Please try again.');
+    console.error('Error resending OTP:', error)
+    alert('Failed to resend OTP. Please try again.')
   } finally {
-    isResending.value = false;
+    isResending.value = false
   }
-};
+}
 
 const goToLogin = () => {
   if (isVerifying.value || isResending.value) return

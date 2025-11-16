@@ -19,12 +19,18 @@
 </template>
 
 <script setup>
+<<<<<<< HEAD
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+=======
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+>>>>>>> origin/kim
 import StudentSidebar from '@/views/student/StudentSidebar.vue'
 import StudentBottomNav from '@/views/student/StudentBottomNav.vue'
 
 const route = useRoute()
+<<<<<<< HEAD
 
 
 const router = useRouter()
@@ -82,4 +88,6 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
+=======
+>>>>>>> origin/kim
 </script>

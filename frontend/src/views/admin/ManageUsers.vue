@@ -2,6 +2,15 @@
   <div class="p-6">
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-semibold text-gray-900">Manage Student Accounts</h1>
+<<<<<<< HEAD
+=======
+      <button
+        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        @click="openAddModal"
+      >
+        <span class="mr-2">➕</span> Add New Student
+      </button>
+>>>>>>> origin/kim
     </div>
 
     <div class="bg-white shadow rounded-lg overflow-hidden">
@@ -33,14 +42,21 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
+<<<<<<< HEAD
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Id</th>
+=======
+>>>>>>> origin/kim
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
+<<<<<<< HEAD
             <tr v-for="u in filteredStudents" :key="u._id" class="hover:bg-gray-50 cursor-pointer" @click="openViewModal(u)">
+=======
+            <tr v-for="u in filteredStudents" :key="u._id">
+>>>>>>> origin/kim
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {{ (u.firstName || '') + ' ' + (u.lastName || '') }}
               </td>
@@ -48,9 +64,12 @@
                 {{ u.section || '-' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+<<<<<<< HEAD
                 {{ u.idNumber || '-' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+=======
+>>>>>>> origin/kim
                 {{ u.emailAddress }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -64,20 +83,32 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
                 <button
                   class="inline-flex items-center px-3 py-1.5 rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 mr-2"
+<<<<<<< HEAD
                   @click.stop="openEditModal(u)"
+=======
+                  @click="openEditModal(u)"
+>>>>>>> origin/kim
                 >
                   ✏️ Edit
                 </button>
                 <button
                   class="inline-flex items-center px-3 py-1.5 rounded-md text-red-700 bg-red-50 hover:bg-red-100"
+<<<<<<< HEAD
                   @click.stop="confirmDelete(u)"
+=======
+                  @click="confirmDelete(u)"
+>>>>>>> origin/kim
                 >
                   🗑️ Delete
                 </button>
               </td>
             </tr>
             <tr v-if="filteredStudents.length === 0">
+<<<<<<< HEAD
               <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">No students found.</td>
+=======
+              <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">No students found.</td>
+>>>>>>> origin/kim
             </tr>
           </tbody>
         </table>
@@ -92,7 +123,11 @@
       <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
         <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h3 class="text-lg font-medium text-gray-900">
+<<<<<<< HEAD
             {{ editTarget ? 'Edit Student' : 'Edit Student' }}
+=======
+            {{ editTarget ? 'Edit Student' : 'Add New Student' }}
+>>>>>>> origin/kim
           </h3>
           <button class="text-gray-400 hover:text-gray-600" @click="closeModal">✖</button>
         </div>
@@ -100,16 +135,25 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-600 mb-1">First Name</label>
+<<<<<<< HEAD
               <input v-model="form.firstName" type="text" required class="w-full border rounded px-3 py-2 text-sm" @input="form.firstName = toTitleCase(form.firstName)" />
             </div>
             <div>
               <label class="block text-xs text-gray-600 mb-1">Last Name</label>
               <input v-model="form.lastName" type="text" required class="w-full border rounded px-3 py-2 text-sm" @input="form.lastName = toTitleCase(form.lastName)" />
+=======
+              <input v-model="form.firstName" type="text" required class="w-full border rounded px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Last Name</label>
+              <input v-model="form.lastName" type="text" required class="w-full border rounded px-3 py-2 text-sm" />
+>>>>>>> origin/kim
             </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-600 mb-1">Section</label>
+<<<<<<< HEAD
               <input v-model="form.section" type="text" class="w-full border rounded px-3 py-2 text-sm" @input="form.section = toTitleCase(form.section)" />
             </div>
             <div>
@@ -124,10 +168,18 @@
                   @input="onIdTailInput"
                 />
               </div>
+=======
+              <input v-model="form.section" type="text" class="w-full border rounded px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">ID Number</label>
+              <input v-model="form.idNumber" type="text" class="w-full border rounded px-3 py-2 text-sm" />
+>>>>>>> origin/kim
             </div>
           </div>
           <div>
             <label class="block text-xs text-gray-600 mb-1">Email</label>
+<<<<<<< HEAD
             <input v-model="form.emailAddress" type="email" required class="w-full border rounded px-3 py-2 text-sm" @input="form.emailAddress = (form.emailAddress || '').toLowerCase()" />
             <div v-if="errors.emailAddress" class="text-sm text-red-600">{{ errors.emailAddress }}</div>
           </div>
@@ -163,17 +215,29 @@
           <div>
             <label class="block text-xs text-gray-600 mb-1">Age</label>
             <input :value="computedAge" type="number" class="w-full border rounded px-3 py-2 text-sm bg-gray-50" disabled />
+=======
+            <input v-model="form.emailAddress" type="email" required class="w-full border rounded px-3 py-2 text-sm" />
+          </div>
+          <div v-if="!editTarget">
+            <label class="block text-xs text-gray-600 mb-1">Password</label>
+            <input v-model="form.password" type="password" required class="w-full border rounded px-3 py-2 text-sm" />
+>>>>>>> origin/kim
           </div>
           <div class="pt-2 flex items-center justify-end gap-3">
             <button type="button" class="px-4 py-2 rounded border" @click="closeModal">Cancel</button>
             <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+<<<<<<< HEAD
               Save Changes
+=======
+              {{ editTarget ? 'Save Changes' : 'Create Student' }}
+>>>>>>> origin/kim
             </button>
           </div>
         </form>
       </div>
     </div>
 
+<<<<<<< HEAD
     <!-- View Student Modal -->
     <div v-if="showViewModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
       <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
@@ -243,6 +307,8 @@
       </div>
     </div>
 
+=======
+>>>>>>> origin/kim
     <!-- Delete Confirmation -->
     <div
       v-if="deleteTarget"
@@ -309,7 +375,11 @@
 </template>
 
 <script>
+<<<<<<< HEAD
 import api from "@/utils/api.js";
+=======
+import api from "@/plugin/axios.js";
+>>>>>>> origin/kim
 
 export default {
   name: "ManageUsers",
@@ -322,8 +392,11 @@ export default {
       showModal: false,
       editTarget: null,
       deleteTarget: null,
+<<<<<<< HEAD
       showViewModal: false,
       viewTarget: null,
+=======
+>>>>>>> origin/kim
       showOtpModal: false,
       otpEmail: "",
       otpCode: "",
@@ -336,6 +409,7 @@ export default {
         firstName: "",
         lastName: "",
         section: "",
+<<<<<<< HEAD
         idNumber: "MCC",
         emailAddress: "",
         contactNumber: "",
@@ -370,6 +444,15 @@ export default {
       if (m < 0 || (m === 0 && today.getDate() < d.getDate())) a--;
       return a;
     },
+=======
+        idNumber: "",
+        emailAddress: "",
+        password: "",
+      },
+    };
+  },
+  computed: {
+>>>>>>> origin/kim
     filteredStudents() {
       const q = this.query.trim().toLowerCase();
       let list = this.students.filter(
@@ -389,6 +472,7 @@ export default {
     this.fetchStudents();
   },
   methods: {
+<<<<<<< HEAD
     toTitleCase(s) {
       if (!s) return "";
       return String(s).replace(/\b\w+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
@@ -413,6 +497,8 @@ export default {
       }
       return ok;
     },
+=======
+>>>>>>> origin/kim
     async fetchStudents() {
       try {
         this.loading = true;
@@ -425,6 +511,7 @@ export default {
         this.loading = false;
       }
     },
+<<<<<<< HEAD
     openEditModal(u) {
       this.editTarget = u;
       this.form = {
@@ -472,13 +559,75 @@ export default {
             program: 'BSIT',
             yearLevel: (this.form.yearLevel || '').trim(),
             birthdate: this.form.birthdate || "",
+=======
+    openAddModal() {
+      this.editTarget = null;
+      this.form = {
+        firstName: "",
+        lastName: "",
+        section: "",
+        idNumber: "",
+        emailAddress: "",
+        password: "",
+      };
+      this.showModal = true;
+    },
+    openEditModal(u) {
+      this.editTarget = u;
+      this.form = {
+        firstName: u.firstName || "",
+        lastName: u.lastName || "",
+        section: u.section || "",
+        idNumber: u.idNumber || "",
+        emailAddress: u.emailAddress || "",
+        password: "", // not editable here
+      };
+      this.showModal = true;
+    },
+    closeModal() {
+      this.showModal = false;
+    },
+    async submitForm() {
+      try {
+        if (this.editTarget) {
+          const payload = {
+            firstName: this.form.firstName,
+            lastName: this.form.lastName,
+            section: this.form.section,
+            idNumber: this.form.idNumber,
+            emailAddress: this.form.emailAddress,
+>>>>>>> origin/kim
           };
           await api.patch(`/admin/users/${this.editTarget._id}`, payload);
           this.showModal = false;
           await this.fetchStudents();
           return;
         }
+<<<<<<< HEAD
         // Adding new students is disabled from Admin Manage Users.
+=======
+        // Create student via existing register endpoint
+        const payload = {
+          role: "student",
+          emailAddress: this.form.emailAddress,
+          password: this.form.password,
+          firstName: this.form.firstName,
+          lastName: this.form.lastName,
+          idNumber: this.form.idNumber,
+          contactNumber: "", // optional
+          facultyPosition: "", // not used for students
+          section: this.form.section, // stored if your schema supports it
+        };
+        await api.post("/auth/register", payload);
+        this.showModal = false;
+        // Open OTP modal for verification
+        this.otpEmail = this.form.emailAddress;
+        this.otpCode = "";
+        this.otpError = "";
+        this.showOtpModal = true;
+        // Start resend cooldown
+        this.startResendTimer(30);
+>>>>>>> origin/kim
       } catch (e) {
         console.error("Failed to submit form", e);
         alert("Failed to submit form");

@@ -36,7 +36,11 @@
 
     <!-- Actions -->
     <div class="mb-4 flex items-center gap-3">
+<<<<<<< HEAD
       <button class="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700" @click="exportAllExcel">Export Excel</button>
+=======
+      <button class="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700" @click="exportAllCSV">Export CSV</button>
+>>>>>>> origin/kim
       <button class="px-4 py-2 rounded bg-gray-800 text-white hover:bg-gray-900" @click="printPDF">Download PDF</button>
     </div>
 
@@ -81,6 +85,7 @@
       <div class="bg-white shadow rounded-lg overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 class="text-lg font-semibold text-gray-900">Student Concerns Summary</h2>
+<<<<<<< HEAD
           <div class="flex items-center gap-2">
             <button class="px-3 py-1.5 rounded bg-gray-800 text-white hover:bg-gray-900 text-xs" @click="exportConcernsPDF">Export PDF</button>
             <button class="px-3 py-1.5 rounded border text-xs" @click="printConcerns">Print</button>
@@ -88,6 +93,12 @@
         </div>
         <div class="p-6">
           <div id="concerns-section" class="overflow-x-auto">
+=======
+          <span class="text-xs text-gray-500">Source: Admin Concerns</span>
+        </div>
+        <div class="p-6">
+          <div class="overflow-x-auto">
+>>>>>>> origin/kim
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
@@ -95,8 +106,11 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professor</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+<<<<<<< HEAD
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+=======
+>>>>>>> origin/kim
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
@@ -106,12 +120,19 @@
                   <td class="px-6 py-3 text-sm text-gray-500">{{ displayStudent(c) }}</td>
                   <td class="px-6 py-3 text-sm text-gray-500">{{ displayProfessor(c) }}</td>
                   <td class="px-6 py-3 text-sm text-gray-500">{{ (c.type || c.category || 'General') }}</td>
+<<<<<<< HEAD
                   <td class="px-6 py-3 text-sm text-gray-500">{{ (c.subject || c.title || '-') }}</td>
                   <td class="px-6 py-3 text-sm text-gray-500">{{ (c.message || c.description || c.details || '-') }}</td>
                   <td class="px-6 py-3 text-sm">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium"
                           :class="badgeClass(normalizeConcernStatusRaw(c.status))">
                       {{ concernStatusLabel(c.status) }}
+=======
+                  <td class="px-6 py-3 text-sm">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium"
+                          :class="badgeClass(c.status)">
+                      {{ (c.status || 'pending') | capitalize }}
+>>>>>>> origin/kim
                     </span>
                   </td>
                 </tr>
@@ -145,6 +166,7 @@
               <div class="text-2xl font-semibold">{{ availability.notAvailable }}</div>
             </div>
           </div>
+<<<<<<< HEAD
 
           <div class="mt-6 overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -170,6 +192,8 @@
               </tbody>
             </table>
           </div>
+=======
+>>>>>>> origin/kim
         </div>
       </div>
     </div>
@@ -177,8 +201,12 @@
 </template>
 
 <script>
+<<<<<<< HEAD
 import api from "@/utils/api.js";
 import * as XLSX from "xlsx";
+=======
+import api from "@/plugin/axios.js";
+>>>>>>> origin/kim
 
 export default {
   name: "GenerateReports",
@@ -233,6 +261,7 @@ export default {
         return true;
       });
     },
+<<<<<<< HEAD
     professorsWithStatus() {
       return (this.professors || []).map(p => ({
         id: p._id,
@@ -240,6 +269,8 @@ export default {
         status: (p.status || 'Not Available')
       }));
     },
+=======
+>>>>>>> origin/kim
   },
   filters: {
     capitalize(v) {
@@ -279,7 +310,11 @@ export default {
     async fetchAvailability() {
       try {
         const res = await api.get('/admin/dashboard');
+<<<<<<< HEAD
         const a = res.data?.stats?.professorAvailability || {};
+=======
+        const a = res.data?.professorAvailability || {};
+>>>>>>> origin/kim
         this.availability = {
           available: a.available || 0,
           busy: a.busy || 0,
@@ -329,6 +364,7 @@ export default {
       if (s === 'archived') return 'bg-gray-100 text-gray-800';
       return 'bg-yellow-100 text-yellow-800';
     },
+<<<<<<< HEAD
     availabilityBadge(status) {
       const s = (status || '').toLowerCase().trim();
       if (s === 'available') return 'bg-green-100 text-green-800';
@@ -346,12 +382,15 @@ export default {
       const raw = this.normalizeConcernStatusRaw(status);
       return raw.charAt(0).toUpperCase() + raw.slice(1);
     },
+=======
+>>>>>>> origin/kim
     formatDate(d) {
       const date = d instanceof Date ? d : new Date(d);
       if (isNaN(date.getTime())) return '-';
       return date.toLocaleString();
     },
     // Export helpers
+<<<<<<< HEAD
     exportAllExcel() {
       // Attendance sheet
       const attendanceData = [
@@ -363,10 +402,27 @@ export default {
       const concernsData = [
         ['Date','Student','Professor','Type','Subject','Message','Status'],
         ...this.concernsFiltered.map(c => [
+=======
+    exportAllCSV() {
+      const sections = [];
+      // Attendance
+      sections.push(['Attendance Logs']);
+      sections.push(['Date/Time','Professor','RFID ID','Action']);
+      for (const r of this.attendancePlaceholder) {
+        sections.push([r.time, r.professor, r.rfidId, r.action]);
+      }
+      sections.push([]);
+      // Concerns
+      sections.push(['Student Concerns']);
+      sections.push(['Date','Student','Professor','Type','Status']);
+      for (const c of this.concernsFiltered) {
+        sections.push([
+>>>>>>> origin/kim
           this.formatDate(c.createdAt || c.timestamp || c.date),
           this.displayStudent(c),
           this.displayProfessor(c),
           (c.type || c.category || 'General'),
+<<<<<<< HEAD
           (c.subject || c.title || '-'),
           (c.message || c.description || c.details || '-'),
           this.concernStatusLabel(c.status)
@@ -402,6 +458,28 @@ export default {
       XLSX.writeFile(wb, filename);
     },
     printPDF() {
+=======
+          (c.status || 'pending')
+        ]);
+      }
+      sections.push([]);
+      // Availability
+      sections.push(['Availability Statistics']);
+      sections.push(['Available','Busy','Not Available']);
+      sections.push([this.availability.available, this.availability.busy, this.availability.notAvailable]);
+
+      const csv = sections.map((r)=> r.map((v)=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reports_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+    printPDF() {
+      // Basic print of the preview area; users can "Save as PDF"
+>>>>>>> origin/kim
       const printContents = document.getElementById('report-preview').innerHTML;
       const w = window.open('', '', 'height=800,width=1000');
       w.document.write('<html><head><title>Reports</title>');
@@ -414,6 +492,7 @@ export default {
       w.print();
       w.close();
     },
+<<<<<<< HEAD
     printConcerns() {
       const el = document.getElementById('concerns-section');
       if (!el) return;
@@ -445,3 +524,8 @@ export default {
   },
 };
 </script>
+=======
+  },
+};
+</script>
+>>>>>>> origin/kim

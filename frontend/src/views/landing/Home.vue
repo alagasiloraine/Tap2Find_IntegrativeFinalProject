@@ -1,4 +1,5 @@
 <template>
+<<<<<<< HEAD
   <div class="home">
     <!-- Hero Section -->
     <section class="bg-gradient-to-br from-blue-50 to-indigo-100 py-20">
@@ -71,4 +72,6 @@
       </div>
     </section>
   </div>
+=======
+>>>>>>> origin/kim
 </template>

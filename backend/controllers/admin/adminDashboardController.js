@@ -80,4 +80,8 @@ export const getUsers = async (req, res) => {
     console.error("Error fetching users:", err);
     return res.status(500).json({ success: false, message: "Failed to fetch users" });
   }
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> origin/kim

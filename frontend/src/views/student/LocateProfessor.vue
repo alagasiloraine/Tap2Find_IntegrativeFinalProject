@@ -77,7 +77,11 @@
           </div>
         </div>
       </div>
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> origin/kim
       <!-- Applied Filters -->
       <div v-if="selectedYearLevel !== '' || selectedStatus !== null" class="mb-6">
         <div class="flex flex-wrap gap-2">
@@ -102,8 +106,17 @@
           v-for="professor in filteredProfessors"
           :key="professor.id"
           :data-professor-id="professor.id"
+<<<<<<< HEAD
           class="bg-gray-50 rounded-lg p-4 transition-shadow"
         >
+=======
+          class="bg-gray-50 rounded-lg p-4 transition-shadow relative"
+        >
+          <div class="absolute top-6 right-4 text-[11px] text-gray-500 flex items-center gap-1">
+            <iconify-icon icon="mingcute:time-line" class="text-base" />
+            <span>Updated {{ formatRelativeTime(professor.statusUpdatedAt) }}</span>
+          </div>
+>>>>>>> origin/kim
           <div class="flex items-center gap-4">
             <!-- Professor Avatar -->
             <div class="flex-shrink-0 flex items-center justify-center">
@@ -118,7 +131,11 @@
               <h3 class="font-medium text-gray-900 text-xl truncate">{{ professor.name }}</h3>
               
               <!-- Course/Department -->
+<<<<<<< HEAD
               <p class="text-sm text-gray-600 mb-2 truncate">{{ professor.department }}</p>
+=======
+              <p class="text-sm text-gray-600 mb-2 truncate">{{ professor.position }}</p>
+>>>>>>> origin/kim
               
               <!-- Status Badge -->
               <span class="px-2 py-1 rounded-lg text-xs font-medium w-fit inline-flex items-center gap-1"
@@ -132,7 +149,11 @@
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center text-sm text-gray-400">
                   <iconify-icon icon="lucide:map-pin" class="h-3 w-3 mr-1 flex-shrink-0" />
+<<<<<<< HEAD
                   <span class="truncate">{{ professor.office }}</span>
+=======
+                  <span class="truncate">{{ professor.inFaculty ? 'Faculty' : 'Not in Faculty' }}</span>
+>>>>>>> origin/kim
                 </div>
                 
                 <button
@@ -149,6 +170,11 @@
 
               </div>
             </div>
+<<<<<<< HEAD
+=======
+            </div>
+            </div>
+>>>>>>> origin/kim
           </div>
         </div>
       </div>
@@ -276,6 +302,7 @@
           leave-to-class="opacity-0 scale-95 transform translate-y-4"
         >
           <div class="bg-white rounded-xl w-full max-w-md">
+<<<<<<< HEAD
             <!-- Modal Header -->
             <div class="bg-white border-b border-gray-200 rounded-t-xl px-6 py-4 flex items-center justify-between">
               <h3 class="text-xl font-bold text-gray-900">Send Inquiry</h3>
@@ -310,8 +337,23 @@
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 ></textarea>
               </div>
+=======
+        <!-- Modal Header -->
+        <div class="bg-white border-b border-gray-200 rounded-t-xl px-6 py-4 flex items-center justify-between">
+          <h3 class="text-xl font-bold text-gray-900">Send Inquiry</h3>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 py-4">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">To:</label>
+            <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg">
+              <p class="font-medium text-gray-900">{{ selectedProfessor?.name }}</p>
+              <p class="text-sm text-gray-600">{{ selectedProfessor?.position }}</p>
+>>>>>>> origin/kim
             </div>
 
+<<<<<<< HEAD
             <!-- Modal Footer -->
             <div class="px-6 py-4  flex justify-end space-x-3">
               <button
@@ -328,6 +370,37 @@
                 Send Inquiry
               </button>
             </div>
+=======
+
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Message:</label>
+            <textarea
+              v-model="inquiryForm.message"
+              rows="5"
+              placeholder="Type your message here..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4  flex justify-end space-x-3">
+          <button
+            @click="closeInquiryModal"
+            class="bg-gray-50 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            @click="submitInquiry"
+            class="px-4 py-2 bg-[#102A71] text-white rounded-lg hover:bg-[#102A71]/90 transition-colors flex items-center"
+          >
+            <iconify-icon icon="lucide:send" class="mr-2 h-4 w-4" />
+            Send Inquiry
+          </button>
+      </div>
+>>>>>>> origin/kim
           </div>
         </transition>
       </div>
@@ -360,8 +433,11 @@
 
     
 
+<<<<<<< HEAD
     </div>
   </div>
+=======
+>>>>>>> origin/kim
 </template>
 
 <script setup>
@@ -404,7 +480,60 @@ const statusOptions = ref([
   { value: 'busy', label: 'Busy' }
 ])
 
+<<<<<<< HEAD
 const professors = ref([])
+=======
+const professors = ref([
+  {
+    id: 1,
+    name: 'Prof. Pauline Alvarez',
+    email: 'paulina.alvarez@university.edu',
+    department: 'Computer Science',
+    office: 'IT Room 202',
+    position: 'Professor',
+    inFaculty: true,
+    yearLevel: 'first-year',
+    available: 'available',
+    statusUpdatedAt: Date.now() - 5 * 60 * 1000
+  },
+  {
+    id: 2,
+    name: 'Dr. Jane Doe',
+    email: 'jane.doe@university.edu',
+    department: 'Mathematics',
+    office: 'Building B, Room 205',
+    position: 'Associate Professor',
+    inFaculty: true,
+    yearLevel: 'second-year',
+    available: 'available',
+    statusUpdatedAt: Date.now() - 35 * 60 * 1000
+  },
+  {
+    id: 3,
+    name: 'Dr. Robert Johnson',
+    email: 'robert.johnson@university.edu',
+    department: 'Physics',
+    office: 'Building C, Room 310',
+    position: 'Lecturer',
+    inFaculty: false,
+    yearLevel: 'third-year',
+    available: 'busy',
+    statusUpdatedAt: Date.now() - 2 * 60 * 60 * 1000
+  },
+  {
+    id: 4,
+    name: 'Dr. Emily Williams',
+    email: 'emily.williams@university.edu',
+    department: 'Chemistry',
+    office: 'Building D, Room 415',
+    position: 'Assistant Professor',
+    inFaculty: false,
+    yearLevel: 'fourth-year',
+    available: 'not-available',
+    statusUpdatedAt: Date.now() - 26 * 60 * 60 * 1000
+  }
+])
+>>>>>>> origin/kim
 
 const selectedYearLevelText = computed(() => {
   const option = yearLevelOptions.value.find(opt => opt.value === selectedYearLevel.value)
@@ -486,7 +615,14 @@ const contactProfessor = (professor) => {
   console.log("🧠 Selected professor:", professor)
   selectedProfessor.value = professor
   showInquiryModal.value = true
+<<<<<<< HEAD
   inquiryForm.value = { subject: '', message: '' }
+=======
+  inquiryForm.value = {
+    subject: professor.position,
+    message: ''
+  }
+>>>>>>> origin/kim
 }
 
 const closeInquiryModal = () => {
@@ -618,6 +754,10 @@ const getStatusBadgeClass = (professor) => {
   }
   return 'bg-gray-100 text-gray-700'
 }
+<<<<<<< HEAD
+=======
+</script>
+>>>>>>> origin/kim
 
 const getStatusDotClass = (professor) => {
   if (professor.isWeekend) {

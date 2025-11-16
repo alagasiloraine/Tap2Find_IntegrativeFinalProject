@@ -15,7 +15,10 @@ const professorRoutes = [
   {
     path: '/professor',
     component: ProfessorLayout,
+<<<<<<< HEAD
     meta: { requiresAuth: true, role: 'professor' },
+=======
+>>>>>>> origin/kim
     children: [
       {
         path: '',

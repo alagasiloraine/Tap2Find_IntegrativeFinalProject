@@ -124,6 +124,7 @@ import cors from "cors";
 import { createServer } from "http"; // Add this import
 import { connectDB } from "./db.js";
 import authRoutes from "./routes/authRoutes.js"; 
+<<<<<<< HEAD
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import professorRoutes from "./routes/professorRoutes.js";
 import inquiryRoutes from "./routes/inquiryRoutes.js";
@@ -134,6 +135,9 @@ import userSettingsRoutes from "./routes/userSettingsRoutes.js";
 import rfidWebSocketServer from "./websocket.js"; // Add this import
 
 import { updateSessionActivity } from './middleware/updateSessionActivity.js';
+=======
+import adminRoutes from "./routes/adminRoutes.js"
+>>>>>>> origin/kim
 
 dotenv.config();
 
@@ -148,7 +152,12 @@ const server = createServer(app);
 
 await connectDB();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 // Allow larger JSON/urlencoded bodies (base64 adds ~33% overhead). 10MB images ≈ 13.3MB base64.
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
@@ -219,6 +228,7 @@ fs.readdir(partialsDir, (err, files) => {
 app.set('rfidWebSocketServer', rfidWebSocketServer);
 
 app.use("/api/auth", authRoutes); 
+<<<<<<< HEAD
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/professors", professorRoutes);
 app.use("/api/inquiries", inquiryRoutes);
@@ -243,6 +253,9 @@ app.get('/api/websocket-status', (req, res) => {
   });
 });
 
+=======
+app.use("/api/admin", adminRoutes);
+>>>>>>> origin/kim
 export default app;
 
 if (!process.env.ELECTRON) {

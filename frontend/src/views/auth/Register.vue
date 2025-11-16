@@ -276,7 +276,10 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { Mail } from 'lucide-vue-next'
+
+const router = useRouter()
 
 const form = ref({
   firstName: '',
@@ -298,8 +301,55 @@ const isEmailFocused = ref(false)
 const isPasswordFocused = ref(false)
 const isConfirmPasswordFocused = ref(false)
 
-const handleRegister = () => {
+const loading = ref(false)
+
+const handleRegister = async () => {
   console.log('Register attempt:', form.value)
-  // TODO: Implement actual registration logic
+  if (!form.value.firstName || !form.value.lastName || !form.value.idNumber || !form.value.contactNumber || !form.value.email || !form.value.password || !form.value.confirmPassword) {
+    alert('Please fill out all required fields')
+    return
+  }
+  if (form.value.password !== form.value.confirmPassword) {
+    alert('Passwords do not match')
+    return
+  }
+  if (!form.value.acceptTerms) {
+    alert('Please accept the terms')
+    return
+  }
+  try {
+    loading.value = true
+    const payload = {
+      role: 'student',
+      firstName: form.value.firstName,
+      lastName: form.value.lastName,
+      idNumber: form.value.idNumber,
+      contactNumber: form.value.contactNumber,
+      emailAddress: form.value.email,
+      password: form.value.password,
+      middleName: '',
+      facultyPosition: '',
+      program: '',
+      yearLevel: '',
+      section: '',
+      avatarUrl: '',
+      coverUrl: ''
+    }
+    const res = await fetch('http://localhost:3000/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      throw new Error(data.message || 'Registration failed')
+    }
+    alert('Registered! Please check your email for the OTP.')
+    await router.push({ path: '/verify-email', query: { email: payload.emailAddress } })
+  } catch (err) {
+    alert(err.message)
+  } finally {
+    loading.value = false
+  }
 }
 </script>

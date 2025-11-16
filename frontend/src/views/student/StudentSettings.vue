@@ -73,37 +73,7 @@
     <section class="bg-white shadow rounded-xl p-5">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Login & Security</h2>
       <div class="space-y-5">
-        <!-- Two-Factor Auth -->
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="text-sm font-medium text-gray-900">Two-Factor Authentication</div>
-            <div class="text-xs text-gray-500">Add an extra layer of security to your account</div>
-          </div>
-          <label class="inline-flex items-center cursor-pointer">
-            <input type="checkbox" class="sr-only peer" v-model="security.twoFA" />
-            <div class="w-11 h-6 bg-gray-400 rounded-full peer peer-checked:bg-[#102A71] transition-colors relative">
-              <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform" :class="security.twoFA ? 'translate-x-5' : ''"></div>
-            </div>
-          </label>
-        </div>
-
-        <!-- OTP channels -->
-        <div class="grid sm:grid-cols-2 gap-4" v-if="security.twoFA">
-          <label class="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
-            <input type="radio" value="email" v-model="security.otpChannel" />
-            <div>
-              <div class="text-sm font-medium text-gray-900">OTP via Email</div>
-              <div class="text-xs text-gray-500">Send codes to your registered email</div>
-            </div>
-          </label>
-          <label class="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
-            <input type="radio" value="sms" v-model="security.otpChannel" />
-            <div>
-              <div class="text-sm font-medium text-gray-900">OTP via SMS</div>
-              <div class="text-xs text-gray-500">Send codes to your phone number</div>
-            </div>
-          </label>
-        </div>
+        
 
         <!-- Active sessions -->
         <div class="border rounded-xl">
@@ -129,7 +99,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -141,20 +111,50 @@ const goBack = () => {
 const password = ref({ current: '', new: '', confirm: '' })
 const passwordMessage = ref('')
 const passwordOk = ref(false)
-const savePassword = () => {
+const savePassword = async () => {
+  passwordOk.value = false
+  passwordMessage.value = ''
   if (!password.value.current || !password.value.new || !password.value.confirm) {
-    passwordOk.value = false
     passwordMessage.value = 'Please complete all fields.'
     return
   }
   if (password.value.new !== password.value.confirm) {
-    passwordOk.value = false
     passwordMessage.value = 'New passwords do not match.'
     return
   }
-  // Simulate success
-  passwordOk.value = true
-  passwordMessage.value = 'Password updated successfully.'
+  if (password.value.new.length < 8) {
+    passwordMessage.value = 'New password must be at least 8 characters.'
+    return
+  }
+  const token = localStorage.getItem('t2f_token')
+  if (!token) {
+    passwordMessage.value = 'Not authenticated. Please log in again.'
+    return
+  }
+  try {
+    const res = await fetch('http://localhost:3000/api/auth/change-password', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        currentPassword: password.value.current,
+        newPassword: password.value.new,
+        confirmPassword: password.value.confirm,
+      })
+    })
+    const data = await res.json()
+    if (!res.ok || data.success === false) {
+      throw new Error(data.message || 'Failed to update password')
+    }
+    passwordOk.value = true
+    passwordMessage.value = 'Password updated successfully.'
+    password.value = { current: '', new: '', confirm: '' }
+  } catch (err) {
+    passwordOk.value = false
+    passwordMessage.value = err.message
+  }
 }
 
 // Notifications
@@ -165,15 +165,89 @@ const saveNotifications = () => {
 }
 
 // Login & Security
-const security = ref({ twoFA: false, otpChannel: 'email' })
-const sessions = ref([
-  { device: 'Chrome on Windows', location: 'Manila, PH', lastActive: 'Active now' },
-  { device: 'iPhone 13', location: 'Quezon City, PH', lastActive: '2 hours ago' },
-])
-const signOutSession = (index) => {
-  sessions.value.splice(index, 1)
+const sessions = ref([])
+
+function authHeaders() {
+  const token = localStorage.getItem('t2f_token')
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  const sid = localStorage.getItem('t2f_session_id')
+  if (sid) headers['x-session-id'] = sid
+  return headers
 }
-const signOutAll = () => {
-  sessions.value = []
+
+// (2FA removed)
+
+async function loadSessions() {
+  try {
+    const res = await fetch('http://localhost:3000/api/auth/sessions', { headers: { ...authHeaders() } })
+    const data = await res.json()
+    if (res.ok && data?.success) {
+      sessions.value = (data.sessions || []).map(s => ({
+        _id: s._id,
+        device: s.userAgent || 'Unknown device',
+        location: s.ip || 'Unknown',
+        lastActive: s.lastActive || s.createdAt || ''
+      }))
+      // Try to set current session id based on userAgent if not set yet
+      const currentUA = navigator.userAgent
+      const existing = localStorage.getItem('t2f_session_id')
+      if (!existing) {
+        const match = (data.sessions || []).find(s => (s.userAgent || '') === currentUA)
+        if (match && match._id) {
+          try { localStorage.setItem('t2f_session_id', match._id) } catch {}
+        }
+      }
+    }
+  } catch {}
 }
+
+async function signOutSession(index) {
+  const sess = sessions.value[index]
+  if (!sess?._id) return
+  try {
+    const res = await fetch(`http://localhost:3000/api/auth/sessions/${sess._id}`, {
+      method: 'DELETE',
+      headers: { ...authHeaders() }
+    })
+    const data = await res.json()
+    if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to sign out session')
+    sessions.value.splice(index, 1)
+    // If signing out the current device, also log out locally
+    const currentId = localStorage.getItem('t2f_session_id')
+    if (currentId && currentId === sess._id) {
+      try {
+        localStorage.removeItem('t2f_token')
+        localStorage.removeItem('t2f_user')
+        localStorage.removeItem('t2f_session_id')
+      } catch {}
+      router.push('/login')
+    }
+  } catch (e) {
+    alert(e.message)
+  }
+}
+
+async function signOutAll() {
+  try {
+    const res = await fetch('http://localhost:3000/api/auth/sessions', {
+      method: 'DELETE',
+      headers: { ...authHeaders() }
+    })
+    const data = await res.json()
+    if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to sign out all devices')
+    sessions.value = []
+    // Also sign out this device
+    try {
+      localStorage.removeItem('t2f_token')
+      localStorage.removeItem('t2f_user')
+    } catch {}
+    router.push('/login')
+  } catch (e) {
+    alert(e.message)
+  }
+}
+
+onMounted(() => {
+  loadSessions()
+})
 </script>

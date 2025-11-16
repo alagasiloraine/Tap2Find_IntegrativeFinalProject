@@ -134,7 +134,10 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { Mail } from 'lucide-vue-next'
+
+const router = useRouter()
 
 const form = ref({
   email: '',
@@ -146,8 +149,33 @@ const form = ref({
 const isEmailFocused = ref(false)
 const isPasswordFocused = ref(false)
 
-const handleLogin = () => {
+const loading = ref(false)
+
+const handleLogin = async () => {
   console.log('Login attempt:', form.value)
-  // TODO: Implement actual login logic
+  if (!form.value.email || !form.value.password) return
+  try {
+    loading.value = true
+    const res = await fetch('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: form.value.email, password: form.value.password })
+    })
+    const data = await res.json()
+    if (!res.ok || data.success === false) {
+      throw new Error(data.message || 'Login failed')
+    }
+    if (data.token) localStorage.setItem('t2f_token', data.token)
+    if (data.sessionId) localStorage.setItem('t2f_session_id', data.sessionId)
+    if (data.user) localStorage.setItem('t2f_user', JSON.stringify(data.user))
+    const role = data.user?.role
+    if (role === 'student') await router.push('/student')
+    else if (role === 'professor') await router.push('/professor')
+    else await router.push('/admin')
+  } catch (err) {
+    alert(err.message)
+  } finally {
+    loading.value = false
+  }
 }
 </script>

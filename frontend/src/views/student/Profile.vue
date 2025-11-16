@@ -91,7 +91,7 @@
                 <label class="block text-sm text-gray-600 mb-1">ID Number</label>
                 <div class="flex">
                   <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-700 text-sm">MCC</span>
-                  <input v-model="form.idNumber" @input="onIdInput" type="text" placeholder="22-0121" class="w-full px-3 py-2 rounded-r-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" />
+                  <input v-model="form.idNumber" @input="onIdInput" type="text" inputmode="numeric" pattern="\\d{4}-\\d{4}" maxlength="9" placeholder="2022-0206" class="w-full px-3 py-2 rounded-r-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" />
                 </div>
               </div>
               <div>
@@ -159,8 +159,8 @@
               <div>
                 <label class="block text-sm text-gray-600 mb-1">Contact Number</label>
                 <div class="flex items-center gap-2">
-                  <input v-model="form.contactNumber" type="text" class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" placeholder="+63 9xx xxx xxxx" />
-                  <span class="text-xs" :class="form.contactVerified ? 'text-green-600' : 'text-gray-500'">Status: {{ form.contactVerified ? 'Verified' : 'Unverified' }}</span>
+                  <input v-model="form.contactNumber" @input="onContactInput" type="text" inputmode="numeric" pattern="\\d*" maxlength="11" class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" placeholder="09xxxxxxxxx" />
+
                 </div>
               </div>
               <div>
@@ -201,11 +201,10 @@
 
           
         </div>
-        <div class="mt-4 text-sm text-gray-500">Last Login: {{ form.lastLogin }}</div>
+        <div class="mt-4 text-sm text-gray-500">   </div>
       </div>
     </div>
   </div>
-  
 </template>
 
 <script setup>
@@ -216,23 +215,23 @@ import StudentTopNav from '@/components/StudentTopNav.vue'
 const router = useRouter()
 const programs = ['BSIT', 'BSCS', 'BSECE']
 const years = ['1st Year', '2nd Year', '3rd Year', '4th Year']
-const sections = ['F1', 'F2', 'A1', 'B1']
+const sections = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6']
 
 const initialForm = {
-  firstName: 'Loraine',
-  lastName: 'Alagasi',
+  firstName: '',
+  lastName: '',
   middleName: '',
   birthdate: '',
   address: '',
-  idNumber: '22-0121',
-  program: 'BSIT',
-  yearLevel: '4th Year',
-  section: 'F1',
-  contactNumber: '+63 9xx xxx xxxx',
+  idNumber: '',
+  program: '',
+  yearLevel: '',
+  section: '',
+  contactNumber: '',
   contactVerified: true,
-  email: 'name@school.edu',
+  email: '',
   emailVerified: true,
-  rfidUid: '04:A1:C3:..',
+  rfidUid: '',
   avatarUrl: '/profile.svg',
   coverUrl: '',
   notify: {
@@ -240,11 +239,11 @@ const initialForm = {
     inquiryUpdates: true,
     systemAlerts: true
   },
-  username: 'loraine.alagasi',
+  username: '',
   currentPassword: '',
   newPassword: '',
   confirmPassword: '',
-  lastLogin: '26 Oct 2025, 08:07 PM (Chrome • Desktop)'
+  lastLogin: ''
 }
 
 const form = ref(JSON.parse(JSON.stringify(initialForm)))
@@ -252,6 +251,24 @@ const snapshot = ref(JSON.parse(JSON.stringify(initialForm)))
 const isEditing = ref(false)
 
 const fullName = computed(() => `${form.value.firstName} ${form.value.lastName}`.trim())
+const loading = ref(false)
+
+function formatDateTime(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return '—'
+  const month = d.toLocaleString('en-US', { month: 'long' })
+  const day = d.getDate()
+  const year = d.getFullYear()
+  let hours = d.getHours()
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  const ampm = hours >= 12 ? 'pm' : 'am'
+  hours = hours % 12
+  if (hours === 0) hours = 12
+  return `${month} ${day}, ${year} ${hours}:${minutes}${ampm}`
+}
+
+const formattedLastLogin = computed(() => formatDateTime(form.value.lastLogin))
 
 // Dropdown open states for School Details custom selects
 const openProgram = ref(false)
@@ -277,7 +294,46 @@ function onClickOutside(e) {
     openSection.value = false
   }
 }
-onMounted(() => document.addEventListener('click', onClickOutside))
+onMounted(async () => {
+  document.addEventListener('click', onClickOutside)
+  const token = localStorage.getItem('t2f_token')
+  if (!token) {
+    router.push('/login')
+    return
+  }
+  try {
+    loading.value = true
+    const sid = localStorage.getItem('t2f_session_id')
+    const res = await fetch('http://localhost:3000/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${token}`, 'x-session-id': sid || '' }
+    })
+    const data = await res.json()
+    if (!res.ok || data.success === false) {
+      throw new Error(data.message || 'Failed to load profile')
+    }
+    const u = data.user || {}
+    form.value.firstName = u.firstName || ''
+    form.value.lastName = u.lastName || ''
+    form.value.middleName = u.middleName || ''
+    form.value.birthdate = (u.birthdate || '').slice(0,10)
+    form.value.address = u.address || ''
+    form.value.idNumber = u.idNumber || ''
+    form.value.contactNumber = u.contactNumber || ''
+    form.value.program = u.program || ''
+    form.value.yearLevel = u.yearLevel || ''
+    form.value.section = u.section || ''
+    form.value.email = u.emailAddress || ''
+    form.value.avatarUrl = u.avatarUrl || '/profile.svg'
+    form.value.coverUrl = u.coverUrl || ''
+    form.value.lastLogin = u.lastLogin || ''
+    snapshot.value = JSON.parse(JSON.stringify(form.value))
+  } catch (err) {
+    alert(err.message)
+    if (String(err.message).toLowerCase().includes('token')) router.push('/login')
+  } finally {
+    loading.value = false
+  }
+})
 onUnmounted(() => document.removeEventListener('click', onClickOutside))
 
 const startEdit = () => {
@@ -289,10 +345,66 @@ const onReset = () => {
   form.value = JSON.parse(JSON.stringify(snapshot.value))
 }
 
-const onSave = () => {
-  // Here you can call an API to persist form.value
-  snapshot.value = JSON.parse(JSON.stringify(form.value))
-  isEditing.value = false
+const onSave = async () => {
+  const token = localStorage.getItem('t2f_token')
+  if (!token) {
+    router.push('/login')
+    return
+  }
+  try {
+    loading.value = true
+    const payload = {
+      firstName: form.value.firstName,
+      lastName: form.value.lastName,
+      middleName: form.value.middleName,
+      birthdate: form.value.birthdate,
+      address: form.value.address,
+      idNumber: form.value.idNumber,
+      contactNumber: form.value.contactNumber,
+      program: form.value.program,
+      yearLevel: form.value.yearLevel,
+      section: form.value.section,
+      emailAddress: form.value.email,
+      avatarUrl: form.value.avatarUrl,
+      coverUrl: form.value.coverUrl,
+    }
+    const sid = localStorage.getItem('t2f_session_id')
+    const res = await fetch('http://localhost:3000/api/auth/profile', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'x-session-id': sid || ''
+      },
+      body: JSON.stringify(payload)
+    })
+    const data = await res.json()
+    if (!res.ok || data.success === false) {
+      throw new Error(data.message || 'Failed to update profile')
+    }
+    const u = data.user || {}
+    form.value.firstName = u.firstName || ''
+    form.value.lastName = u.lastName || ''
+    form.value.middleName = u.middleName || ''
+    form.value.birthdate = u.birthdate || ''
+    form.value.address = u.address || ''
+    form.value.idNumber = u.idNumber || ''
+    form.value.contactNumber = u.contactNumber || ''
+    form.value.program = u.program || ''
+    form.value.yearLevel = u.yearLevel || ''
+    form.value.section = u.section || ''
+    form.value.email = u.emailAddress || ''
+    form.value.avatarUrl = u.avatarUrl || '/profile.svg'
+    form.value.coverUrl = u.coverUrl || ''
+    form.value.lastLogin = u.lastLogin || ''
+    snapshot.value = JSON.parse(JSON.stringify(form.value))
+    isEditing.value = false
+    alert('Profile updated')
+  } catch (err) {
+    alert(err.message)
+  } finally {
+    loading.value = false
+  }
 }
 
 const onBindCard = () => {
@@ -331,10 +443,17 @@ const onCoverSelected = (e) => {
 }
 
 const onIdInput = (e) => {
-  const d = (e.target.value || '').replace(/\D/g, '').slice(0, 6)
-  const part = d.slice(0, 2)
-  const rest = d.slice(2, 6)
-  form.value.idNumber = part + (rest ? '-' + rest : '')
+  // Keep digits only, format as YYYY-NNNN
+  const digits = (e.target.value || '').replace(/\D/g, '').slice(0, 8)
+  const year = digits.slice(0, 4)
+  const seq = digits.slice(4, 8)
+  form.value.idNumber = year + (seq ? '-' + seq : '')
+}
+
+const onContactInput = (e) => {
+  // Digits only, limit to 11 digits (PH mobile format like 09xxxxxxxxx)
+  const digitsOnly = (e.target.value || '').replace(/\D/g, '').slice(0, 11)
+  form.value.contactNumber = digitsOnly
 }
 
 const goBack = () => {

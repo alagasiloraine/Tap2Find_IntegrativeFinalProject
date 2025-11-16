@@ -107,13 +107,14 @@
       >
         <!-- Profile Picture -->
         <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center overflow-hidden">
-          <span class="text-sm font-semibold text-blue-600">JD</span>
+          <img v-if="avatarSrc" :src="avatarSrc" alt="avatar" class="w-full h-full object-cover" />
+          <span v-else class="text-sm font-semibold text-blue-600">{{ initials }}</span>
         </div>
         
         <!-- Profile Info -->
         <div class="flex flex-col items-start">
-          <span class="text-sm font-semibold text-gray-900">John Doe</span>
-          <span class="text-xs text-gray-500">john.doe@student.edu</span>
+          <span class="text-sm font-semibold text-gray-900">{{ displayName }}</span>
+          <span class="text-xs text-gray-500">{{ displayEmail }}</span>
         </div>
         
         <!-- Dropdown Icon -->
@@ -228,8 +229,11 @@ const toggleNotifications = () => {
 }
 
 const logout = () => {
-  console.log('Logging out...')
-  router.push('/auth/login')
+  try {
+    localStorage.removeItem('t2f_token')
+    localStorage.removeItem('t2f_user')
+  } catch {}
+  router.push('/login')
 }
 
 const confirmSignOut = () => {
@@ -271,6 +275,10 @@ watch(() => route.path, updatePageInfo)
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   updatePageInfo()
+  // Load user info from storage immediately
+  loadUserFromStorage()
+  // Optionally refresh from backend if token exists
+  refreshUserFromApi()
 })
 
 onUnmounted(() => {
@@ -282,6 +290,54 @@ const getStatusIcon = (status) => {
   if (status === 'message') return 'lucide:message-circle'
   if (status === 'busy') return 'lucide:x'
   return 'lucide:circle'
+}
+
+// User display data
+const user = ref(null)
+const displayName = computed(() => {
+  const u = user.value || {}
+  const first = (u.firstName || '').trim()
+  const last = (u.lastName || '').trim()
+  const combined = (first + ' ' + last).trim()
+  return combined || 'Student'
+})
+const displayEmail = computed(() => (user.value?.emailAddress || '').trim() || '—')
+const initials = computed(() => {
+  const first = (user.value?.firstName || '').trim()
+  const last = (user.value?.lastName || '').trim()
+  const a = first ? first[0].toUpperCase() : ''
+  const b = last ? last[0].toUpperCase() : ''
+  if (a || b) return `${a}${b}`
+  const email = (user.value?.emailAddress || '').trim()
+  return email ? email[0].toUpperCase() : 'S'
+})
+
+const avatarSrc = computed(() => {
+  const src = (user.value?.avatarUrl || '').trim()
+  return src || '/profile.svg'
+})
+
+function loadUserFromStorage() {
+  try {
+    const raw = localStorage.getItem('t2f_user')
+    if (raw) user.value = JSON.parse(raw)
+  } catch {}
+}
+
+async function refreshUserFromApi() {
+  const token = localStorage.getItem('t2f_token')
+  const sid = localStorage.getItem('t2f_session_id')
+  if (!token || !sid) return
+  try {
+    const res = await fetch('http://localhost:3000/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}`, 'x-session-id': sid },
+    })
+    const data = await res.json()
+    if (res.ok && data?.success && data.user) {
+      user.value = data.user
+      try { localStorage.setItem('t2f_user', JSON.stringify(data.user)) } catch {}
+    }
+  } catch {}
 }
 </script>
 

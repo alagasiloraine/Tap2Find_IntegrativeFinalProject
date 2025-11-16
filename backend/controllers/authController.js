@@ -147,9 +147,10 @@ export const loginUser = async (req, res) => {
   try {
     const db = getDB("tap2find_db");
     const users = db.collection("users");
-    const { email, password } = req.body;
+    const { email, emailAddress, password } = req.body;
+    const targetEmail = email || emailAddress;
 
-    const user = await users.findOne({ emailAddress: email });
+    const user = await users.findOne({ emailAddress: targetEmail });
     if (!user)
       return res.status(404).json({ success: false, message: "User not found" });
 
@@ -169,11 +170,29 @@ export const loginUser = async (req, res) => {
 
     const when = new Date().toISOString()
     const agent = req.headers['user-agent'] || 'Unknown'
+    const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString()
     await users.updateOne({ _id: user._id }, { $set: { lastLogin: when, lastLoginAgent: agent } })
+
+    // Record session
+    let sessionId = null
+    try {
+      const sessions = db.collection('sessions')
+      const ins = await sessions.insertOne({
+        userId: user._id,
+        userAgent: agent,
+        ip,
+        createdAt: when,
+        lastActive: when,
+      })
+      sessionId = String(ins.insertedId)
+    } catch (e) {
+      console.warn('Session record failed:', e?.message)
+    }
     res.status(200).json({
       success: true,
       message: "Login successful",
       token,
+      sessionId,
       user: {
         id: user._id,
         role: user.role,

@@ -139,9 +139,9 @@
 
         <!-- Concerns Table -->
         <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto max-h-[60vh] overflow-y-auto">
             <table class="min-w-full align-middle">
-              <thead class="bg-[#102A71] text-white text-xs uppercase tracking-wide">
+              <thead class="bg-[#102A71] text-white text-xs uppercase tracking-wide sticky top-0 z-10">
                 <tr>
                   <th class="text-left px-6 py-4 font-semibold">Student</th>
                   <th class="text-left px-6 py-4 font-semibold">Year Level</th>

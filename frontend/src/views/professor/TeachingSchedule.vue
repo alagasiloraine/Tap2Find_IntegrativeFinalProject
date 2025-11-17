@@ -101,12 +101,12 @@
     <!-- Modal Card -->
     <div class="relative w-full max-w-xl bg-white rounded-xl shadow-lg overflow-hidden">
       <!-- Header -->
-      <div class="bg-[#001740] text-white px-6 py-4">
+      <div class="bg-[#001740]  text-white px-6 py-4">
         <div class="text-2xl font-semibold">{{ isEditMode ? 'Edit Schedule' : 'Add Schedule' }}</div>
       </div>
 
       <!-- Body -->
-      <div class="px-6 py-5 space-y-5">
+      <div class="px-8 py-9 space-y-5">
         <p class="text-sm text-gray-600">Please fill out the details below to add a new class schedule. Ensure all required fields are complete before saving.</p>
 
         <!-- Day Selector -->

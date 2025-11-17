@@ -112,9 +112,9 @@
           </div>
 
           <!-- 🧾 Inquiries Table -->
-          <div class="overflow-x-auto rounded-2xl border border-gray-200">
+          <div class="overflow-x-auto rounded-2xl border border-gray-200 max-h-[60vh] overflow-y-auto">
             <table class="min-w-full border border-gray-100">
-              <thead class="bg-[#102A71] text-white text-xs uppercase tracking-wide">
+              <thead class="bg-[#102A71] text-white text-xs uppercase tracking-wide sticky top-0 z-10">
                 <tr>
                   <th class="px-6 py-4 text-left">Professor</th>
                   <th class="px-6 py-4 text-left">Subject/Message</th>

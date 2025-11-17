@@ -15,8 +15,20 @@
             </div>
             <div class="text-sm text-gray-600 mt-1">{{ stepLabel }}</div>
           </div>
-          <button @click="next" :disabled="isLastStep" class="text-sm font-medium"
-                  :class="isLastStep ? 'text-gray-300 cursor-default' : 'text-gray-900 hover:underline'">
+          <button
+            v-if="isActivityStep"
+            @click="done"
+            class="text-sm font-medium text-gray-900 hover:underline"
+          >
+            Done
+          </button>
+          <button
+            v-else
+            @click="next"
+            :disabled="isTapStep"
+            class="text-sm font-medium"
+            :class="isTapStep ? 'text-gray-300 cursor-default' : 'text-gray-900 hover:underline'"
+          >
             Next
           </button>
         </div>
@@ -62,6 +74,9 @@ const currentTitle = computed(() => steps[currentStep.value]?.name || '')
 const isLastStep = computed(() => currentStep.value >= totalSteps - 1)
 const progressWidth = computed(() => `${Math.max(0, Math.min(100, Math.round(((currentStepDisplay.value) / totalSteps) * 100)))}%`)
 
+const isTapStep = computed(() => route.name === 'professor-availability-tap')
+const isActivityStep = computed(() => route.name === 'professor-availability-activity')
+
 const next = () => {
   if (currentStep.value < steps.length - 1) {
     router.push(steps[currentStep.value + 1].route)
@@ -71,6 +86,10 @@ const prev = () => {
   if (currentStep.value > 0) {
     router.push(steps[currentStep.value - 1].route)
   }
+}
+
+const done = () => {
+  router.push({ name: 'professor-dashboard' })
 }
  
 </script>

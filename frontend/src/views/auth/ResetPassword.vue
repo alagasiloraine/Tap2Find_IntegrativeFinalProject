@@ -72,7 +72,7 @@ const handleResetPassword = async () => {
     })
 
     successMessage.value = res.data.message
-    setTimeout(() => router.push('/login'), 2000)
+    setTimeout(() => router.push('/auth/login'), 2000)
   } catch (err) {
     errorMessage.value = err.response?.data?.message || 'Something went wrong.'
   } finally {

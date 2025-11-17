@@ -65,12 +65,12 @@
         <div class="flex items-center">
           <div class="flex-shrink-0">
             <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <span class="text-white text-sm font-medium">P</span>
+              <span class="text-white text-sm font-medium">{{ initials }}</span>
             </div>
           </div>
           <div class="ml-3">
-            <p class="text-sm font-medium text-gray-700">Prof. Smith</p>
-            <p class="text-xs text-gray-500">prof@tap2find.com</p>
+            <p class="text-sm font-medium text-gray-700">Prof. {{ user.firstName }} {{ user.lastName }}</p>
+            <p class="text-xs text-gray-500">{{ user.emailAddress }}</p>
           </div>
         </div>
       </div>
@@ -79,5 +79,27 @@
 </template>
 
 <script setup>
-// Pure presentational sidebar
+import { ref, computed, onMounted } from 'vue'
+
+const user = ref({
+  _id: '',
+  firstName: '',
+  lastName: '',
+  role: '',
+  emailAddress: '',
+  status: ''
+})
+
+const initials = computed(() => {
+  const first = user.value.firstName?.charAt(0).toUpperCase() || ''
+  const last = user.value.lastName?.charAt(0).toUpperCase() || ''
+  return first + last
+})
+
+onMounted(async () => {
+  const storedUser = localStorage.getItem('user')
+  if (storedUser) {
+    user.value = JSON.parse(storedUser)
+  }
+})
 </script>

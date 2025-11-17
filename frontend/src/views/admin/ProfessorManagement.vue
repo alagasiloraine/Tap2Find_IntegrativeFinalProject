@@ -1,13 +1,99 @@
 <template>
   <div class="p-6">
+    <!-- Real-time RFID Notification -->
+    <div v-if="showRfidNotification" class="fixed top-4 right-4 z-50">
+      <div class="bg-blue-500 text-white px-6 py-4 rounded-lg shadow-lg max-w-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold">New RFID Detected</h3>
+          <button @click="closeRfidNotification" class="text-white hover:text-blue-200">
+            ✖
+          </button>
+        </div>
+        <p class="text-sm mb-3">RFID: <strong class="font-mono">{{ detectedRfid }}</strong></p>
+        <p class="text-xs opacity-90 mb-3">This RFID is not assigned to any professor.</p>
+        <div class="flex gap-2">
+          <button 
+            @click="assignDetectedRfid"
+            class="flex-1 bg-white text-blue-600 py-2 px-3 rounded text-sm font-medium hover:bg-blue-50"
+          >
+            Assign Now
+          </button>
+          <button 
+            @click="useInCurrentForm"
+            class="flex-1 bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700"
+          >
+            Use in Form
+          </button>
+          <button 
+            @click="closeRfidNotification"
+            class="flex-1 bg-gray-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-gray-700"
+          >
+            Later
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assign RFID Modal -->
+    <div v-if="showAssignModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-md">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-lg font-medium text-gray-900">Assign RFID to Professor</h3>
+          <button class="text-gray-400 hover:text-gray-600" @click="closeAssignModal">✖</button>
+        </div>
+        <div class="px-6 py-4">
+          <p class="text-sm text-gray-700 mb-4">
+            Assign RFID <strong class="font-mono">{{ detectedRfid }}</strong> to:
+          </p>
+          <select 
+            v-model="selectedProfessorForAssignment"
+            class="w-full border rounded px-3 py-2 text-sm mb-4"
+          >
+            <option value="">Select a professor...</option>
+            <option 
+              v-for="prof in professorsWithoutRfid" 
+              :key="prof._id" 
+              :value="prof._id"
+            >
+              {{ prof.firstName }} {{ prof.lastName }} - {{ prof.department || 'No department' }}
+            </option>
+          </select>
+          <div v-if="selectedProfessorForAssignment" class="p-3 bg-blue-50 rounded">
+            <p class="text-sm text-blue-700">
+              Will assign to: <strong>{{ getProfessorName(selectedProfessorForAssignment) }}</strong>
+            </p>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+          <button class="px-4 py-2 rounded border" @click="closeAssignModal">Cancel</button>
+          <button 
+            class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            @click="confirmRfidAssignment"
+            :disabled="!selectedProfessorForAssignment"
+          >
+            Assign RFID
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-semibold text-gray-900">Professor Management</h1>
-      <button
-        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        @click="openAddModal"
-      >
-        <span class="mr-2">➕</span> Add Professor
-      </button>
+      <div class="flex items-center gap-3">
+        <!-- Connection Status -->
+        <div class="flex items-center gap-2 px-3 py-1 rounded-full text-sm"
+             :class="connectionStatus.class">
+          <div class="w-2 h-2 rounded-full" :class="connectionStatus.dotClass"></div>
+          {{ connectionStatus.text }}
+        </div>
+        
+        <button
+          class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          @click="openAddModal"
+        >
+          <span class="mr-2">➕</span> Add Professor
+        </button>
+      </div>
     </div>
 
     <div class="bg-white shadow rounded-lg overflow-hidden">
@@ -38,7 +124,7 @@
           <thead class="bg-gray-50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RFID ID</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -46,7 +132,7 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="p in filteredProfessors" :key="p._id" class="hover:bg-gray-50 cursor-pointer" @click="openViewModal(p)">
+            <tr v-for="p in filteredProfessors" :key="p._id">
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {{ (p.firstName || '') + ' ' + (p.lastName || '') }}
               </td>
@@ -54,7 +140,8 @@
                 {{ p.facultyPosition || p.department || '-' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ p.rfidId || p.rfid || p.idNumber || '-' }}
+                <span v-if="p.idNumber" class="font-mono bg-gray-100 px-2 py-1 rounded">{{ p.idNumber }}</span>
+                <span v-else class="text-gray-400 italic">Not assigned</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ p.emailAddress }}
@@ -69,25 +156,25 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-right space-x-2">
                 <button class="px-3 py-1.5 rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
-                        @click.stop="openScheduleModal(p)">
+                        @click="openScheduleModal(p)">
                   📅 Manage Schedule
                 </button>
                 <button class="px-3 py-1.5 rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100"
-                        @click.stop="openEditModal(p)">
+                        @click="openEditModal(p)">
                   ✏️ Edit
                 </button>
                 <button class="px-3 py-1.5 rounded-md text-red-700 bg-red-50 hover:bg-red-100"
-                        @click.stop="confirmDelete(p)">
+                        @click="confirmDelete(p)">
                   🗑️ Delete
                 </button>
                 <button class="px-3 py-1.5 rounded-md text-yellow-700 bg-yellow-50 hover:bg-yellow-100"
-                        @click.stop="resetPassword(p)">
+                        @click="resetPassword(p)">
                   🔑 Reset Password
                 </button>
                 <button
                   class="px-3 py-1.5 rounded-md"
                   :class="p.isVerified ? 'text-gray-700 bg-gray-100 hover:bg-gray-200' : 'text-green-700 bg-green-50 hover:bg-green-100'"
-                  @click.stop="toggleDisable(p)"
+                  @click="toggleDisable(p)"
                 >
                   {{ p.isVerified ? 'Disable' : 'Enable' }}
                 </button>
@@ -114,63 +201,57 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-600 mb-1">First Name</label>
-              <input v-model="form.firstName" type="text" required class="w-full border rounded px-3 py-2 text-sm" @input="form.firstName = toTitleCase(form.firstName)" />
+              <input v-model="form.firstName" type="text" required class="w-full border rounded px-3 py-2 text-sm" />
             </div>
             <div>
               <label class="block text-xs text-gray-600 mb-1">Last Name</label>
-              <input v-model="form.lastName" type="text" required class="w-full border rounded px-3 py-2 text-sm" @input="form.lastName = toTitleCase(form.lastName)" />
+              <input v-model="form.lastName" type="text" required class="w-full border rounded px-3 py-2 text-sm" />
             </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-600 mb-1">Email</label>
-              <input v-model="form.emailAddress" type="email" required class="w-full border rounded px-3 py-2 text-sm" @input="form.emailAddress = (form.emailAddress || '').toLowerCase()" />
+              <input v-model="form.emailAddress" type="email" required class="w-full border rounded px-3 py-2 text-sm" />
             </div>
             <div>
               <label class="block text-xs text-gray-600 mb-1">Department</label>
-              <input v-model="form.department" type="text" class="w-full border rounded px-3 py-2 text-sm bg-gray-50" disabled />
+              <input v-model="form.department" type="text" class="w-full border rounded px-3 py-2 text-sm" />
             </div>
-          </div>
-          <div>
-            <label class="block text-xs text-gray-600 mb-1">Faculty Position</label>
-            <input v-model="form.facultyPosition" type="text" class="w-full border rounded px-3 py-2 text-sm" @input="form.facultyPosition = toTitleCase(form.facultyPosition)" />
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-600 mb-1">RFID ID</label>
-              <input v-model="form.rfidId" type="text" class="w-full border rounded px-3 py-2 text-sm" />
+              <div class="flex gap-2">
+                <input 
+                  v-model="form.rfidId" 
+                  type="text" 
+                  class="flex-1 border rounded px-3 py-2 text-sm font-mono bg-gray-50"
+                  :class="detectedRfid ? 'bg-blue-50 border-blue-300' : ''"
+                  placeholder="Tap RFID card or enter manually"
+                  :disabled="true"
+                />
+                <button 
+                  v-if="detectedRfid && !editTarget && !form.rfidId"
+                  type="button"
+                  @click="useDetectedRfid"
+                  class="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 whitespace-nowrap"
+                >
+                  Use Detected
+                </button>
+              </div>
+              <p v-if="detectedRfid && !editTarget" class="text-xs text-blue-600 mt-1">
+                RFID <strong>{{ detectedRfid }}</strong> detected and ready for assignment
+              </p>
+              <p v-else-if="form.rfidId" class="text-xs text-green-600 mt-1">
+                RFID assigned: {{ form.rfidId }}
+              </p>
+              <p v-else class="text-xs text-gray-500 mt-1">
+                Tap an RFID card or use the detected RFID to assign
+              </p>
             </div>
-            <div>
-              <label class="block text-xs text-gray-600 mb-1">Contact Number</label>
-              <input v-model="form.contactNumber" type="tel" class="w-full border rounded px-3 py-2 text-sm" />
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs text-gray-600 mb-1">Advisory Class</label>
-            <input v-model="form.advisoryClass" type="text" class="w-full border rounded px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <label class="block text-xs text-gray-600 mb-1">Address</label>
-            <textarea v-model="form.address" rows="2" class="w-full border rounded px-3 py-2 text-sm" @input="form.address = toTitleCase(form.address)"></textarea>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs text-gray-600 mb-1">Birthdate</label>
-              <input v-model="form.birthdate" type="date" class="w-full border rounded px-3 py-2 text-sm" />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-600 mb-1">Age</label>
-              <input :value="computedAge" type="number" class="w-full border rounded px-3 py-2 text-sm bg-gray-50" disabled />
-            </div>
-          </div>
-          <div v-if="!editTarget" class="space-y-3">
-            <div>
+            <div v-if="!editTarget">
               <label class="block text-xs text-gray-600 mb-1">Password</label>
               <input v-model="form.password" type="password" required class="w-full border rounded px-3 py-2 text-sm" />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-600 mb-1">Confirm Password</label>
-              <input v-model="form.confirmPassword" type="password" required class="w-full border rounded px-3 py-2 text-sm" />
             </div>
           </div>
           <div class="pt-2 flex items-center justify-end gap-3">
@@ -180,131 +261,6 @@
             </button>
           </div>
         </form>
-      </div>
-    </div>
-
-    <!-- View Professor Modal -->
-    <div v-if="showViewModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
-        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-medium text-gray-900">Professor Details</h3>
-          <button class="text-gray-400 hover:text-gray-600" @click="closeViewModal">✖</button>
-        </div>
-        <div class="px-6 py-4 space-y-4 text-sm">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <div class="text-gray-500">First Name</div>
-              <div class="font-medium">{{ viewTarget?.firstName || '-' }}</div>
-            </div>
-            <div>
-              <div class="text-gray-500">Last Name</div>
-              <div class="font-medium">{{ viewTarget?.lastName || '-' }}</div>
-            </div>
-            <div>
-              <div class="text-gray-500">Email</div>
-              <div class="font-medium break-all">{{ viewTarget?.emailAddress || '-' }}</div>
-            </div>
-            <div>
-              <div class="text-gray-500">Status</div>
-              <div>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium"
-                      :class="viewTarget?.isVerified ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
-                  {{ viewTarget?.isVerified ? 'Active' : 'Inactive' }}
-                </span>
-              </div>
-            </div>
-            <div>
-              <div class="text-gray-500">Department</div>
-              <div class="font-medium">{{ viewTarget?.department || '-' }}</div>
-            </div>
-            <div>
-              <div class="text-gray-500">Faculty Position</div>
-              <div class="font-medium">{{ viewTarget?.facultyPosition || '-' }}</div>
-            </div>
-            <div>
-              <div class="text-gray-500">RFID / ID Number</div>
-              <div class="font-medium">{{ viewTarget?.rfidId || viewTarget?.rfid || viewTarget?.idNumber || '-' }}</div>
-            </div>
-            <div>
-              <div class="text-gray-500">Contact Number</div>
-              <div class="font-medium">{{ viewTarget?.contactNumber || '-' }}</div>
-            </div>
-            <div>
-              <div class="text-gray-500">Birthdate</div>
-              <div class="font-medium">{{ viewTarget?.birthdate ? new Date(viewTarget.birthdate).toLocaleDateString() : '-' }}</div>
-            </div>
-            <div>
-              <div class="text-gray-500">Age</div>
-              <div class="font-medium">{{ viewTarget?.age ?? '-' }}</div>
-            </div>
-            <div class="col-span-2">
-              <div class="text-gray-500">Address</div>
-              <div class="font-medium">{{ viewTarget?.address || '-' }}</div>
-            </div>
-          </div>
-
-          <div class="pt-2">
-            <div class="flex items-center justify-between mb-2">
-              <h4 class="text-sm font-medium text-gray-900">Schedule</h4>
-              <span class="text-xs text-gray-500" v-if="viewScheduleLoading">Loading...</span>
-              <button class="text-xs text-blue-600 hover:underline" @click="reloadViewSchedule" v-if="!viewScheduleLoading">Refresh</button>
-            </div>
-            <div v-if="viewSchedule.length === 0 && !viewScheduleLoading" class="text-xs text-gray-500">No schedule found.</div>
-            <div v-else class="space-y-1 max-h-40 overflow-y-auto">
-              <div v-for="(s, idx) in viewSchedule" :key="idx" class="flex items-center justify-between text-xs border rounded px-2 py-1 bg-gray-50">
-                <div class="flex items-center gap-3">
-                  <span class="font-medium text-gray-700 w-20">{{ s.day }}</span>
-                  <span class="text-gray-600 w-32">{{ formatTimeDisplay(s.startTime) }} - {{ formatTimeDisplay(s.endTime) }}</span>
-                  <span class="text-blue-700">{{ s.subject }}</span>
-                </div>
-                <div class="text-gray-500">{{ s.room }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end bg-gray-50">
-          <button class="px-4 py-2 rounded border" @click="closeViewModal">Close</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- OTP Verification Modal -->
-    <div v-if="showOtpModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-md">
-        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-medium text-gray-900">Verify Email</h3>
-          <button class="text-gray-400 hover:text-gray-600" @click="showOtpModal = false">✖</button>
-        </div>
-        <div class="px-6 py-4 space-y-3">
-          <p class="text-sm text-gray-600">We sent a 6-digit verification code to <b>{{ otpEmail }}</b>. Enter it below to activate the account.</p>
-          <input
-            v-model="otpCode"
-            type="text"
-            maxlength="6"
-            placeholder="Enter 6-digit code"
-            class="w-full border rounded px-3 py-2 text-sm tracking-widest text-center"
-          />
-          <div v-if="otpError" class="text-sm text-red-600">{{ otpError }}</div>
-          <div class="flex items-center justify-between pt-2">
-            <button class="px-4 py-2 rounded border" @click="showOtpModal = false">Cancel</button>
-            <div class="flex items-center gap-2">
-              <button
-                class="px-3 py-2 rounded text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-                :disabled="resendIn > 0 || resendBusy"
-                @click="resendOtp"
-              >
-                Resend Code <span v-if="resendIn > 0">({{ resendIn }})</span>
-              </button>
-              <button
-                class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-                :disabled="verifying || otpCode.length !== 6"
-                @click="verifyOtp"
-              >
-                {{ verifying ? 'Verifying...' : 'Verify' }}
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -485,13 +441,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import api from "@/utils/api"
-
-const toTitleCase = (s) => {
-  if (!s) return ""
-  return String(s).replace(/\b\w+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-}
 
 // Reactive data
 const professors = ref([])
@@ -502,18 +453,17 @@ const showModal = ref(false)
 const editTarget = ref(null)
 const deleteTarget = ref(null)
 const scheduleTarget = ref(null)
-const showViewModal = ref(false)
-const viewTarget = ref(null)
-const viewSchedule = ref([])
-const viewScheduleLoading = ref(false)
-const showOtpModal = ref(false)
-const otpEmail = ref("")
-const otpCode = ref("")
-const otpError = ref("")
-const verifying = ref(false)
-const resendBusy = ref(false)
-const resendIn = ref(0)
-let resendTimerId = null
+
+// RFID Real-time Detection
+const showRfidNotification = ref(false)
+const detectedRfid = ref('')
+const showAssignModal = ref(false)
+const selectedProfessorForAssignment = ref('')
+
+// Connection status
+let pollingInterval = null
+const isConnected = ref(true)
+const lastPollTime = ref('')
 
 // Schedule management data
 const currentSchedule = ref([])
@@ -545,29 +495,21 @@ const form = ref({
   firstName: "",
   lastName: "",
   emailAddress: "",
-  department: "CSS",
-  facultyPosition: "",
+  department: "",
   rfidId: "",
-  contactNumber: "",
-  address: "",
-  birthdate: "",
-  advisoryClass: "",
   password: "",
-  confirmPassword: "",
+})
+
+// Connection status
+const connectionStatus = computed(() => {
+  return {
+    text: 'Connected (Polling)',
+    class: 'bg-green-100 text-green-800',
+    dotClass: 'bg-green-500'
+  }
 })
 
 // Computed properties
-const computedAge = computed(() => {
-  if (!form.value.birthdate) return ''
-  const d = new Date(form.value.birthdate)
-  if (isNaN(d.getTime())) return ''
-  const today = new Date()
-  let a = today.getFullYear() - d.getFullYear()
-  const m = today.getMonth() - d.getMonth()
-  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) a--
-  return a
-})
-
 const filteredProfessors = computed(() => {
   const q = query.value.trim().toLowerCase()
   let list = professors.value.filter((p) => {
@@ -585,13 +527,150 @@ const filteredProfessors = computed(() => {
   return list
 })
 
+const professorsWithoutRfid = computed(() => {
+  return professors.value.filter(prof => !prof.idNumber)
+})
+
+// Get all used RFID IDs to prevent duplicates
+const usedRfidIds = computed(() => {
+  return professors.value
+    .filter(prof => prof.idNumber)
+    .map(prof => prof.idNumber)
+})
+
 const isValidSchedule = computed(() => {
   return newSchedule.value.startTime < newSchedule.value.endTime && 
          newSchedule.value.subject.trim() !== '' &&
          newSchedule.value.room.trim() !== ''
 })
 
-// Methods
+// Watch for detected RFID changes
+watch(detectedRfid, (newRfid) => {
+  if (newRfid && usedRfidIds.value.includes(newRfid)) {
+    console.log('⚠️ RFID already in use, ignoring:', newRfid)
+    detectedRfid.value = '' // Clear if already used
+    return
+  }
+})
+
+// HTTP Polling for RFID Detection
+const startPolling = () => {
+  console.log('🔄 Starting RFID polling every 3 seconds...')
+  
+  // Poll immediately first time
+  pollForNewRfids()
+  
+  // Then set up interval
+  pollingInterval = setInterval(() => {
+    pollForNewRfids()
+  }, 3000)
+}
+
+const pollForNewRfids = async () => {
+  try {
+    const response = await api.get('/rfid/recent-unknown')
+    if (response.data.success && response.data.data) {
+      const recentRfids = response.data.data
+      if (recentRfids.length > 0) {
+        const latestRfid = recentRfids[0]
+        // Only process if it's a new RFID we haven't seen and not already used
+        if (latestRfid.uid !== detectedRfid.value && !usedRfidIds.value.includes(latestRfid.uid)) {
+          console.log('📨 Polling found new RFID:', latestRfid.uid)
+          handleUnknownRfid(latestRfid.uid)
+        }
+      }
+      lastPollTime.value = new Date().toLocaleTimeString()
+    }
+  } catch (error) {
+    console.error('❌ Polling error:', error)
+  }
+}
+
+const handleUnknownRfid = (rfid) => {
+  console.log('🔔 Unknown RFID detected:', rfid)
+  detectedRfid.value = rfid
+  showRfidNotification.value = true
+  
+  // Auto-hide notification after 15 seconds
+  setTimeout(() => {
+    if (showRfidNotification.value) {
+      closeRfidNotification()
+    }
+  }, 15000)
+}
+
+const closeRfidNotification = () => {
+  showRfidNotification.value = false
+  detectedRfid.value = ''
+}
+
+const assignDetectedRfid = () => {
+  showRfidNotification.value = false
+  showAssignModal.value = true
+  selectedProfessorForAssignment.value = ''
+}
+
+const useInCurrentForm = () => {
+  if (showModal.value) {
+    // If add/edit modal is open, auto-fill the RFID field
+    form.value.rfidId = detectedRfid.value
+  } else {
+    // If no modal is open, open the add modal with the RFID pre-filled
+    openAddModal()
+    form.value.rfidId = detectedRfid.value
+  }
+  showRfidNotification.value = false
+}
+
+const useDetectedRfid = () => {
+  form.value.rfidId = detectedRfid.value
+  detectedRfid.value = '' // Clear after using
+}
+
+const closeAssignModal = () => {
+  showAssignModal.value = false
+  selectedProfessorForAssignment.value = ''
+  detectedRfid.value = '' // Clear detected RFID when closing assign modal
+}
+
+const getProfessorName = (professorId) => {
+  const professor = professors.value.find(p => p._id === professorId)
+  return professor ? `${professor.firstName} ${professor.lastName}` : ''
+}
+
+const confirmRfidAssignment = async () => {
+  try {
+    if (!selectedProfessorForAssignment.value) {
+      alert('Please select a professor')
+      return
+    }
+
+    const payload = {
+      rfid: detectedRfid.value,
+      userId: selectedProfessorForAssignment.value,
+      userRole: 'professor'
+    }
+
+    await api.post('/rfid/assign', payload)
+    
+    // Refresh professors list
+    await fetchProfessors()
+    
+    // Clear detected RFID
+    detectedRfid.value = ''
+    
+    showAssignModal.value = false
+    selectedProfessorForAssignment.value = ''
+    
+    alert('RFID assigned successfully!')
+    
+  } catch (error) {
+    console.error('Error assigning RFID:', error)
+    alert(error.response?.data?.message || 'Failed to assign RFID')
+  }
+}
+
+// Existing methods
 const fetchProfessors = async () => {
   try {
     loading.value = true
@@ -610,15 +689,9 @@ const openAddModal = () => {
     firstName: "",
     lastName: "",
     emailAddress: "",
-    department: "CSS",
-    facultyPosition: "",
-    rfidId: "",
-    contactNumber: "",
-    address: "",
-    birthdate: "",
-    advisoryClass: "",
+    department: "",
+    rfidId: detectedRfid.value || "", // Pre-fill with detected RFID
     password: "",
-    confirmPassword: "",
   }
   showModal.value = true
 }
@@ -626,32 +699,14 @@ const openAddModal = () => {
 const openEditModal = (p) => {
   editTarget.value = p
   form.value = {
-    firstName: toTitleCase(p.firstName || ""),
-    lastName: toTitleCase(p.lastName || ""),
-    emailAddress: (p.emailAddress || "").toLowerCase(),
-    department: "CSS",
-    facultyPosition: toTitleCase(p.facultyPosition || ""),
-    rfidId: p.rfidId || p.rfid || p.idNumber || "",
-    contactNumber: p.contactNumber || "",
-    address: toTitleCase(p.address || ""),
-    birthdate: p.birthdate ? new Date(p.birthdate).toISOString().slice(0,10) : "",
-    advisoryClass: p.advisoryClass || "",
+    firstName: p.firstName || "",
+    lastName: p.lastName || "",
+    emailAddress: p.emailAddress || "",
+    department: p.facultyPosition || p.department || "",
+    rfidId: p.idNumber || "", // Use idNumber field from database
     password: "",
-    confirmPassword: "",
   }
   showModal.value = true
-}
-
-const openViewModal = async (p) => {
-  viewTarget.value = p
-  showViewModal.value = true
-  await reloadViewSchedule()
-}
-
-const closeViewModal = () => {
-  showViewModal.value = false
-  viewTarget.value = null
-  viewSchedule.value = []
 }
 
 const openScheduleModal = async (p) => {
@@ -680,6 +735,7 @@ const closeScheduleModal = () => {
 
 const closeModal = () => {
   showModal.value = false
+  detectedRfid.value = '' // Clear detected RFID when closing modal
 }
 
 const resetNewSchedule = () => {
@@ -694,51 +750,42 @@ const resetNewSchedule = () => {
 
 const submitProfessor = async () => {
   try {
+    // Check if RFID is already used (except when editing the same professor)
+    if (form.value.rfidId && usedRfidIds.value.includes(form.value.rfidId)) {
+      const currentProfessor = editTarget.value
+      if (!currentProfessor || currentProfessor.idNumber !== form.value.rfidId) {
+        alert('This RFID is already assigned to another professor. Please use a different RFID.')
+        return
+      }
+    }
+
     if (editTarget.value) {
       const payload = {
-        firstName: toTitleCase(form.value.firstName.trim()),
-        lastName: toTitleCase(form.value.lastName.trim()),
-        emailAddress: (form.value.emailAddress || '').trim().toLowerCase(),
-        idNumber: (form.value.rfidId || '').trim(),
-        contactNumber: (form.value.contactNumber || '').trim(),
-        address: toTitleCase((form.value.address || '').trim()),
-        facultyPosition: toTitleCase((form.value.facultyPosition || '').trim()),
-        department: 'CSS',
-        birthdate: form.value.birthdate || '',
-        advisoryClass: (form.value.advisoryClass || '').trim(),
+        firstName: form.value.firstName,
+        lastName: form.value.lastName,
+        emailAddress: form.value.emailAddress,
+        idNumber: form.value.rfidId,
       }
       await api.patch(`/admin/users/${editTarget.value._id}`, payload)
       showModal.value = false
       await fetchProfessors()
       return
     }
-
-    if (form.value.password !== form.value.confirmPassword) {
-      alert('Password and Confirm Password do not match.')
-      return
-    }
     
     const payload = {
       role: "professor",
-      emailAddress: (form.value.emailAddress || '').trim().toLowerCase(),
+      emailAddress: form.value.emailAddress,
       password: form.value.password,
-      firstName: toTitleCase(form.value.firstName.trim()),
-      lastName: toTitleCase(form.value.lastName.trim()),
-      idNumber: (form.value.rfidId || '').trim(),
-      contactNumber: (form.value.contactNumber || '').trim(),
-      address: toTitleCase((form.value.address || '').trim()),
-      facultyPosition: toTitleCase((form.value.facultyPosition || '').trim()),
-      department: 'CSS',
-      birthdate: form.value.birthdate || '',
-      advisoryClass: (form.value.advisoryClass || '').trim(),
+      firstName: form.value.firstName,
+      lastName: form.value.lastName,
+      idNumber: form.value.rfidId,
+      contactNumber: "",
+      facultyPosition: form.value.department,
     }
-    await api.post("/auth/register", payload)
+    await api.post("/admin/add-professor", payload)
     showModal.value = false
-    otpEmail.value = form.value.emailAddress
-    otpCode.value = ""
-    otpError.value = ""
-    showOtpModal.value = true
-    startResendTimer(30)
+    await fetchProfessors()
+    alert("Professor created. A verification code has been sent to their email.")
   } catch (e) {
     console.error("Failed to submit professor", e)
     alert("Failed to submit professor")
@@ -941,64 +988,14 @@ const resetPassword = async (p) => {
 }
 
 // Lifecycle
-const verifyOtp = async () => {
-  try {
-    verifying.value = true
-    otpError.value = ""
-    await api.post("/auth/verify-otp", { emailAddress: otpEmail.value, otp: otpCode.value })
-    showOtpModal.value = false
-    await fetchProfessors()
-  } catch (e) {
-    otpError.value = e?.response?.data?.message || "Invalid or expired code"
-  } finally {
-    verifying.value = false
-  }
-}
-
-const resendOtp = async () => {
-  try {
-    if (resendIn.value > 0 || resendBusy.value) return
-    resendBusy.value = true
-    await api.post("/auth/resend-otp", { emailAddress: otpEmail.value })
-    startResendTimer(30)
-  } catch (e) {
-    otpError.value = e?.response?.data?.message || "Failed to resend code"
-  } finally {
-    resendBusy.value = false
-  }
-}
-
-const startResendTimer = (seconds) => {
-  resendIn.value = seconds
-  if (resendTimerId) clearInterval(resendTimerId)
-  resendTimerId = setInterval(() => {
-    if (resendIn.value > 0) resendIn.value -= 1
-    if (resendIn.value <= 0 && resendTimerId) {
-      clearInterval(resendTimerId)
-      resendTimerId = null
-    }
-  }, 1000)
-}
-
-const reloadViewSchedule = async () => {
-  try {
-    if (!viewTarget.value) return
-    viewScheduleLoading.value = true
-    viewSchedule.value = []
-    const res = await api.get(`/admin/professors/${viewTarget.value._id}/schedule/manual`)
-    viewSchedule.value = res.data?.schedule || []
-  } catch (e) {
-    // 404 means none yet; ignore
-    if (e?.response?.status !== 404) {
-      console.error('Failed to load professor schedule', e)
-    }
-    viewSchedule.value = []
-  } finally {
-    viewScheduleLoading.value = false
-  }
-}
-
 onMounted(() => {
   fetchProfessors()
+  startPolling()
+})
+
+onUnmounted(() => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval)
+  }
 })
 </script>

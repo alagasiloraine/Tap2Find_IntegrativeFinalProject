@@ -135,7 +135,7 @@
   </div>
 </template>
 <script>
-import api from "@/plugin/axios.js";
+import api from "@/utils/api.js";
 
 export default {
   name: "AdminDashboard",
@@ -220,5 +220,4 @@ async fetchConcerns() {
   }
 };
 </script>
-
 

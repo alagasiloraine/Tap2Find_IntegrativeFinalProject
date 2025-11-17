@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { ObjectId } from "mongodb";
 import { getDB } from "../db.js";
+import { UAParser } from 'ua-parser-js'; 
 
 // 📧 Setup email transporter (use App Password if Gmail)
 const transporter = nodemailer.createTransport({
@@ -27,25 +28,9 @@ export const registerUser = async (req, res) => {
   try {
     const db = getDB("tap2find_db");
     const users = db.collection("users");
-    const {
-      role,
-      emailAddress,
-      password,
-      firstName,
-      middleName,
-      lastName,
-      idNumber,
-      contactNumber,
-      facultyPosition,
-      department,
-      section,
-      address,
-      program,
-      yearLevel,
-      birthdate,
-      avatarUrl,
-      coverUrl,
-    } = req.body;
+
+    const { role, emailAddress, password, firstName, middleName, lastName, idNumber, contactNumber, facultyPosition, program, yearLevel, section, avatarUrl, coverUrl } = req.body;
+
     const existingUser = await users.findOne({ emailAddress });
     if (existingUser)
       return res.status(400).json({ message: "Email already registered" });
@@ -54,42 +39,19 @@ export const registerUser = async (req, res) => {
     const otp = generateOTP();
     const otpExpires = Date.now() + 5 * 60 * 1000; 
 
-    // Normalize birthdate and compute age if provided
-    let age = undefined;
-    let birthdateISO = undefined;
-    if (birthdate) {
-      const d = new Date(birthdate);
-      if (!isNaN(d.getTime())) {
-        birthdateISO = d.toISOString();
-        const today = new Date();
-        let a = today.getFullYear() - d.getFullYear();
-        const m = today.getMonth() - d.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < d.getDate())) a--;
-        age = a;
-      }
-    }
-
-    // Normalize casing for consistent storage
-    const toTitle = (s) => !s ? "" : String(s).replace(/\b\w+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-    const normalizedEmail = (emailAddress || '').trim().toLowerCase();
-
     const newUser = {
       role,
-      emailAddress: normalizedEmail,
+      emailAddress,
       password: hashedPassword,
-      firstName: toTitle(firstName),
-      middleName: toTitle(middleName || ''),
-      lastName: toTitle(lastName),
+      firstName,
+      middleName: middleName || '',
+      lastName,
       idNumber,
       contactNumber,
       facultyPosition,
-      department: department || "",
-      section: toTitle(section || ""),
-      address: toTitle(address || ""),
-      program: program || "BSIT",
-      yearLevel: yearLevel || "",
-      birthdate: birthdateISO,
-      age,
+      program: program || '',
+      yearLevel: yearLevel || '',
+      section: section || '',
       avatarUrl: avatarUrl || '',
       coverUrl: coverUrl || '',
       otp,
@@ -188,77 +150,291 @@ export const loginUser = async (req, res) => {
   try {
     const db = getDB("tap2find_db");
     const users = db.collection("users");
-    const { email, emailAddress, password } = req.body;
-    const targetEmail = email || emailAddress;
+    const sessions = db.collection("user_sessions");
+    
+    const { email, password } = req.body;
 
-    const user = await users.findOne({ emailAddress: targetEmail });
-    if (!user)
-      return res.status(404).json({ success: false, message: "User not found" });
+    console.log('🔐 Login attempt for email:', email);
+
+    // Input validation
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Email and password are required" 
+      });
+    }
+
+    const user = await users.findOne({ emailAddress: email });
+    
+    if (!user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Invalid email or password" 
+      });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(401).json({ success: false, message: "Incorrect password" });
 
-    if (!user.isVerified)
+    if (!isMatch) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Invalid email or password" 
+      });
+    }
+
+    if (!user.isVerified) {
       return res.status(403).json({
         success: false,
         message: "Your email is not verified. Please verify it before logging in.",
       });
+    }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ 
+      id: user._id.toString(), 
+      role: user.role 
+    }, process.env.JWT_SECRET || 'fallback-secret-key-for-development', {
       expiresIn: "1d",
     });
 
-    const when = new Date().toISOString()
-    const agent = req.headers['user-agent'] || 'Unknown'
-    const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString()
-    await users.updateOne({ _id: user._id }, { $set: { lastLogin: when, lastLoginAgent: agent } })
+    const when = new Date();
+    const agent = req.headers['user-agent'] || 'Unknown';
+    
+    // Get IP address
+    const ipAddress = req.ip || 
+                     req.headers['x-forwarded-for']?.split(',')[0] || 
+                     req.connection.remoteAddress || 
+                     req.socket.remoteAddress || 
+                     req.connection.socket?.remoteAddress || 
+                     'Unknown';
+    
+    const deviceInfo = parseUserAgent(agent);
+    const location = await getLocationFromIP(ipAddress);
 
-    // Record session
-    let sessionId = null
-    try {
-      const sessions = db.collection('sessions')
-      const ins = await sessions.insertOne({
+    console.log('💻 Session details:', {
+      device: deviceInfo,
+      ip: ipAddress,
+      location: location
+    });
+
+    // Check if an active session already exists for this device
+    const existingSession = await sessions.findOne({
+      userId: user._id,
+      userAgent: deviceInfo,
+      ipAddress: ipAddress,
+      expiresAt: { $gt: new Date() } // Only consider active sessions
+    });
+
+    let sessionId;
+    
+    if (existingSession) {
+      // Update existing session
+      console.log('🔄 Updating existing session');
+      await sessions.updateOne(
+        { _id: existingSession._id },
+        { 
+          $set: { 
+            sessionToken: token,
+            lastActivity: when,
+            expiresAt: new Date(when.getTime() + 24 * 60 * 60 * 1000), // Renew expiry
+            location: location // Update location in case it changed
+          } 
+        }
+      );
+      sessionId = existingSession._id;
+    } else {
+      // Create new session
+      console.log('🆕 Creating new session');
+      const sessionData = {
         userId: user._id,
-        userAgent: agent,
-        ip,
-        createdAt: when,
-        lastActive: when,
-      })
-      sessionId = String(ins.insertedId)
-    } catch (e) {
-      console.warn('Session record failed:', e?.message)
+        sessionToken: token,
+        userAgent: deviceInfo,
+        ipAddress: ipAddress,
+        location: location,
+        lastActivity: when,
+        expiresAt: new Date(when.getTime() + 24 * 60 * 60 * 1000),
+        createdAt: when
+      };
+
+      const result = await sessions.insertOne(sessionData);
+      sessionId = result.insertedId;
     }
+
+    // Update user's last login
+    await users.updateOne({ _id: user._id }, { 
+      $set: { 
+        lastLogin: when, 
+        lastLoginAgent: agent,
+        updatedAt: when
+      } 
+    });
+
+    // Prepare user data for response
+    const userResponse = {
+      id: user._id,
+      role: user.role,
+      emailAddress: user.emailAddress,
+      firstName: user.firstName,
+      middleName: user.middleName || '',
+      lastName: user.lastName,
+      birthdate: user.birthdate || '',
+      address: user.address || '',
+      idNumber: user.idNumber || '',
+      contactNumber: user.contactNumber || '',
+      program: user.program || '',
+      yearLevel: user.yearLevel || '',
+      section: user.section || '',
+      avatarUrl: user.avatarUrl || '',
+      coverUrl: user.coverUrl || '',
+      lastLogin: when,
+      lastLoginAgent: agent,
+      status: user.status || 'Unavailable',
+    };
+
+    console.log(existingSession ? '✅ Session updated' : '✅ New session created');
+
     res.status(200).json({
       success: true,
       message: "Login successful",
       token,
-      sessionId,
-      user: {
-        id: user._id,
-        role: user.role,
-        emailAddress: user.emailAddress,
-        firstName: user.firstName,
-        middleName: user.middleName,
-        lastName: user.lastName,
-        birthdate: user.birthdate,
-        address: user.address,
-        idNumber: user.idNumber,
-        contactNumber: user.contactNumber,
-        program: user.program,
-        yearLevel: user.yearLevel,
-        section: user.section,
-        avatarUrl: user.avatarUrl,
-        coverUrl: user.coverUrl,
-        lastLogin: when,
-        lastLoginAgent: agent,
-      },
+      user: userResponse
     });
+
   } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    console.error("❌ Login error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error during login"
+    });
   }
 };
+
+// Simple user agent parser without external dependencies
+const parseUserAgent = (userAgent) => {
+  if (!userAgent || userAgent === 'Unknown') return 'Unknown Device';
+  
+  const ua = userAgent.toLowerCase();
+  
+  // Detect browser
+  let browser = 'Unknown Browser';
+  if (ua.includes('chrome') && !ua.includes('edg')) browser = 'Chrome';
+  else if (ua.includes('firefox')) browser = 'Firefox';
+  else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'Safari';
+  else if (ua.includes('edge')) browser = 'Edge';
+  else if (ua.includes('opera')) browser = 'Opera';
+  
+  // Detect OS
+  let os = 'Unknown OS';
+  if (ua.includes('windows')) os = 'Windows';
+  else if (ua.includes('mac os') || ua.includes('macos')) os = 'macOS';
+  else if (ua.includes('linux')) os = 'Linux';
+  else if (ua.includes('android')) os = 'Android';
+  else if (ua.includes('iphone') || ua.includes('ipad')) os = 'iOS';
+  
+  return `${browser} on ${os}`;
+};
+
+// Helper function to get location from IP (simplified)
+const getLocationFromIP = async (ip) => {
+  // For local development
+  if (ip === '127.0.0.1' || ip === '::1') {
+    return 'Localhost';
+  }
+  
+  // Remove IPv6 prefix if present
+  const cleanIp = ip.replace(/^::ffff:/, '');
+  
+  // Skip private IP ranges
+  if (isPrivateIP(cleanIp)) {
+    return 'Local Network';
+  }
+
+  try {
+    // Option 1: ipinfo.io (1000 free requests/day)
+    const response = await fetch(`https://ipinfo.io/${cleanIp}?token=f574af6e231278`);
+    
+    if (!response.ok) {
+      throw new Error(`IP info API responded with status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.error) {
+      console.warn('IP info API error:', data.error);
+      return `${cleanIp} (Location Unknown)`;
+    }
+    
+    // Format location: City, Region, Country
+    const locationParts = [];
+    if (data.city && data.city !== '') locationParts.push(data.city);
+    if (data.region && data.region !== '' && data.region !== data.city) locationParts.push(data.region);
+    if (data.country && data.country !== '') locationParts.push(data.country);
+    
+    return locationParts.length > 0 ? locationParts.join(', ') : `${cleanIp} (Location Unknown)`;
+    
+  } catch (error) {
+    console.error('IP geolocation error:', error.message);
+    
+    // Fallback: Try ipapi.co
+    try {
+      const fallbackResponse = await fetch(`https://ipapi.co/${cleanIp}/json/`);
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json();
+        
+        if (fallbackData.error) {
+          return `${cleanIp} (Location Unknown)`;
+        }
+        
+        const locationParts = [];
+        if (fallbackData.city) locationParts.push(fallbackData.city);
+        if (fallbackData.region) locationParts.push(fallbackData.region);
+        if (fallbackData.country_name) locationParts.push(fallbackData.country_name);
+        
+        return locationParts.length > 0 ? locationParts.join(', ') : `${cleanIp} (Location Unknown)`;
+      }
+    } catch (fallbackError) {
+      console.error('Fallback IP geolocation error:', fallbackError.message);
+    }
+    
+    return `${cleanIp} (Location Unknown)`;
+  }
+};
+
+// Helper function to check if IP is in private range
+const isPrivateIP = (ip) => {
+  // IPv4 private ranges
+  if (ip.includes('.')) {
+    const parts = ip.split('.').map(part => parseInt(part, 10));
+    
+    // 10.0.0.0/8
+    if (parts[0] === 10) return true;
+    
+    // 172.16.0.0/12
+    if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+    
+    // 192.168.0.0/16
+    if (parts[0] === 192 && parts[1] === 168) return true;
+    
+    // 127.0.0.0/8 (localhost)
+    if (parts[0] === 127) return true;
+    
+    // 169.254.0.0/16 (link-local)
+    if (parts[0] === 169 && parts[1] === 254) return true;
+  }
+  
+  // IPv6 private ranges
+  if (ip.includes(':')) {
+    // ::1/128 (localhost)
+    if (ip === '::1') return true;
+    
+    // fc00::/7 (unique local address)
+    if (ip.startsWith('fc') || ip.startsWith('fd')) return true;
+    
+    // fe80::/10 (link-local)
+    if (ip.startsWith('fe80:')) return true;
+  }
+  
+  return false;
+}
 
 // 🧾 Request password reset
 export const requestPasswordReset = async (req, res) => {
@@ -321,4 +497,3 @@ export const resetPassword = async (req, res) => {
 };
 
 // (moved) updateProfile handler is now in studentprofileController.js
- 

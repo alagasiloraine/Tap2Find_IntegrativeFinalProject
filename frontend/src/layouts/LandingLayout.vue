@@ -15,7 +15,7 @@
             <a href="#features" class="text-gray-600 hover:text-gray-900">Features</a>
             <router-link to="/about" class="text-gray-600 hover:text-gray-900">About</router-link>
             <a href="#contact" class="text-gray-600 hover:text-gray-900">Contact</a>
-            <router-link to="/login" class="text-gray-600 hover:text-gray-900">Login</router-link>
+            <router-link to="/auth/login" class="text-gray-600 hover:text-gray-900">Login</router-link>
             <router-link to="/register" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Get Started</router-link>
           </div>
           

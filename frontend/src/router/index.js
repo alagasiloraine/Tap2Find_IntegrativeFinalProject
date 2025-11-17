@@ -38,7 +38,7 @@ router.beforeEach((to, from, next) => {
   // 🧩 If route requires login but no token
   if (requiresAuth && !token) {
     clearSession()
-    return next('/login')
+    return next('/auth/login')
   }
 
   // 👮 If route has role restrictions

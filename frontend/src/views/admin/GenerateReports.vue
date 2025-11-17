@@ -177,7 +177,7 @@
 </template>
 
 <script>
-import api from "@/plugin/axios.js";
+import api from "@/utils/api.js";
 import * as XLSX from "xlsx";
 
 export default {

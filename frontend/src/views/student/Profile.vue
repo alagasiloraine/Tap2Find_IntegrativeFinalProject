@@ -1,8 +1,7 @@
 <template>
-  <div class="bg-white min-h-screen pb-20 md:pb-8 p-4 md:p-4">
-    <StudentTopNav />
+  <div class="bg-white min-h-screen pb-20 md:pb-8 py-4 md:p-4">
 
-    <div class="px-4 md:px-6 pt-8">
+    <div class="px-0 md:px-6 pt-8">
       <div class="mb-4">
         <button @click="goBack" class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 ">
           <iconify-icon icon="ion:chevron-back" class="text-base" />
@@ -120,9 +119,9 @@
             </div>
             <div>
               <label class="block text-sm text-gray-600 mb-1">Email</label>
-              <div class="flex items-center gap-2">
-                <input v-model="form.email" type="email" class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" placeholder="name@school.edu">
-                <span class="text-xs" :class="form.emailVerified ? 'text-green-600' : 'text-gray-500'">Status: {{ form.emailVerified ? 'Verified' : 'Unverified' }}</span>
+              <div class="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
+                <input v-model="form.email" type="email" class="w-full sm:flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" placeholder="name@school.edu">
+                <span class="text-[10px] sm:text-xs break-words whitespace-normal" :class="form.emailVerified ? 'text-green-600' : 'text-gray-500'">Status: {{ form.emailVerified ? 'Verified' : 'Unverified' }}</span>
               </div>
             </div>
           </div>
@@ -181,7 +180,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import StudentTopNav from '@/components/StudentTopNav.vue'
 
 const router = useRouter()
 const programs = ['BSIT', 'BSCS', 'BSCpE']

@@ -3,18 +3,60 @@
     <!-- Main Content Area -->
     <div class="flex">
       <!-- Sidebar - Desktop/Tablet Only -->
-      <aside class="hidden md:block w-64 fixed left-4 top-4 bottom-4 h-auto shadow rounded-xl">
+      <aside class="hidden md:block md:w-56 lg:w-64 xl:w-72 fixed md:left-3 lg:left-4 xl:left-6 md:top-3 md:bottom-3 lg:top-4 lg:bottom-4 h-auto shadow rounded-xl z-40">
         <StudentSidebar />
       </aside>
 
       <!-- Main Content with Sidebar Spacing -->
-      <main class="flex-1 md:ml-64">
+      <main class="flex-1 min-w-0 px-4 sm:px-6 md:px-6 pb-20 md:pb-0 md:ml-[14.75rem] lg:ml-[17rem] xl:ml-[19.5rem]">
+        <div class="sticky top-0 z-30 bg-white">
+          <StudentNotificationsTopNav v-if="isNotifications" />
+          <StudentTopNav v-else />
+        </div>
         <router-view></router-view>
       </main>
     </div>
-    <!-- Bottom Navigation - Mobile Only -->
-    <StudentBottomNav />
-    
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="md:hidden fixed left-0 right-0 z-40 px-4" style="bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px);">
+      <div class="mx-auto max-w-md">
+        <div class="rounded-2xl bg-white border border-gray-200 shadow-lg">
+          <ul class="flex items-center justify-between px-3 py-2">
+            <!-- Home -->
+            <router-link to="/student/dashboard" class="flex items-center">
+              <div :class="isActive('/student/dashboard') ? 'bg-[#cbd5f1]/60 text-[#102A71]' : 'text-gray-500'" class="flex items-center gap-2 h-10 px-3 rounded-full transition-colors">
+                <iconify-icon :icon="isActive('/student/dashboard') ? 'fluent:home-12-filled' : 'fluent:home-12-regular'" class="text-xl" />
+                <span v-if="isActive('/student/dashboard')" class="text-sm font-medium">Home</span>
+              </div>
+            </router-link>
+
+            <!-- Locate Professor -->
+            <router-link to="/student/locate-professor" class="flex items-center">
+              <div :class="isActive('/student/locate-professor') ? 'bg-[#cbd5f1]/60 text-[#102A71]' : 'text-gray-500'" class="flex items-center gap-2 h-10 px-3 rounded-full transition-colors">
+                <iconify-icon :icon="isActive('/student/locate-professor') ? 'fluent:location-12-filled' : 'fluent:location-12-regular'" class="text-xl" />
+                <span v-if="isActive('/student/locate-professor')" class="text-sm font-medium">Locate</span>
+              </div>
+            </router-link>
+
+            <!-- Notifications -->
+            <router-link to="/student/notifications" class="flex items-center">
+              <div :class="isActive('/student/notifications') ? 'bg-[#cbd5f1]/60 text-[#102A71]' : 'text-gray-500'" class="flex items-center gap-2 h-10 px-3 rounded-full transition-colors">
+                <iconify-icon icon="lucide:bell" class="text-xl" />
+                <span v-if="isActive('/student/notifications')" class="text-sm font-medium">Alerts</span>
+              </div>
+            </router-link>
+
+            <!-- Profile -->
+            <router-link to="/student/profile" class="flex items-center">
+              <div :class="isActive('/student/profile') ? 'bg-[#cbd5f1]/60 text-[#102A71]' : 'text-gray-500'" class="flex items-center gap-2 h-10 px-3 rounded-full transition-colors">
+                <iconify-icon :icon="isActive('/student/profile') ? 'lucide:user' : 'lucide:user'" class="text-xl" />
+                <span v-if="isActive('/student/profile')" class="text-sm font-medium">Profile</span>
+              </div>
+            </router-link>
+          </ul>
+        </div>
+      </div>
+    </nav>
   </div>
 </template>
 
@@ -22,13 +64,18 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StudentSidebar from '@/views/student/StudentSidebar.vue'
-import StudentBottomNav from '@/views/student/StudentBottomNav.vue'
+import StudentTopNav from '@/components/StudentTopNav.vue'
+import StudentNotificationsTopNav from '@/components/StudentNotificationsTopNav.vue'
 
 const route = useRoute()
 
 
 const router = useRouter()
 const showConfirm = ref(false)
+const isNotifications = computed(() => route.path.includes('/student/notifications'))
+
+// Helper to highlight active bottom nav item
+const isActive = (path) => route.path === path
 
 // 🧩 Reactive user state
 const user = ref({

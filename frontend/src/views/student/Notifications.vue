@@ -1,29 +1,5 @@
 <template>
-  <div class="bg-white min-h-screen pb-28 md:pb-16 p-6 md:p-10">
-    <!-- Header -->
-    <div class="flex items-start justify-between relative">
-      <div>
-        <h1 class="text-4xl font-semibold text-gray-900">Notification</h1>
-        <p class="text-base text-gray-500">
-          You have 
-          <span class="text-[#F5C400]">{{ unreadCount }} notification{{ unreadCount !== 1 ? 's' : '' }}</span> 
-          today.
-        </p>
-      </div>
-      <div class="relative" ref="menuRef">
-        <button class="p-2 rounded-full hover:bg-gray-100" aria-label="Filter" @click="toggleMenu">
-          <iconify-icon icon="mage:filter" class="text-2xl" />
-        </button>
-        <transition name="fade">
-          <div v-if="menuOpen" class="absolute right-0 mt-2 w-44 rounded-xl border border-gray-200 bg-white shadow-md overflow-hidden z-10">
-            <button @click="selectFilter(null)" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">All</button>
-            <button @click="selectFilter('today')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Today</button>
-            <button @click="selectFilter('week')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">This Week</button>
-          </div>
-        </transition>
-      </div>
-    </div>
-
+  <div class="bg-white min-h-screen pb-28 md:pb-16 py-4 md:p-4">
     <div class="mt-2"></div>
 
     <!-- Notifications List -->
@@ -49,11 +25,11 @@
               class="w-10 h-10 rounded-full object-cover flex-shrink-0"
             />
             <div class="flex-1">
-              <p class="text-gray-900" :class="{'font-semibold': !notification.read}">
+              <p class="text-[11px] sm:text-base text-gray-900" :class="{'font-semibold': !notification.read}">
                 {{ notification.title }}
               </p>
-              <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
-              <p class="text-xs text-gray-500 mt-1">{{ formatTimeAgo(notification.createdAt) }}</p>
+              <p class="text-[10px] sm:text-sm text-gray-600 mt-1">{{ notification.message }}</p>
+              <p class="text-[9px] sm:text-xs text-gray-500 mt-1">{{ formatTimeAgo(notification.createdAt) }}</p>
             </div>
             <div class="flex-shrink-0">
               <button
@@ -88,11 +64,11 @@
               class="w-10 h-10 rounded-full object-cover flex-shrink-0"
             />
             <div class="flex-1">
-              <p class="text-gray-900" :class="{'font-semibold': !notification.read}">
+              <p class="text-[11px] sm:text-base text-gray-900" :class="{'font-semibold': !notification.read}">
                 {{ notification.title }}
               </p>
-              <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
-              <p class="text-xs text-gray-500 mt-1">{{ formatTimeAgo(notification.createdAt) }}</p>
+              <p class="text-[10px] sm:text-sm text-gray-600 mt-1">{{ notification.message }}</p>
+              <p class="text-[9px] sm:text-xs text-gray-500 mt-1">{{ formatTimeAgo(notification.createdAt) }}</p>
             </div>
             <div class="flex-shrink-0">
               <button
@@ -127,11 +103,11 @@
               class="w-10 h-10 rounded-full object-cover flex-shrink-0"
             />
             <div class="flex-1">
-              <p class="text-gray-900" :class="{'font-semibold': !notification.read}">
+              <p class="text-[11px] sm:text-base text-gray-900" :class="{'font-semibold': !notification.read}">
                 {{ notification.title }}
               </p>
-              <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
-              <p class="text-xs text-gray-500 mt-1">{{ formatDate(notification.createdAt) }}</p>
+              <p class="text-[10px] sm:text-sm text-gray-600 mt-1">{{ notification.message }}</p>
+              <p class="text-[9px] sm:text-xs text-gray-500 mt-1">{{ formatDate(notification.createdAt) }}</p>
             </div>
             <div class="flex-shrink-0">
               <button
@@ -158,15 +134,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import StudentTopNav from '@/components/StudentTopNav.vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useNotifications } from '@/composables/useNotifications'
 import api from '@/utils/api'
 
+const route = useRoute()
 const selectedType = ref(null)
 const loading = ref(true)
-const menuOpen = ref(false)
-const menuRef = ref(null)
 const { notifications, markAsRead } = useNotifications()
 
 // 🧠 Utility: check if date is today
@@ -231,21 +206,17 @@ const unreadCount = computed(() => {
 })
 
 // Filter menu functions
-function toggleMenu() {
-  menuOpen.value = !menuOpen.value
-}
+// Sync selectedType with route query (?filter=today|week)
+onMounted(() => {
+  const q = route.query.filter
+  if (q === 'today' || q === 'week') selectedType.value = q
+})
 
-function selectFilter(val) {
-  selectedType.value = val
-  menuOpen.value = false
-}
-
-function onClickOutside(e) {
-  if (!menuRef.value) return
-  if (!menuRef.value.contains(e.target)) {
-    menuOpen.value = false
+watch(() => route.query.filter, (q) => {
+  if (q === 'today' || q === 'week' || q === null || q === undefined) {
+    selectedType.value = q ?? null
   }
-}
+})
 
 // ✅ Helper for dynamic icons
 const getNotificationIcon = (type) => {
@@ -315,11 +286,6 @@ const fetchNotifications = async () => {
 // ✅ On mount: load notifications
 onMounted(() => {
   fetchNotifications()
-  document.addEventListener('click', onClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', onClickOutside)
 })
 </script>
 

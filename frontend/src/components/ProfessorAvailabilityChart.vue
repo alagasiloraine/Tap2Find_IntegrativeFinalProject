@@ -158,6 +158,7 @@
           <div class="relative flex justify-center w-full h-12 bg-indigo-400" title="Available"></div>
           <span class="absolute bottom-0 text-[10px] font-semibold">6 PM</span>
         </div>
+        </div>
       </div>
       
     </div>
@@ -177,8 +178,11 @@
 <template>
   <div class="w-full h-full flex flex-col items-center p-2">
     <div class="flex flex-col items-center w-full p-2 sm:p-4 text-white relative">
-      <h2 class="text-base font-semibold">Professor Availability</h2>
-      <span class="text-xs font-medium text-white/80 mb-8">{{ currentDay }}</span>
+      <!-- Reserve vertical space so bars never crowd the headings on small screens -->
+      <div class="w-full text-center leading-tight mb-3 sm:mb-6 md:mb-8 h-12 sm:h-14 md:h-16 flex flex-col items-center justify-center">
+        <h2 class="text-xs sm:text-sm md:text-base font-semibold">Professor Availability</h2>
+        <span class="block text-[10px] sm:text-xs font-medium text-white/80 mt-0.5">{{ currentDay }}</span>
+      </div>
       
       <!-- Loading State -->
       <div v-if="loading" class="flex items-center justify-center h-72">
@@ -186,33 +190,30 @@
       </div>
 
       <!-- Chart -->
-      <div v-else class="flex items-end flex-grow w-full mt-2 space-x-1 sm:space-x-2">
+      <div v-else class="relative z-10 w-full overflow-x-auto md:overflow-visible overflow-y-visible">
+        <div class="relative flex items-end flex-grow w-[900px] md:w-full mt-2 sm:mt-3 space-x-1 sm:space-x-2">
+          <!-- Current Time Indicator (desktop and up) positioned relative to bars row -->
+          <div 
+            v-if="!loading && isNowVisible"
+            class="flex absolute bottom-5 left-0 -translate-x-1/2 z-[60] pointer-events-none"
+            :style="{ left: nowLeftPercent + '%' }"
+          >
+            <div class="w-1 h-6 md:h-8 bg-red-500 rounded-full z-[60]"></div>
+            <div class="absolute -top-6 text-xs text-red-300 font-semibold whitespace-nowrap z-[60]">
+              Now
+            </div>
+          </div>
         <div 
           v-for="(data, hour) in hourlyData" 
           :key="hour"
           class="relative flex flex-col items-center flex-grow pb-5 group"
+          @mouseenter="showTooltip($event, data)"
+          @mousemove="moveTooltip($event)"
+          @mouseleave="hideTooltip"
         >
-          <!-- Tooltip -->
-          <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-            <div class="text-sm font-semibold">{{ data.total }} PROFESSORS</div>
-            <div class="mt-1 space-y-1 text-xs">
-              <div class="flex items-center gap-2">
-                <span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span>
-                <span>{{ data.available }} Available</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span>
-                <span>{{ data.busy }} Busy</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span>
-                <span>{{ data.notAvailable }} Not Available</span>
-              </div>
-            </div>
-          </div>
 
           <!-- Chart Bars -->
-          <div class="w-full flex flex-col justify-end h-32">
+          <div class="w-full flex flex-col justify-end h-28 sm:h-32 md:h-36">
             <!-- Not Available Bar -->
             <div 
               v-if="data.notAvailable > 0"
@@ -244,30 +245,94 @@
           </span>
         </div>
       </div>
-
-      <!-- Current Time Indicator -->
-      <div 
-        v-if="!loading && currentHour >= 8 && currentHour <= 20"
-        class="absolute bottom-8 left-0 right-0 flex justify-center"
-        :style="{ left: `${((currentHour - 8) / 13) * 100}%` }"
-      >
-        <div class="w-1 h-8 bg-red-500 rounded-full"></div>
-        <div class="absolute -top-6 text-xs text-red-300 font-semibold whitespace-nowrap">
-          Now
-        </div>
       </div>
+      
+      
+      
+      <!-- Global tooltip portal inside template to avoid SFC parse issues -->
+      <teleport to="body">
+        <div v-if="tooltip.visible" class="pointer-events-none fixed z-[9999]" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
+          <div class="w-40 sm:w-44 rounded-lg bg-indigo-900 text-white shadow-lg px-3 py-2">
+            <div class="text-sm font-semibold">{{ tooltip.data ? tooltip.data.total : '' }} PROFESSORS</div>
+            <div class="mt-1 space-y-1 text-xs">
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-400"></span><span>{{ tooltip.data ? tooltip.data.available : '' }} Available</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-300"></span><span>{{ tooltip.data ? tooltip.data.busy : '' }} Busy</span></div>
+              <div class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-200"></span><span>{{ tooltip.data ? tooltip.data.notAvailable : '' }} Not Available</span></div>
+            </div>
+          </div>
+        </div>
+      </teleport>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api from '@/utils/api'
 
 const loading = ref(true)
 const hourlyData = ref({})
 const currentDay = ref('')
 const currentHour = ref(0)
+
+// Keep the 'Now' indicator realtime with minute precision
+let nowTicker = null
+const updateCurrentHour = () => {
+  const d = new Date()
+  currentHour.value = d.getHours() + d.getMinutes() / 60
+}
+updateCurrentHour()
+
+// Tooltip state rendered via Teleport to body (prevents clipping/overlap)
+const tooltip = ref({ visible: false, x: 0, y: 0, data: null })
+
+// Compute hour range from data to position 'Now' accurately at column centers
+const hoursRange = computed(() => {
+  const keys = Object.keys(hourlyData.value || {}).map((n) => parseInt(n, 10)).filter((n) => !Number.isNaN(n)).sort((a, b) => a - b)
+  const min = keys.length ? keys[0] : 0
+  const max = keys.length ? keys[keys.length - 1] : 0
+  const count = keys.length || 1
+  return { min, max, count }
+})
+
+const nowLeftPercent = computed(() => {
+  const { min, count } = hoursRange.value
+  // position at the center of the current hour column, include minute fraction
+  const pos = ((currentHour.value - min) + 0.5) / count
+  const clamped = Math.max(0, Math.min(1, pos))
+  return clamped * 100
+})
+
+const isToday = computed(() => {
+  try {
+    const today = new Date().toLocaleDateString(undefined, { weekday: 'long' })
+    return (currentDay.value || '').toLowerCase() === today.toLowerCase()
+  } catch (e) {
+    return true
+  }
+})
+
+const isNowVisible = computed(() => {
+  const { min, max } = hoursRange.value
+  return isToday.value && currentHour.value >= min && currentHour.value <= (max + 1)
+})
+
+const showTooltip = (evt, data) => {
+  tooltip.value.data = data
+  tooltip.value.visible = true
+  moveTooltip(evt)
+}
+
+const moveTooltip = (evt) => {
+  if (!tooltip.value.visible) return
+  const offset = 12
+  tooltip.value.x = evt.clientX + offset
+  tooltip.value.y = evt.clientY - 80
+}
+
+const hideTooltip = () => {
+  tooltip.value.visible = false
+}
 
 const formatHour = (hour) => {
   if (hour === 12) return '12 PM'
@@ -315,12 +380,17 @@ const generateSampleData = () => {
 
 onMounted(() => {
   fetchAvailabilityData()
+  // start realtime ticker for 'Now' indicator (update every 30s)
+  nowTicker = setInterval(updateCurrentHour, 30 * 1000)
   
   // Refresh data every 5 minutes
   setInterval(fetchAvailabilityData, 5 * 60 * 1000)
 })
-</script>
 
+onUnmounted(() => {
+  if (nowTicker) clearInterval(nowTicker)
+})
+</script>
 <style scoped>
 .group:hover .group-hover\:block {
   display: block;

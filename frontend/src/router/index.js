@@ -19,6 +19,10 @@ const router = createRouter({
     // Student routes
     ...studentRoutes,
   ],
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    return { left: 0, top: 0 }
+  },
 })
 
 // ✅ Navigation Guard (Middleware)

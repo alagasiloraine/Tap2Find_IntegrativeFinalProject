@@ -1,18 +1,18 @@
 <template>
-  <div class="px-4 md:px-2 py-4 flex justify-between items-center rounded-lg mx-4 mt-6" :class="{ 'gap-32': isDashboard }">
+  <div class="relative -mx-4 md:-mx-6 px-4 md:px-6 py-1.5 flex flex-row items-start justify-between flex-nowrap rounded-lg mx-0 mt-6 gap-2 sm:gap-3 lg:gap-32 min-h-[56px] sm:min-h-[72px]">
     <!-- Navigation Menu Info -->
-    <div class="flex-1">
-      <h1 class="text-4xl font-semibold text-gray-900">{{ currentPageTitle }}</h1>
-      <p class="text-base text-gray-500">{{ currentPageDescription }}</p>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-xs sm:text-xl md:text-3xl lg:text-4xl font-semibold text-gray-900">{{ currentPageTitle }}</h1>
+      <p class="text-[10px] sm:text-sm md:text-base text-gray-500 break-words">{{ currentPageDescription }}</p>
     </div>
 
     <!-- Right Side - Notifications and Profile -->
-    <div class="flex items-center space-x-1">
+    <div class="flex items-center space-x-1 ml-2 sm:ml-auto shrink-0">
       <!-- Notifications -->
-      <div class="relative">
+      <div class="static sm:relative">
         <button
           @click="toggleNotifications"
-          class="flex items-center justify-center w-12 h-12 text-2xl text-gray-600 hover:text-gray-600 relative transition-colors"
+          class="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 text-2xl text-gray-600 hover:text-gray-600 relative transition-colors"
         >
           <iconify-icon
             :icon="showNotifications ? 'ion:notifications' : 'ion:notifications-outline'"
@@ -26,31 +26,30 @@
           </span>
         </button>
 
-        <!-- 🔽 Notifications Dropdown -->
-        <Transition name="dropdown">
-          <div
-            v-if="showNotifications"
-            class="absolute right-0 mt-2 w-[420px] bg-white rounded-lg shadow-lg border border-gray-200 z-50"
-          >
+        <!-- 🔽 Notifications Dropdown centered under header on xs; anchored to header container -->
+        <div
+          v-if="showNotifications"
+          class="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[90vw] sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[420px] sm:translate-x-0 bg-white rounded-lg shadow-lg border border-gray-200 z-[70]"
+        >
             <!-- Header -->
-            <div class="px-6 py-4 flex justify-between items-center border-b border-gray-100">
-              <h3 class="text-xl font-bold text-gray-900">Notifications</h3>
-              <button @click="clearAll" class="text-sm text-gray-500 hover:text-gray-700">
+            <div class="px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center border-b border-gray-100">
+              <h3 class="text-sm sm:text-xl font-bold text-gray-900">Notifications</h3>
+              <button @click="clearAll" class="text-xs sm:text-sm text-gray-500 hover:text-gray-700">
                 Clear All
               </button>
             </div>
 
             <!-- Notifications List -->
-            <div class="max-h-96 overflow-y-auto px-6 py-2">
+            <div class="max-h-96 overflow-y-auto px-4 sm:px-6 py-2">
               <template v-if="notifications.length > 0">
                 <!-- TODAY -->
                 <div v-if="groupedNotifications.today.length">
-                  <p class="text-sm text-gray-500 font-semibold mt-2 mb-1">Today</p>
+                  <p class="text-xs sm:text-sm text-gray-500 font-semibold mt-2 mb-1">Today</p>
                   <ul>
                     <li
                       v-for="n in groupedNotifications.today"
                       :key="n._id"
-                      class="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0"
+                      class="flex items-start gap-2 sm:gap-3 py-2 sm:py-3 border-b border-gray-100 last:border-0"
                     >
                       <div>
                         <div
@@ -63,14 +62,14 @@
                           v-else
                           :src="n.avatar || '/profile.svg'"
                           alt="avatar"
-                          class="w-10 h-10 rounded-full object-cover"
+                          class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                         />
                       </div>
 
                       <div class="flex-1">
-                        <p class="text-gray-900 font-medium">{{ n.title }}</p>
-                        <p class="text-sm text-gray-600">{{ n.message }}</p>
-                        <p class="text-xs text-gray-500 mt-1">{{ formatDate(n.createdAt) }}</p>
+                        <p class="text-[11px] sm:text-base text-gray-900 font-medium">{{ n.title }}</p>
+                        <p class="text-[10px] sm:text-sm text-gray-600">{{ n.message }}</p>
+                        <p class="text-[9px] sm:text-xs text-gray-500 mt-1">{{ formatDate(n.createdAt) }}</p>
                       </div>
 
                       <button
@@ -86,7 +85,7 @@
 
                 <!-- YESTERDAY -->
                 <div v-if="groupedNotifications.yesterday.length">
-                  <p class="text-sm text-gray-500 font-semibold mt-4 mb-1">Yesterday</p>
+                  <p class="text-xs sm:text-sm text-gray-500 font-semibold mt-4 mb-1">Yesterday</p>
                   <ul>
                     <li
                       v-for="n in groupedNotifications.yesterday"
@@ -109,9 +108,9 @@
                       </div>
 
                       <div class="flex-1">
-                        <p class="text-gray-900 font-medium">{{ n.title }}</p>
-                        <p class="text-sm text-gray-600">{{ n.message }}</p>
-                        <p class="text-xs text-gray-500 mt-1">{{ formatDate(n.createdAt) }}</p>
+                        <p class="text-[11px] sm:text-base text-gray-900 font-medium">{{ n.title }}</p>
+                        <p class="text-[10px] sm:text-sm text-gray-600">{{ n.message }}</p>
+                        <p class="text-[9px] sm:text-xs text-gray-500 mt-1">{{ formatDate(n.createdAt) }}</p>
                       </div>
 
                       <button
@@ -127,7 +126,7 @@
 
                 <!-- EARLIER -->
                 <div v-if="groupedNotifications.earlier.length">
-                  <p class="text-sm text-gray-500 font-semibold mt-4 mb-1">Earlier</p>
+                  <p class="text-xs sm:text-sm text-gray-500 font-semibold mt-4 mb-1">Earlier</p>
                   <ul>
                     <li
                       v-for="n in groupedNotifications.earlier"
@@ -150,9 +149,9 @@
                       </div>
 
                       <div class="flex-1">
-                        <p class="text-gray-900 font-medium">{{ n.title }}</p>
-                        <p class="text-sm text-gray-600">{{ n.message }}</p>
-                        <p class="text-xs text-gray-500 mt-1">{{ formatDate(n.createdAt) }}</p>
+                        <p class="text-[11px] sm:text-base text-gray-900 font-medium">{{ n.title }}</p>
+                        <p class="text-[10px] sm:text-sm text-gray-600">{{ n.message }}</p>
+                        <p class="text-[9px] sm:text-xs text-gray-500 mt-1">{{ formatDate(n.createdAt) }}</p>
                       </div>
 
                       <button
@@ -183,15 +182,14 @@
                 View all
               </router-link>
             </div>
-          </div>
-        </Transition>
+        </div>
       </div>
 
       <!-- Profile -->
       <div class="relative">
         <button
           @click="toggleProfileMenu"
-          class="flex items-center space-x-3 p-2  rounded-lg transition-colors"
+          class="flex items-center space-x-0 md:space-x-2 p-2 rounded-lg transition-colors"
         >
           <!-- Profile Picture -->
           <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center overflow-hidden">
@@ -199,22 +197,26 @@
           </div>
           
           <!-- Profile Info -->
-          <div class="flex flex-col items-start">
+          <div class="hidden md:flex flex-col items-start">
             <span class="text-sm font-semibold text-gray-900">{{ user.firstName }} {{ user.lastName }}</span>
             <span class="text-xs text-gray-500">{{ user.emailAddress }}</span>
           </div>
           
           <!-- Dropdown Icon -->
-          <iconify-icon icon="lucide:chevron-down" class="h-4 w-4 text-gray-400" />
+          <iconify-icon icon="lucide:chevron-down" class="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 -ml-1" />
         </button>
 
         <!-- Profile Dropdown Menu -->
         <Transition name="dropdown">
           <div
             v-if="showProfileMenu"
-            class="absolute right-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+            class="absolute right-2 sm:right-0 mt-2 w-56 sm:w-full bg-white rounded-lg shadow-lg border border-gray-200 z-[60]"
           >
             <div class="py-1">
+              <!-- Email on small screens -->
+              <div class="block sm:hidden px-4 py-2 text-xs text-gray-500 border-b border-gray-100">
+                {{ user.emailAddress }}
+              </div>
               <router-link
                 to="/student/profile"
                 class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"

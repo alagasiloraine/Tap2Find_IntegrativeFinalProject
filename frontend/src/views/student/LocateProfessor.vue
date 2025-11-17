@@ -1,17 +1,14 @@
 <template>
-  <div class="bg-white min-h-screen pb-20 md:pb-8 p-4 md:p-4">
-    <!-- Top Bar with Notifications and Profile -->
-    <StudentTopNav />
-
+  <div class="bg-white min-h-screen pb-20 md:pb-8 py-4 md:p-4">
     <!-- Content Division -->
-    <div class="px-4 md:px-6 py-4 min-h-0">
+    <div class="px-0 md:px-6 py-4 min-h-0">
       <!-- Search and Filter Section -->
       <div>
       <!-- Search Bar -->
       <div class="mb-4">
         <div class="flex flex-col md:flex-row gap-4">
           <div class="flex-1">
-            <div class="relative flex gap-2">
+            <div class="relative flex items-center gap-2">
               <div class="relative">
                 <iconify-icon icon="fluent:search-16-filled" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
@@ -20,7 +17,7 @@
                   @focus="showSearchDropdown = true"
                   @blur="hideSearchDropdown"
                   placeholder="Search professor name..."
-                  class="w-96 pl-10 pr-4 py-2 rounded-full bg-gray-50 focus:outline-none"
+                  class="w-full md:w-96 pl-10 pr-3 py-2 rounded-xl bg-white text-sm border border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 placeholder:text-xs md:placeholder:text-sm"
                 />
               
               <!-- Search Dropdown -->
@@ -65,16 +62,82 @@
             </div>
               
               <!-- Filter Icon -->
-              <div class="flex items-center">
+              <div class="flex items-center ml-auto shrink-0">
                 <iconify-icon
                   @click="toggleFilterSlider"
                   icon="mage:filter-fill"
-                  class="text-xl cursor-pointer transition-colors"
+                  class="text-lg md:text-xl cursor-pointer transition-colors"
                   :class="(showFilterSlider || selectedYearLevel !== '' || selectedStatus !== null) ? 'text-[#102A71]' : 'text-gray-600'"
                 ></iconify-icon>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Mobile Bottom Sheet (small screens only) -->
+      <div
+        v-if="showFilterSlider"
+        class="md:hidden fixed inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-50 max-h-[85vh] overflow-y-auto"
+      >
+        <!-- Header (mobile) -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-[#001740] rounded-t-2xl">
+          <h2 class="text-base text-white font-semibold">Filter</h2>
+        </div>
+
+        <!-- Content (mobile) -->
+        <div class="px-4 py-4 pb-24">
+          <!-- Year Level Filter -->
+          <div class="mb-6">
+            <h3 class="text-sm font-semibold mb-3">Year Level</h3>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                v-for="option in yearLevelOptions"
+                :key="option.value"
+                @click="selectYearLevel(option.value)"
+                class="px-3 py-2 rounded-lg transition-colors text-sm"
+                :class="selectedYearLevel === option.value 
+                  ? 'text-[#102A71] border border-[#102A71] bg-white' 
+                  : 'border border-transparent bg-gray-50 text-gray-500 hover:bg-gray-50'"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Status Filter -->
+          <div>
+            <h3 class="text-sm font-semibold mb-3">Status</h3>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                v-for="status in statusOptions"
+                :key="status.value"
+                @click="selectStatusFilter(status.value)"
+                class="px-3 py-2 rounded-lg transition-colors text-sm"
+                :class="selectedStatus === status.value 
+                  ? 'text-[#102A71] border border-[#102A71] bg-white' 
+                  : 'border border-transparent bg-gray-50 text-gray-500 hover:bg-gray-50'"
+              >
+                {{ status.label }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Buttons (mobile) -->
+        <div class="sticky bottom-0 left-0 right-0 bg-white px-4 py-3 flex gap-3 border-t z-10">
+          <button
+            @click="toggleFilterSlider"
+            class="flex-1 px-4 py-2 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors text-sm"
+          >
+            Back
+          </button>
+          <button
+            @click="applyFilters"
+            class="flex-1 px-4 py-2 bg-[#F5C400] text-white rounded-lg font-medium hover:bg-[#F5C400]/80 transition-colors text-sm"
+          >
+            Apply
+          </button>
         </div>
       </div>
 
@@ -97,53 +160,53 @@
       </div>
 
       <!-- Results -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
         <div
           v-for="professor in filteredProfessors"
           :key="professor.id"
           :data-professor-id="professor.id"
-          class="bg-gray-50 rounded-lg p-4 transition-shadow"
+          class="bg-gray-50 rounded-lg p-2 md:p-4 transition-shadow"
         >
-          <div class="flex items-center gap-4">
+          <div class="grid grid-cols-[auto,1fr] items-stretch gap-2 md:gap-4">
             <!-- Professor Avatar -->
-            <div class="flex-shrink-0 flex items-center justify-center">
-              <div class="w-32 h-32 bg-gradient-to-br from-blue-300 to-blue-500 rounded-lg flex items-center justify-center">
-                <span class="text-white text-2xl font-bold">{{ professor.name.split(' ').map(n => n[0]).join('') }}</span>
+            <div class="flex items-center justify-center h-full">
+              <div class="h-full aspect-square md:w-20 md:h-20 lg:w-24 lg:h-24 min-h-[48px] min-w-[48px] bg-gradient-to-br from-blue-300 to-blue-500 rounded-lg flex items-center justify-center">
+                <span class="text-white text-[11px] md:text-base lg:text-lg font-bold">{{ professor.name.split(' ').map(n => n[0]).join('') }}</span>
+              </div>
             </div>
-          </div>
           
             <!-- Professor Info -->
-            <div class="flex-1 flex flex-col min-w-0">
+            <div class="flex-1 flex flex-col min-w-0 whitespace-normal space-y-0.5 md:space-y-1">
               <!-- Name -->
-              <h3 class="font-medium text-gray-900 text-xl truncate">{{ professor.name }}</h3>
+              <h3 class="font-medium text-gray-900 text-[10px] md:text-sm lg:text-base">{{ professor.name }}</h3>
               
               <!-- Course/Department -->
-              <p class="text-sm text-gray-600 mb-2 truncate">{{ professor.department }}</p>
+              <p class="text-[9px] md:text-sm text-gray-600 mb-0 md:mb-0">{{ professor.department }}</p>
               
               <!-- Status Badge -->
-              <span class="px-2 py-1 rounded-lg text-xs font-medium w-fit inline-flex items-center gap-1"
+              <span class="px-1 py-0.5 md:px-2 md:py-1 rounded-lg text-[8px] md:text-xs font-medium w-fit inline-flex items-center gap-1"
                 :class="getStatusBadgeClass(professor)"
               >
-                <iconify-icon :icon="getStatusIcon(professor)" class="h-3 w-3" />
+                <iconify-icon :icon="getStatusIcon(professor)" class="h-3 w-3 md:h-3 md:w-3" />
                 <span>{{ getStatusDisplayText(professor) }}</span>
               </span>
               
               <!-- Location and Send Inquiry Button -->
-              <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center text-sm text-gray-400">
-                  <iconify-icon icon="lucide:map-pin" class="h-3 w-3 mr-1 flex-shrink-0" />
-                  <span class="truncate">{{ professor.office }}</span>
+              <div class="flex items-center gap-3 w-full mt-0.5 md:mt-1">
+                <div class="flex items-center text-[8px] md:text-sm text-gray-400">
+                  <iconify-icon icon="lucide:map-pin" class="h-3 w-3 mr-1 flex-shrink-0 md:h-4 md:w-4" />
+                  <span>{{ professor.office }}</span>
                 </div>
                 
                 <button
                   @click="contactProfessor(professor)"
                   :disabled="!isProfessorAvailable(professor)"
-                  class="py-2 px-4 rounded-lg text-sm flex items-center justify-center flex-shrink-0 transition-all"
+                  class="ml-auto py-0.5 px-1.5 md:py-2 md:px-3 rounded-lg text-[8px] md:text-sm flex items-center justify-center flex-shrink-0 transition-all"
                   :class="isProfessorAvailable(professor)
                     ? 'bg-[#102A71] text-white hover:bg-[#102A71]/80'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
                 >
-                  <iconify-icon icon="lucide:send" class="mr-2 h-4 w-4" />
+                  <iconify-icon icon="lucide:send" class="mr-1.5 h-3 w-3 md:mr-2" />
                   {{ isProfessorAvailable(professor) ? 'Send Inquiry' : 'Not Available' }}
                 </button>
 
@@ -193,7 +256,7 @@
     >
       <div
         v-if="showFilterSlider"
-        class="fixed top-0 bottom-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 overflow-y-auto"
+        class="hidden md:block fixed top-0 bottom-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 overflow-y-auto"
       >
         <!-- Header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-[#001740]">
@@ -240,7 +303,7 @@
       </div>
 
         <!-- Footer Buttons -->
-        <div class="fixed bottom-0 right-0 max-w-md w-full  bg-white px-6 py-4 flex gap-3 z-10">
+        <div class="hidden md:flex fixed bottom-0 right-0 max-w-md w-full  bg-white px-6 py-4 gap-3 z-10">
           <button
             @click="toggleFilterSlider"
             class="flex-1 px-4 py-3  rounded-lg  bg-gray-50 text-gray-600 hover:bg-gray-50 transition-colors"
@@ -365,8 +428,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import StudentTopNav from '@/components/StudentTopNav.vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import api from '@/utils/api'
 
 // Reactive data
@@ -380,6 +442,33 @@ const showSearchDropdown = ref(false)
 const showYearLevelDropdown = ref(false)
 const showFilterSlider = ref(false)
 const isWeekend = ref(false)
+
+// Prevent background scrolling when the filter slider is open (especially on mobile)
+const lockScroll = () => {
+  const body = document.body
+  if (!body) return
+  body.style.overflow = 'hidden'
+  body.style.touchAction = 'none'
+}
+
+const unlockScroll = () => {
+  const body = document.body
+  if (!body) return
+  body.style.overflow = ''
+  body.style.touchAction = ''
+}
+
+watch(showFilterSlider, (open) => {
+  if (open) {
+    lockScroll()
+  } else {
+    unlockScroll()
+  }
+})
+
+onUnmounted(() => {
+  unlockScroll()
+})
 
 const inquiryForm = ref({
   subject: '',

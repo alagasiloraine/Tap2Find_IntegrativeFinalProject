@@ -1,32 +1,29 @@
 <template>
-  <div class="bg-white min-h-screen pb-20 md:pb-8 p-4 md:p-4">
-    <!-- Top Bar with Notifications and Profile -->
-    <StudentTopNav />
-
-    <div class="px-4 md:px-6 py-4 min-h-0">
+  <div class="bg-white min-h-screen pb-20 md:pb-8 py-4 md:p-4">
+    <div class="px-0 md:px-6 py-4 min-h-0">
       <div class="space-y-6">
         <!-- Top Section: Chart + Status Cards -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-2">
             <div
-              class="rounded-xl border border-gray-200 p-8 h-96"
+              class="relative overflow-visible rounded-xl border border-gray-200 p-8 h-96"
               style="background: linear-gradient(180deg, #5e89ff, #102a71);"
             >
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-semibold text-white">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+                <h3 class="text-base sm:text-lg md:text-xl font-semibold text-white">
                   Professor Availability Trend Chart
                 </h3>
-                <div class="flex items-center gap-4 text-white text-xs">
-                  <span class="flex items-center gap-2">
-                    <span class="w-3.5 h-3.5 rounded-sm bg-indigo-400"></span>
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3 text-white text-[10px] sm:text-xs">
+                  <span class="flex items-center gap-1 sm:gap-2">
+                    <span class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-sm bg-indigo-400"></span>
                     Available
                   </span>
-                  <span class="flex items-center gap-2">
-                    <span class="w-3.5 h-3.5 rounded-sm bg-indigo-300"></span>
+                  <span class="flex items-center gap-1 sm:gap-2">
+                    <span class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-sm bg-indigo-300"></span>
                     Busy
                   </span>
-                  <span class="flex items-center gap-2">
-                    <span class="w-3.5 h-3.5 rounded-sm bg-indigo-200"></span>
+                  <span class="flex items-center gap-1 sm:gap-2">
+                    <span class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-sm bg-indigo-200"></span>
                     Not Available
                   </span>
                 </div>
@@ -38,21 +35,21 @@
           </div>
 
           <!-- Status Cards -->
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
             <div
               v-for="(value, key) in statusCards"
               :key="key"
-              class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center"
+              class="bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-5 flex items-center gap-2 sm:gap-4"
             >
               <div
-                class="w-12 h-12 rounded-full flex items-center justify-center mr-4 flex-shrink-0"
+                class="w-8 h-8 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0"
                 :class="value.bg"
               >
-                <iconify-icon :icon="value.icon" :class="value.iconClass"></iconify-icon>
+                <iconify-icon :icon="value.icon" :class="[value.iconClass, 'text-[16px] sm:text-[24px]']"></iconify-icon>
               </div>
-              <div>
-                <p class="text-sm font-medium text-gray-500 mb-1">{{ value.label }}</p>
-                <p class="text-2xl font-bold text-gray-900">{{ stats[key] }}</p>
+              <div class="min-w-0 whitespace-normal leading-tight">
+                <p class="text-[10px] sm:text-sm font-medium text-gray-500 mb-0.5 sm:mb-1">{{ value.label }}</p>
+                <p class="text-base sm:text-2xl font-bold text-gray-900">{{ stats[key] }}</p>
               </div>
             </div>
           </div>
@@ -74,15 +71,15 @@
                   v-model="searchQuery"
                   type="text"
                   placeholder="Search..."
-                  class="w-full sm:w-72 pl-10 pr-3 py-2 rounded-xl bg-gray-50 text-sm focus:outline-none"
+                  class="w-full sm:w-72 pl-10 pr-3 py-2 rounded-xl bg-white text-sm border border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300"
                 />
               </div>
 
               <!-- 🔽 Filter Dropdown -->
-              <div class="relative dropdown-container">
+              <div class="relative dropdown-container self-end sm:self-auto">
                 <button
                   @click="openStatus = !openStatus"
-                  class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm min-w-[120px] text-left flex items-center justify-between"
+                  class="px-3 sm:px-4 py-2 rounded-lg border border-gray-300 bg-white text-xs sm:text-sm min-w-[96px] sm:min-w-[120px] text-left flex items-center justify-between"
                 >
                   <span>{{ statusFilterLabel }}</span>
                   <iconify-icon
@@ -114,13 +111,13 @@
           <!-- 🧾 Inquiries Table -->
           <div class="overflow-x-auto rounded-2xl border border-gray-200">
             <table class="min-w-full border border-gray-100">
-              <thead class="bg-[#102A71] text-white text-xs uppercase tracking-wide">
+              <thead class="bg-[#102A71] text-white text-[10px] sm:text-xs uppercase tracking-wide">
                 <tr>
-                  <th class="px-6 py-4 text-left">Professor</th>
-                  <th class="px-6 py-4 text-left">Subject/Message</th>
-                  <th class="px-6 py-4 text-left">Date Sent</th>
-                  <th class="px-6 py-4 text-left">Status</th>
-                  <th class="px-6 py-4 text-left">Response Time</th>
+                  <th class="px-3 py-2 sm:px-6 sm:py-4 text-left">Professor</th>
+                  <th class="px-3 py-2 sm:px-6 sm:py-4 text-left">Subject/Message</th>
+                  <th class="px-3 py-2 sm:px-6 sm:py-4 text-left">Date Sent</th>
+                  <th class="px-3 py-2 sm:px-6 sm:py-4 text-left">Status</th>
+                  <th class="px-3 py-2 sm:px-6 sm:py-4 text-left">Response Time</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
@@ -131,31 +128,27 @@
                   class="hover:bg-gray-50"
                 >
                   <!-- 👨‍🏫 Professor -->
-                  <td class="px-6 py-4">
-                    <div class="flex items-center gap-3">
+                  <td class="px-3 py-2 sm:px-6 sm:py-4">
+                    <div class="flex items-center gap-2 sm:gap-3">
                       <div
-                        class="w-9 h-9 rounded-full bg-blue-100 text-blue-600 grid place-items-center ring-2 ring-white shadow"
+                        class="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-blue-100 text-blue-600 grid place-items-center ring-2 ring-white shadow"
                       >
-                        <span class="text-xs font-bold">
+                        <span class="text-sm font-semibold">
                           {{ inquiry.professor?.initials || getInitials(inquiry.professor?.name) }}
                         </span>
                       </div>
-                      <div class="flex flex-col">
-                        <span class="font-medium">
-                          {{ inquiry.professor?.name || 'Unknown Professor' }}
-                        </span>
-                        <span class="text-xs text-gray-500">
-                          {{ inquiry.professor?.department || 'No department' }}
-                        </span>
+                      <div>
+                        <div class="font-semibold text-gray-900 text-sm sm:text-base">{{ inquiry.professor?.name || 'Unknown Professor' }}</div>
+                        <div class="text-[11px] sm:text-xs text-gray-500">{{ inquiry.professor?.department || 'No department' }}</div>
                       </div>
                     </div>
                   </td>
 
                   <!-- 📄 Subject / Message -->
-                  <td class="px-6 py-4 text-sm text-gray-700">
+                  <td class="px-3 py-2 sm:px-6 sm:py-4 text-xs sm:text-sm text-gray-700">
                     <div class="font-medium">{{ inquiry.subject || '—' }}</div>
                     <p
-                      class="line-clamp-2 text-gray-600 mt-1"
+                      class="line-clamp-2 text-gray-600 mt-0.5 sm:mt-1"
                       :title="inquiry.message || ''"
                     >
                       {{ inquiry.message || 'No message provided' }}
@@ -163,18 +156,18 @@
                   </td>
 
                   <!-- 📅 Date -->
-                  <td class="px-6 py-4 text-sm">
+                  <td class="px-3 py-2 sm:px-6 sm:py-4 text-xs sm:text-sm">
                     {{ inquiry.dateRelative || new Date(inquiry.createdAt).toLocaleDateString() }}
                   </td>
 
                   <!-- 📌 Status -->
-                 <td class="px-6 py-4 text-sm">
+                 <td class="px-3 py-2 sm:px-6 sm:py-4 text-xs sm:text-sm">
                     <span
                       class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border"
                       :class="getStatusColor(inquiry.status)"
                     >
                       <span
-                        class="w-2 h-2 rounded-full"
+                        class="w-1.5 h-1.5 rounded-full"
                         :class="getStatusDot(inquiry.status)"
                       ></span>
                       {{ getStatusDisplayText(inquiry.status) }}
@@ -182,17 +175,17 @@
                   </td>
 
                   <!-- ⏱ Response Time -->
-                  <td class="px-6 py-4 text-sm">
+                  <td class="px-3 py-2 sm:px-6 sm:py-4 text-xs sm:text-sm">
                     {{ inquiry.responseTime || '—' }}
                   </td>
                 </tr>
 
                 <!-- ⚠️ No Inquiries -->
                 <tr v-if="filteredInquiries.length === 0">
-                  <td colspan="5" class="text-center py-10 text-gray-500">
+                  <td colspan="5" class="text-center py-8 sm:py-10 text-gray-500 text-sm">
                     <iconify-icon
                       icon="mdi:email-off-outline"
-                      class="text-xl text-gray-300 mb-2"
+                      class="text-lg sm:text-xl text-gray-300 mb-2"
                     />
                     <p>No inquiries found</p>
                   </td>
@@ -208,7 +201,6 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import StudentTopNav from '@/components/StudentTopNav.vue'
 import ProfessorAvailabilityChart from '@/components/ProfessorAvailabilityChart.vue'
 import api from '@/utils/api'
 
@@ -412,6 +404,7 @@ onUnmounted(() => {
 <style scoped>
 .line-clamp-2 {
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;

@@ -10,7 +10,7 @@
             Tap2Find is an RFID-powered system that lets students instantly locate professors, check their availability, and send inquiries in one tap—built for the College of Computer Studies.
           </p>
           <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <router-link to="/register" class="group relative inline-flex items-center justify-center rounded-full bg-[#001740] hover:bg-[#0a2a6a] text-white font-semibold px-8 py-4 text-lg transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105">
+            <router-link to="/auth/register" class="group relative inline-flex items-center justify-center rounded-full bg-[#001740] hover:bg-[#0a2a6a] text-white font-semibold px-8 py-4 text-lg transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105">
               <span class="relative z-10">Get Started</span>
               <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>

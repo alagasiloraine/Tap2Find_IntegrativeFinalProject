@@ -24,7 +24,6 @@ const professorRoutes = [
       },
       {
         path: 'availability',
-        name: 'professor-availability',
         component: SetAvailabilityStatus,
         children: [
           {

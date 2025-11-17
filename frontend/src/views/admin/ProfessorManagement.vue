@@ -146,6 +146,10 @@
             </div>
           </div>
           <div>
+            <label class="block text-xs text-gray-600 mb-1">Advisory Class</label>
+            <input v-model="form.advisoryClass" type="text" class="w-full border rounded px-3 py-2 text-sm" />
+          </div>
+          <div>
             <label class="block text-xs text-gray-600 mb-1">Address</label>
             <textarea v-model="form.address" rows="2" class="w-full border rounded px-3 py-2 text-sm" @input="form.address = toTitleCase(form.address)"></textarea>
           </div>
@@ -159,9 +163,15 @@
               <input :value="computedAge" type="number" class="w-full border rounded px-3 py-2 text-sm bg-gray-50" disabled />
             </div>
           </div>
-          <div v-if="!editTarget">
-            <label class="block text-xs text-gray-600 mb-1">Password</label>
-            <input v-model="form.password" type="password" required class="w-full border rounded px-3 py-2 text-sm" />
+          <div v-if="!editTarget" class="space-y-3">
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Password</label>
+              <input v-model="form.password" type="password" required class="w-full border rounded px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Confirm Password</label>
+              <input v-model="form.confirmPassword" type="password" required class="w-full border rounded px-3 py-2 text-sm" />
+            </div>
           </div>
           <div class="pt-2 flex items-center justify-end gap-3">
             <button type="button" class="px-4 py-2 rounded border" @click="closeModal">Cancel</button>
@@ -541,7 +551,9 @@ const form = ref({
   contactNumber: "",
   address: "",
   birthdate: "",
+  advisoryClass: "",
   password: "",
+  confirmPassword: "",
 })
 
 // Computed properties
@@ -604,7 +616,9 @@ const openAddModal = () => {
     contactNumber: "",
     address: "",
     birthdate: "",
+    advisoryClass: "",
     password: "",
+    confirmPassword: "",
   }
   showModal.value = true
 }
@@ -621,7 +635,9 @@ const openEditModal = (p) => {
     contactNumber: p.contactNumber || "",
     address: toTitleCase(p.address || ""),
     birthdate: p.birthdate ? new Date(p.birthdate).toISOString().slice(0,10) : "",
+    advisoryClass: p.advisoryClass || "",
     password: "",
+    confirmPassword: "",
   }
   showModal.value = true
 }
@@ -689,10 +705,16 @@ const submitProfessor = async () => {
         facultyPosition: toTitleCase((form.value.facultyPosition || '').trim()),
         department: 'CSS',
         birthdate: form.value.birthdate || '',
+        advisoryClass: (form.value.advisoryClass || '').trim(),
       }
       await api.patch(`/admin/users/${editTarget.value._id}`, payload)
       showModal.value = false
       await fetchProfessors()
+      return
+    }
+
+    if (form.value.password !== form.value.confirmPassword) {
+      alert('Password and Confirm Password do not match.')
       return
     }
     
@@ -708,6 +730,7 @@ const submitProfessor = async () => {
       facultyPosition: toTitleCase((form.value.facultyPosition || '').trim()),
       department: 'CSS',
       birthdate: form.value.birthdate || '',
+      advisoryClass: (form.value.advisoryClass || '').trim(),
     }
     await api.post("/auth/register", payload)
     showModal.value = false

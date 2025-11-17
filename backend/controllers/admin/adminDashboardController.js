@@ -4,7 +4,7 @@ export const getDashboardStats = async (req, res) => {
   try {
     const db = getDB("tap2find_db");
     const users = db.collection("users");
-    const concerns = db.collection("concerns");
+    const concerns = db.collection("inquiries");
     const tapins = db.collection("tapins");
 
     // Today range

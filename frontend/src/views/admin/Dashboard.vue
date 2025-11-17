@@ -84,24 +84,6 @@
         </div>
       </div>
 
-      <!-- Total Concerns Logged -->
-      <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
-                <span class="text-white text-lg">📝</span>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">Total Concerns Logged</dt>
-                <dd class="text-lg font-medium text-gray-900">{{ stats.totalConcerns?.toLocaleString() || 0 }}</dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
 
     </div>
 
@@ -133,15 +115,19 @@
         </div>
       </div>
 
+      <!-- Daily Student Concerns (Last 14 days) -->
       <div class="bg-white shadow rounded-lg p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">User Growth</h3>
-        <div class="h-64 bg-gray-50 rounded-md flex items-center justify-center">
-          <div class="text-center">
-            <span class="text-4xl mb-2 block">📈</span>
-            <p class="text-gray-500">Chart placeholder</p>
-            <p class="text-sm text-gray-400">User growth over time</p>
+        <h3 class="text-lg font-medium text-gray-900 mb-1">Daily Student Concerns (Last 14 days)</h3>
+        <div class="text-xs text-gray-500 mb-4">Total: {{ dailyChart.total }}</div>
+        <div class="h-48 flex items-end gap-2 border-b border-gray-200 pb-2">
+          <div v-for="(d, idx) in dailyChart.points" :key="idx" class="flex-1 flex flex-col items-center justify-end">
+            <div class="w-full bg-blue-200 rounded-t"
+                 :style="{ height: (dailyChart.max > 0 ? Math.round((d.count / dailyChart.max) * 100) : 0) + '%', minHeight: d.count > 0 ? '6px' : '0' }"
+                 :title="d.label + ': ' + d.count"></div>
+            <div class="mt-1 text-[10px] text-gray-500 rotate-0">{{ d.label.slice(5) }}</div>
           </div>
         </div>
+        <div class="mt-2 text-xs text-gray-500">Max per day: {{ dailyChart.max }}</div>
       </div>
     </div>
 
@@ -158,11 +144,13 @@ export default {
       stats: {},
       users: [],
       loading: true,
+      concerns: [],
     };
   },
   mounted() {
     this.fetchDashboard();
     this.fetchUsers();
+    this.fetchConcerns();
   },
   computed: {
     availability() {
@@ -182,6 +170,30 @@ export default {
         notAvailablePct: pct(notAvailable),
       };
     },
+    dailyChart() {
+      const days = 14;
+      const today = new Date();
+      const labels = [];
+      const map = new Map();
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        labels.push(key);
+        map.set(key, 0);
+      }
+      for (const c of this.concerns) {
+        const stamp = c.createdAt || c.timestamp || c.date;
+        const d = stamp ? new Date(stamp) : null;
+        if (!d || isNaN(d.getTime())) continue;
+        const key = d.toISOString().slice(0, 10);
+        if (map.has(key)) map.set(key, map.get(key) + 1);
+      }
+      const points = labels.map(l => ({ label: l, count: map.get(l) || 0 }));
+      const max = points.reduce((m, p) => Math.max(m, p.count), 0);
+      const total = points.reduce((s, p) => s + p.count, 0);
+      return { points, max, total };
+    },
   },
   methods: {
 async fetchDashboard() {
@@ -194,6 +206,14 @@ async fetchUsers() {
     this.users = res.data.users;
   } catch (error) {
     console.error("Error fetching users:", error);
+  }
+},
+async fetchConcerns() {
+  try {
+    const res = await api.get('/admin/concerns');
+    this.concerns = res.data.concerns || [];
+  } catch (e) {
+    console.error('Error fetching concerns:', e);
   }
 }
 

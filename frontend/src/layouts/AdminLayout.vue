@@ -62,22 +62,25 @@
               <span class="mr-3 text-lg">📄</span>
               Generate Reports
             </router-link>
+
+           
           </nav>
         </div>
         
         <!-- User Profile -->
         <div class="flex-shrink-0 flex border-t border-gray-200 p-4">
-          <div class="flex items-center">
+          <router-link to="/admin/profile" class="flex items-center group">
             <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                <span class="text-white text-sm font-medium">{{ userInitials }}</span>
+              <div class="w-8 h-8 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center">
+                <img v-if="adminPhotoUrl" :src="adminPhotoUrl" alt="Profile" class="w-full h-full object-cover" />
+                <span v-else class="text-white text-sm font-medium">{{ adminInitial }}</span>
               </div>
             </div>
             <div class="ml-3">
-              <p class="text-sm font-medium text-gray-700">{{ user.firstName }} {{ user.lastName }}</p>
-              <p class="text-xs text-gray-500">{{ user.emailAddress }}</p>
+              <p class="text-sm font-medium text-gray-700 group-hover:text-gray-900">{{ adminName }}</p>
+              <p class="text-xs text-gray-500">{{ adminEmail || '-' }}</p>
             </div>
-          </div>
+          </router-link>
         </div>
       </div>
     </div>
@@ -116,14 +119,14 @@
             <!-- Profile dropdown -->
             <div class="ml-3 relative">
               <div class="flex items-center space-x-3">
-                <div class="text-sm text-gray-700">
-                  Welcome back, <span class="font-medium">Admin</span>
-                </div>
+                <router-link to="/admin/profile" class="text-sm text-gray-700 hover:text-gray-900">
+                  Welcome back, <span class="font-medium">{{ adminFirstName || 'Admin' }}</span>
+                </router-link>
                 <router-link
-                  to="/"
+                  to="/admin/profile"
                   class="text-sm text-blue-600 hover:text-blue-500"
                 >
-                  View Site
+                  Edit Profile
                 </router-link>
               </div>
             </div>
@@ -190,15 +193,50 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import api from '@/plugin/axios.js'
 
 const route = useRoute()
 const mobileMenuOpen = ref(false)
 
-const user = ref({
-  firstName: '',
-  lastName: '',
-  role: '',
-  emailAddress: ''
+const admin = ref(null)
+const adminName = computed(() => {
+  if (!admin.value) return 'Admin User'
+  const full = `${admin.value.firstName || ''} ${admin.value.lastName || ''}`.trim()
+  return full || admin.value.emailAddress || 'Admin User'
+})
+const adminFirstName = computed(() => admin.value?.firstName || (adminName.value.split(' ')[0] || 'Admin'))
+const adminEmail = computed(() => admin.value?.emailAddress || '')
+const adminInitial = computed(() => (adminName.value.charAt(0) || 'A').toUpperCase())
+const adminPhotoUrl = computed(() => {
+  const a = admin.value
+  if (a && a.photoBase64 && a.photoMime) {
+    return `data:${a.photoMime};base64,${a.photoBase64}`
+  }
+  return ''
+})
+
+onMounted(async () => {
+  try {
+    const candidates = ['currentUser', 'user', 'admin']
+    let cached = null
+    for (const key of candidates) {
+      const raw = localStorage.getItem(key)
+      if (raw) {
+        try { cached = JSON.parse(raw) } catch {}
+      }
+      if (cached) break
+    }
+    if (cached) {
+      admin.value = cached
+      const id = cached._id || cached.id
+      if (id) {
+        try {
+          const res = await api.get(`/admin/users/${id}`)
+          if (res.data?.user) admin.value = res.data.user
+        } catch {}
+      }
+    }
+  } catch {}
 })
 
 const pageTitle = computed(() => {
@@ -210,16 +248,5 @@ const pageTitle = computed(() => {
   }
 })
 
-const userInitials = computed(() => {
-  const first = user.value.firstName?.charAt(0) || ''
-  const last = user.value.lastName?.charAt(0) || ''
-  return (first + last).toUpperCase()
-})
-
-onMounted(() => {
-   const storedUser = localStorage.getItem('user')
-  if (storedUser) {
-    user.value = JSON.parse(storedUser)
-  }
-})
+// admin profile data is loaded in the onMounted hook above
 </script>

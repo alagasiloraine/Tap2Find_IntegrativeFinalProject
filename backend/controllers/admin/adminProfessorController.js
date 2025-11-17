@@ -1,4 +1,166 @@
-// Get latest schedule metadata for a professor
+import { getDB } from "../../db.js";
+import { ObjectId, GridFSBucket } from "mongodb";
+import { Readable } from "stream";
+
+// Get professor's manual schedule
+export const getProfessorSchedule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDB("tap2find_db");
+    const schedules = db.collection("professor_schedules");
+
+    const scheduleDoc = await schedules.findOne({ 
+      professorId: new ObjectId(id) 
+    });
+
+    return res.status(200).json({
+      success: true,
+      schedule: scheduleDoc?.schedule || []
+    });
+  } catch (err) {
+    console.error("Error getting schedule:", err);
+    return res.status(500).json({ success: false, message: "Failed to load schedule" });
+  }
+};
+
+// Save professor's manual schedule
+export const saveProfessorSchedule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { schedule } = req.body;
+
+    console.log('Saving manual schedule for professor:', id);
+    console.log('Schedule data:', schedule);
+
+    if (!Array.isArray(schedule)) {
+      return res.status(400).json({ success: false, message: "Invalid schedule data" });
+    }
+
+    const db = getDB("tap2find_db");
+    const users = db.collection("users");
+    const schedules = db.collection("professor_schedules");
+
+    // Verify professor exists
+    const prof = await users.findOne({ _id: new ObjectId(id) });
+    if (!prof) {
+      return res.status(404).json({ success: false, message: "Professor not found" });
+    }
+
+    // Validate schedule data
+    for (const entry of schedule) {
+      if (!entry.day || !entry.startTime || !entry.endTime || !entry.subject || !entry.room) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Each schedule entry must have day, startTime, endTime, subject, and room" 
+        });
+      }
+
+      if (entry.startTime >= entry.endTime) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Start time must be before end time" 
+        });
+      }
+
+      // Validate time range (7 AM to 6 PM)
+      if (entry.startTime < 7 || entry.endTime > 19) {
+        return res.status(400).json({
+          success: false,
+          message: "Schedule time must be between 7:00 AM and 6:00 PM"
+        });
+      }
+
+      // Validate day
+      const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+      if (!validDays.includes(entry.day)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid day. Must be Monday to Friday"
+        });
+      }
+    }
+
+    // Check for overlapping schedules within the same day
+    const dayGroups = {};
+    schedule.forEach(entry => {
+      if (!dayGroups[entry.day]) {
+        dayGroups[entry.day] = [];
+      }
+      dayGroups[entry.day].push(entry);
+    });
+
+    for (const day in dayGroups) {
+      const daySchedules = dayGroups[day].sort((a, b) => a.startTime - b.startTime);
+      
+      for (let i = 0; i < daySchedules.length - 1; i++) {
+        const current = daySchedules[i];
+        const next = daySchedules[i + 1];
+        
+        if (current.endTime > next.startTime) {
+          return res.status(400).json({
+            success: false,
+            message: `Schedule overlap detected on ${day}: ${current.subject} (${formatTime(current.startTime)}-${formatTime(current.endTime)}) overlaps with ${next.subject} (${formatTime(next.startTime)}-${formatTime(next.endTime)})`
+          });
+        }
+      }
+    }
+
+    // Prepare schedule data for storage
+    const scheduleData = schedule.map(entry => ({
+      day: entry.day,
+      startTime: entry.startTime,
+      endTime: entry.endTime,
+      subject: entry.subject,
+      room: entry.room,
+      createdAt: new Date()
+    }));
+
+    // Save or update schedule
+    const result = await schedules.updateOne(
+      { professorId: new ObjectId(id) },
+      {
+        $set: { 
+          schedule: scheduleData,
+          updatedAt: new Date(),
+          professorName: `${prof.firstName} ${prof.lastName}`,
+          professorEmail: prof.emailAddress,
+          scheduleType: 'manual' // Mark as manual schedule
+        },
+        $setOnInsert: {
+          professorId: new ObjectId(id),
+          createdAt: new Date()
+        }
+      },
+      { upsert: true }
+    );
+
+    console.log('Manual schedule saved successfully:', result);
+
+    return res.status(200).json({ 
+      success: true, 
+      message: "Schedule saved successfully",
+      scheduleCount: schedule.length
+    });
+  } catch (err) {
+    console.error("Error saving schedule:", err);
+    
+    // Handle specific MongoDB errors
+    if (err.name === 'BSONError') {
+      return res.status(400).json({ success: false, message: "Invalid professor ID format" });
+    }
+    
+    return res.status(500).json({ success: false, message: "Failed to save schedule" });
+  }
+};
+
+// Helper function to format time for error messages
+const formatTime = (hour) => {
+  if (hour === 12) return '12:00 PM';
+  if (hour > 12) return `${hour - 12}:00 PM`;
+  return `${hour}:00 AM`;
+};
+
+// Get latest schedule metadata for a professor (keep for file-based schedules)
 export const getProfessorScheduleMeta = async (req, res) => {
   try {
     const { id } = req.params;
@@ -28,10 +190,6 @@ export const getProfessorScheduleMeta = async (req, res) => {
   }
 };
 
-import { getDB } from "../../db.js";
-import { ObjectId, GridFSBucket } from "mongodb";
-import { Readable } from "stream";
-
 // Get professors only
 export const getProfessors = async (req, res) => {
   try {
@@ -54,7 +212,7 @@ export const getProfessors = async (req, res) => {
   }
 };
 
-// Upload a schedule file for a professor to GridFS
+// Upload a schedule file for a professor to GridFS (keep for file-based schedules)
 export const uploadProfessorSchedule = async (req, res) => {
   try {
     const { id } = req.params;
@@ -127,7 +285,7 @@ export const uploadProfessorSchedule = async (req, res) => {
   }
 };
 
-// Download latest (or specific) schedule for a professor from GridFS
+// Download latest (or specific) schedule for a professor from GridFS (keep for file-based schedules)
 export const downloadProfessorSchedule = async (req, res) => {
   try {
     const { id } = req.params;
@@ -162,5 +320,44 @@ export const downloadProfessorSchedule = async (req, res) => {
   } catch (err) {
     console.error("Error downloading schedule:", err);
     return res.status(500).json({ success: false, message: "Failed to download schedule" });
+  }
+};
+
+// Get professor schedule with both manual and file-based data
+export const getProfessorFullSchedule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDB("tap2find_db");
+    const schedulesColl = db.collection("professor_schedules");
+    const bucket = new GridFSBucket(db, { bucketName: "schedules" });
+
+    // Get manual schedule
+    const manualSchedule = await schedulesColl.findOne({ 
+      professorId: new ObjectId(id),
+      scheduleType: 'manual'
+    });
+
+    // Get file-based schedule
+    const fileSchedule = await bucket
+      .find({ "metadata.professorId": new ObjectId(id) })
+      .sort({ uploadDate: -1 })
+      .limit(1)
+      .next();
+
+    return res.status(200).json({
+      success: true,
+      manualSchedule: manualSchedule?.schedule || [],
+      fileSchedule: fileSchedule ? {
+        fileId: fileSchedule._id,
+        filename: fileSchedule.filename,
+        uploadDate: fileSchedule.uploadDate,
+        contentType: fileSchedule.contentType,
+      } : null,
+      hasManualSchedule: !!manualSchedule?.schedule?.length,
+      hasFileSchedule: !!fileSchedule
+    });
+  } catch (err) {
+    console.error("Error getting full schedule:", err);
+    return res.status(500).json({ success: false, message: "Failed to load schedule data" });
   }
 };

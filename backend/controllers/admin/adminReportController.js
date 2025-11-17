@@ -5,7 +5,7 @@ export const getReportsSummary = async (req, res) => {
   try {
     const db = getDB("tap2find_db");
     const users = db.collection("users");
-    const concerns = db.collection("concerns");
+    const concerns = db.collection("inquiries");
 
     const [professors, students, totalConcerns] = await Promise.all([
       users.countDocuments({ $expr: { $eq: [ { $toLower: { $trim: { input: "$role" } } }, "professor" ] } }),

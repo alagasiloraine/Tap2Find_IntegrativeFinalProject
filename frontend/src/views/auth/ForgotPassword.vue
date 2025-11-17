@@ -85,6 +85,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import api from '@/utils/api.js'
 
 const form = ref({
   email: ''
@@ -92,27 +93,44 @@ const form = ref({
 
 const isLoading = ref(false)
 const emailSent = ref(false)
+const error = ref('')
+const success = ref('')
+
+const validateEmail = (email) => /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)
 
 const handleForgotPassword = async () => {
-  isLoading.value = true
+  error.value = ''
+  success.value = ''
   
+  if (!form.value.email) {
+    error.value = 'Email is required.'
+    return
+  }
+
+  if (!validateEmail(form.value.email)) {
+    error.value = 'Please enter a valid email address.'
+    return
+  }
+
+  isLoading.value = true
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    console.log('Forgot password request:', form.value)
-    emailSent.value = true
-    
-    // TODO: Implement actual forgot password logic
-  } catch (error) {
-    console.error('Error:', error)
+    const res = await api.post('/auth/forgot-password', { email: form.value.email })
+    if (res.data.success) {
+      emailSent.value = true
+      success.value = res.data.message || 'Email sent successfully!'
+    } else {
+      error.value = res.data.message || 'Something went wrong.'
+    }
+  } catch (err) {
+    error.value = err.response?.data?.message || 'Failed to send email. Try again later.'
   } finally {
     isLoading.value = false
   }
 }
 
-const resendEmail = () => {
+const resendEmail = async () => {
   emailSent.value = false
-  // TODO: Implement resend logic
+  await handleForgotPassword()
 }
 </script>
+

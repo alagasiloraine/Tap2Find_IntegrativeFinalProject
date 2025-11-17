@@ -14,9 +14,9 @@
             <div class="relative flex gap-2">
               <div class="relative">
                 <iconify-icon icon="fluent:search-16-filled" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              v-model="searchQuery"
+                <input
+                  type="text"
+                  v-model="searchQuery"
                   @focus="showSearchDropdown = true"
                   @blur="hideSearchDropdown"
                   placeholder="Search professor name..."
@@ -50,32 +50,34 @@
                     <!-- Professor Info -->
                     <div class="flex-1">
                       <p class="font-medium text-gray-900">{{ professor.name }}</p>
-                      <p class="text-sm text-gray-600">{{ professor.position }}</p>
+                      <p class="text-sm text-gray-600">{{ professor.department }}</p>
                     </div>
                     
                     <!-- Status Indicator -->
                     <div class="ml-2">
                       <span class="w-2 h-2 rounded-full"
-                        :class="professor.available === 'available' ? 'bg-green-500' : professor.available === 'busy' ? 'bg-red-500' : 'bg-gray-500'"
+                        :class="getStatusDotClass(professor)"
                       ></span>
                     </div>
                   </div>
                 </div>
               </transition>
             </div>
-          </div>
-          </div>
-          <div class="flex items-center">
-            <iconify-icon
-              @click="toggleFilterSlider"
-              icon="mage:filter-fill"
-              class="text-xl cursor-pointer transition-colors"
-              :class="(showFilterSlider || selectedYearLevel !== '' || selectedStatus !== null) ? 'text-[#102A71]' : 'text-gray-600'"
-            ></iconify-icon>
+              
+              <!-- Filter Icon -->
+              <div class="flex items-center">
+                <iconify-icon
+                  @click="toggleFilterSlider"
+                  icon="mage:filter-fill"
+                  class="text-xl cursor-pointer transition-colors"
+                  :class="(showFilterSlider || selectedYearLevel !== '' || selectedStatus !== null) ? 'text-[#102A71]' : 'text-gray-600'"
+                ></iconify-icon>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      
+
       <!-- Applied Filters -->
       <div v-if="selectedYearLevel !== '' || selectedStatus !== null" class="mb-6">
         <div class="flex flex-wrap gap-2">
@@ -100,12 +102,8 @@
           v-for="professor in filteredProfessors"
           :key="professor.id"
           :data-professor-id="professor.id"
-          class="bg-gray-50 rounded-lg p-4 transition-shadow relative"
+          class="bg-gray-50 rounded-lg p-4 transition-shadow"
         >
-          <div class="absolute top-6 right-4 text-[11px] text-gray-500 flex items-center gap-1">
-            <iconify-icon icon="mingcute:time-line" class="text-base" />
-            <span>Updated {{ formatRelativeTime(professor.statusUpdatedAt) }}</span>
-          </div>
           <div class="flex items-center gap-4">
             <!-- Professor Avatar -->
             <div class="flex-shrink-0 flex items-center justify-center">
@@ -120,37 +118,36 @@
               <h3 class="font-medium text-gray-900 text-xl truncate">{{ professor.name }}</h3>
               
               <!-- Course/Department -->
-              <p class="text-sm text-gray-600 mb-2 truncate">{{ professor.position }}</p>
+              <p class="text-sm text-gray-600 mb-2 truncate">{{ professor.department }}</p>
               
               <!-- Status Badge -->
               <span class="px-2 py-1 rounded-lg text-xs font-medium w-fit inline-flex items-center gap-1"
-                :class="professor.available === 'available' 
-                  ? 'bg-green-100 text-green-700' 
-                  : professor.available === 'busy' 
-                  ? 'bg-pink-100 text-pink-700' 
-                  : 'bg-gray-100 text-gray-700'"
+                :class="getStatusBadgeClass(professor)"
               >
-                <iconify-icon :icon="getStatusIcon(professor.available)" class="h-3 w-3" />
-                <span>{{ getStatusText(professor.available) }}</span>
+                <iconify-icon :icon="getStatusIcon(professor)" class="h-3 w-3" />
+                <span>{{ getStatusDisplayText(professor) }}</span>
               </span>
               
               <!-- Location and Send Inquiry Button -->
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center text-sm text-gray-400">
                   <iconify-icon icon="lucide:map-pin" class="h-3 w-3 mr-1 flex-shrink-0" />
-                  <span class="truncate">{{ professor.inFaculty ? 'Faculty' : 'Not in Faculty' }}</span>
+                  <span class="truncate">{{ professor.office }}</span>
                 </div>
                 
                 <button
                   @click="contactProfessor(professor)"
-                  class="bg-[#102A71] text-white py-2 px-4 rounded-lg hover:bg-[#102A71]/80 transition-colors text-sm flex items-center justify-center flex-shrink-0"
+                  :disabled="!isProfessorAvailable(professor)"
+                  class="py-2 px-4 rounded-lg text-sm flex items-center justify-center flex-shrink-0 transition-all"
+                  :class="isProfessorAvailable(professor)
+                    ? 'bg-[#102A71] text-white hover:bg-[#102A71]/80'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
                 >
                   <iconify-icon icon="lucide:send" class="mr-2 h-4 w-4" />
-                  Send Inquiry
+                  {{ isProfessorAvailable(professor) ? 'Send Inquiry' : 'Not Available' }}
                 </button>
+
               </div>
-            </div>
-            </div>
             </div>
           </div>
         </div>
@@ -279,50 +276,58 @@
           leave-to-class="opacity-0 scale-95 transform translate-y-4"
         >
           <div class="bg-white rounded-xl w-full max-w-md">
-        <!-- Modal Header -->
-        <div class="bg-white border-b border-gray-200 rounded-t-xl px-6 py-4 flex items-center justify-between">
-          <h3 class="text-xl font-bold text-gray-900">Send Inquiry</h3>
-        </div>
-
-        <!-- Modal Body -->
-        <div class="px-6 py-4">
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">To:</label>
-            <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg">
-              <p class="font-medium text-gray-900">{{ selectedProfessor?.name }}</p>
-              <p class="text-sm text-gray-600">{{ selectedProfessor?.position }}</p>
+            <!-- Modal Header -->
+            <div class="bg-white border-b border-gray-200 rounded-t-xl px-6 py-4 flex items-center justify-between">
+              <h3 class="text-xl font-bold text-gray-900">Send Inquiry</h3>
             </div>
-          </div>
 
+            <!-- Modal Body -->
+            <div class="px-6 py-4">
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">To:</label>
+                <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg">
+                  <p class="font-medium text-gray-900">{{ selectedProfessor?.name }}</p>
+                  <p class="text-sm text-gray-600">{{ selectedProfessor?.department }}</p>
+                </div>
+              </div>
 
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Subject:</label>
+                <input
+                  v-model="inquiryForm.subject"
+                  type="text"
+                  placeholder="Enter subject..."
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
 
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Message:</label>
-            <textarea
-              v-model="inquiryForm.message"
-              rows="5"
-              placeholder="Type your message here..."
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            ></textarea>
-          </div>
-        </div>
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Message:</label>
+                <textarea
+                  v-model="inquiryForm.message"
+                  rows="5"
+                  placeholder="Type your message here..."
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                ></textarea>
+              </div>
+            </div>
 
-        <!-- Modal Footer -->
-        <div class="px-6 py-4  flex justify-end space-x-3">
-          <button
-            @click="closeInquiryModal"
-            class="bg-gray-50 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            @click="submitInquiry"
-            class="px-4 py-2 bg-[#102A71] text-white rounded-lg hover:bg-[#102A71]/90 transition-colors flex items-center"
-          >
-            <iconify-icon icon="lucide:send" class="mr-2 h-4 w-4" />
-            Send Inquiry
-          </button>
-      </div>
+            <!-- Modal Footer -->
+            <div class="px-6 py-4  flex justify-end space-x-3">
+              <button
+                @click="closeInquiryModal"
+                class="bg-gray-50 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                @click="submitInquiry"
+                class="px-4 py-2 bg-[#102A71] text-white rounded-lg hover:bg-[#102A71]/90 transition-colors flex items-center"
+              >
+                <iconify-icon icon="lucide:send" class="mr-2 h-4 w-4" />
+                Send Inquiry
+              </button>
+            </div>
           </div>
         </transition>
       </div>
@@ -355,11 +360,14 @@
 
     
 
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import StudentTopNav from '@/components/StudentTopNav.vue'
+import api from '@/utils/api'
 
 // Reactive data
 const searchQuery = ref('')
@@ -371,6 +379,7 @@ const selectedProfessor = ref(null)
 const showSearchDropdown = ref(false)
 const showYearLevelDropdown = ref(false)
 const showFilterSlider = ref(false)
+const isWeekend = ref(false)
 
 const inquiryForm = ref({
   subject: '',
@@ -395,58 +404,8 @@ const statusOptions = ref([
   { value: 'busy', label: 'Busy' }
 ])
 
-const professors = ref([
-  {
-    id: 1,
-    name: 'Prof. Pauline Alvarez',
-    email: 'paulina.alvarez@university.edu',
-    department: 'Computer Science',
-    office: 'IT Room 202',
-    position: 'Professor',
-    inFaculty: true,
-    yearLevel: 'first-year',
-    available: 'available',
-    statusUpdatedAt: Date.now() - 5 * 60 * 1000
-  },
-  {
-    id: 2,
-    name: 'Dr. Jane Doe',
-    email: 'jane.doe@university.edu',
-    department: 'Mathematics',
-    office: 'Building B, Room 205',
-    position: 'Associate Professor',
-    inFaculty: true,
-    yearLevel: 'second-year',
-    available: 'available',
-    statusUpdatedAt: Date.now() - 35 * 60 * 1000
-  },
-  {
-    id: 3,
-    name: 'Dr. Robert Johnson',
-    email: 'robert.johnson@university.edu',
-    department: 'Physics',
-    office: 'Building C, Room 310',
-    position: 'Lecturer',
-    inFaculty: false,
-    yearLevel: 'third-year',
-    available: 'busy',
-    statusUpdatedAt: Date.now() - 2 * 60 * 60 * 1000
-  },
-  {
-    id: 4,
-    name: 'Dr. Emily Williams',
-    email: 'emily.williams@university.edu',
-    department: 'Chemistry',
-    office: 'Building D, Room 415',
-    position: 'Assistant Professor',
-    inFaculty: false,
-    yearLevel: 'fourth-year',
-    available: 'not-available',
-    statusUpdatedAt: Date.now() - 26 * 60 * 60 * 1000
-  }
-])
+const professors = ref([])
 
-// Computed
 const selectedYearLevelText = computed(() => {
   const option = yearLevelOptions.value.find(opt => opt.value === selectedYearLevel.value)
   return option ? option.label : 'All Year Levels'
@@ -467,8 +426,6 @@ const filteredProfessors = computed(() => {
     return matchesSearch && matchesYearLevel && matchesStatus
   })
 })
-
-// No special feature flags required
 
 // Methods
 const searchProfessors = () => {
@@ -522,12 +479,14 @@ const filterByStatus = (status) => {
 }
 
 const contactProfessor = (professor) => {
+  if (!isProfessorAvailable(professor)) {
+    return // Don't open modal if professor is not available
+  }
+  
+  console.log("🧠 Selected professor:", professor)
   selectedProfessor.value = professor
   showInquiryModal.value = true
-  inquiryForm.value = {
-    subject: professor.position,
-    message: ''
-  }
+  inquiryForm.value = { subject: '', message: '' }
 }
 
 const closeInquiryModal = () => {
@@ -535,18 +494,72 @@ const closeInquiryModal = () => {
   selectedProfessor.value = null
 }
 
-const submitInquiry = () => {
-  console.log('Sending inquiry to:', selectedProfessor.value.name)
-  console.log('Subject:', inquiryForm.value.subject)
-  console.log('Message:', inquiryForm.value.message)
-  // TODO: send the inquiry via API. After success:
-  closeInquiryModal()
-  showAnimationModal.value = true
-  // Fallback: auto-hide after 5s in case load doesn't fire
-  if (animationHideTimer) clearTimeout(animationHideTimer)
-  animationHideTimer = setTimeout(() => {
-    showAnimationModal.value = false
-  }, 5000)
+const submitInquiry = async () => {
+  try {
+    const professor = selectedProfessor.value
+    const userData = JSON.parse(localStorage.getItem("user"))
+
+    if (!userData) return alert("No user logged in.")
+    if (!professor) return alert("No professor selected.")
+
+    const professorId =
+      professor.id ||
+      professor._id ||
+      professor._id?.$oid ||
+      null
+
+    const studentId = userData.id || userData._id || userData._id?.$oid || null
+
+    if (!professorId || !studentId)
+      return alert("Missing required professor or student ID.")
+
+    if (!inquiryForm.value.subject.trim() || !inquiryForm.value.message.trim())
+      return alert("Please enter both subject and message.")
+
+    const inquiryData = {
+      professorId,
+      studentId,
+      subject: inquiryForm.value.subject.trim(),
+      message: inquiryForm.value.message.trim(),
+    }
+
+    // 🚀 Send inquiry to backend
+    const response = await api.post("/inquiries/send", inquiryData)
+
+    if (response.data.success) {
+      console.log("✅ Inquiry sent successfully:", response.data)
+      alert("✅ Inquiry sent successfully!")
+
+      // 🧠 Send notification to the professor
+      await api.post("/notification/add-notification", {
+        title: "New Inquiry Received",
+        message: `${userData.name || "A student"} sent you an inquiry: “${inquiryForm.value.subject}”`,
+        professorId: professorId, // ✅ send to the professor
+        isGeneral: false,
+        read: false,
+        createdAt: new Date(),
+      })
+
+      console.log("📢 Notification sent to professor:", professorId)
+
+      // Reset form & close modal
+      inquiryForm.value.subject = ''
+      inquiryForm.value.message = ''
+      showInquiryModal.value = false
+    } else {
+      console.error("❌ Inquiry failed:", response.data)
+      alert(response.data.message || "Failed to send inquiry.")
+    }
+
+  } catch (error) {
+    if (error.response) {
+      console.error("🚨 Server responded with error:", error.response.data)
+      alert(error.response.data.message || "Server error occurred.")
+    } else {
+      console.error("🚨 Unexpected error:", error)
+      alert("Unexpected error while sending inquiry.")
+    }
+  }
 }
 
 const closeAnimationModal = () => {
@@ -570,28 +583,74 @@ const viewProfile = (professor) => {
   console.log('Viewing profile:', professor.name)
 }
 
+// Updated status methods to handle weekend display
+const getStatusDisplayText = (professor) => {
+  if (professor.isWeekend) {
+    return "Not Available (It's Weekend)"
+  }
+  if (professor.available === 'available') return 'Available'
+  if (professor.available === 'busy') return 'Busy'
+  return 'Not Available'
+}
+
 const getStatusText = (status) => {
   if (status === 'available') return 'Available'
   if (status === 'busy') return 'Busy'
   return 'Not Available'
 }
 
-const getStatusIcon = (status) => {
-  if (status === 'available') return 'lucide:circle-check'
-  if (status === 'busy') return 'lucide:clock'
+const getStatusIcon = (professor) => {
+  if (professor.isWeekend) return 'lucide:calendar-x'
+  if (professor.available === 'available') return 'lucide:circle-check'
+  if (professor.available === 'busy') return 'lucide:clock'
   return 'lucide:circle-x'
 }
 
-const formatRelativeTime = (ts) => {
-  if (!ts) return 'just now'
-  const diff = Date.now() - ts
-  const m = Math.floor(diff / 60000)
-  if (m < 1) return 'just now'
-  if (m < 60) return `${m}m ago`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  const d = Math.floor(h / 24)
-  return d === 1 ? '1 day ago' : `${d} days ago`
+const getStatusBadgeClass = (professor) => {
+  if (professor.isWeekend) {
+    return 'bg-gray-100 text-gray-700'
+  }
+  if (professor.available === 'available') {
+    return 'bg-green-100 text-green-700'
+  }
+  if (professor.available === 'busy') {
+    return 'bg-pink-100 text-pink-700'
+  }
+  return 'bg-gray-100 text-gray-700'
 }
-</script>
 
+const getStatusDotClass = (professor) => {
+  if (professor.isWeekend) {
+    return 'bg-gray-500'
+  }
+  if (professor.available === 'available') {
+    return 'bg-green-500'
+  }
+  if (professor.available === 'busy') {
+    return 'bg-red-500'
+  }
+  return 'bg-gray-500'
+}
+
+const isProfessorAvailable = (professor) => {
+  // Professor is only available if it's not weekend AND their status is 'available'
+  return !professor.isWeekend && professor.available === 'available'
+}
+
+onMounted(async () => {
+  try {
+    const res = await api.get("/professors");
+
+    if (res.data.success) {
+      professors.value = res.data.professors;
+      isWeekend.value = res.data.isWeekend || false;
+      
+      console.log('Loaded professors:', professors.value.length)
+      console.log('Is weekend:', isWeekend.value)
+    }
+  } catch (err) {
+    console.error("Error loading professors:", err);
+  }
+});
+
+</script>

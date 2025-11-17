@@ -9,162 +9,232 @@
     <!-- Right Side - Notifications and Profile -->
     <div class="flex items-center space-x-1">
       <!-- Notifications -->
-    <div class="relative">
-      <button
-        @click="toggleNotifications"
-        class="flex items-center justify-center w-12 h-12 text-2xl text-gray-600 hover:text-gray-600 relative transition-colors"
-      >
-        <iconify-icon 
-          :icon="showNotifications ? 'ion:notifications' : 'ion:notifications-outline'" 
-          class="h-5 w-5" 
-        />
-        <span
-          v-if="notificationCount > 0"
-          class="absolute -top-1 -right-1 h-5 w-5 bg-[#F5C400] text-white text-xs rounded-full flex items-center justify-center"
+      <div class="relative">
+        <button
+          @click="toggleNotifications"
+          class="flex items-center justify-center w-12 h-12 text-2xl text-gray-600 hover:text-gray-600 relative transition-colors"
         >
-          {{ notificationCount }}
-        </span>
-      </button>
+          <iconify-icon
+            :icon="showNotifications ? 'ion:notifications' : 'ion:notifications-outline'"
+            class="h-5 w-5"
+          />
+          <span
+            v-if="count > 0"
+            class="absolute -top-1 -right-1 h-5 w-5 bg-[#F5C400] text-white text-xs rounded-full flex items-center justify-center"
+          >
+            {{ count }}
+          </span>
+        </button>
 
-      <!-- Notifications Dropdown -->
-      <Transition name="dropdown">
-        <div
-          v-if="showNotifications"
-          class="absolute right-0 mt-2 w-[420px] bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+        <!-- 🔽 Notifications Dropdown -->
+        <Transition name="dropdown">
+          <div
+            v-if="showNotifications"
+            class="absolute right-0 mt-2 w-[420px] bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+          >
+            <!-- Header -->
+            <div class="px-6 py-4 flex justify-between items-center border-b border-gray-100">
+              <h3 class="text-xl font-bold text-gray-900">Notifications</h3>
+              <button @click="clearAll" class="text-sm text-gray-500 hover:text-gray-700">
+                Clear All
+              </button>
+            </div>
+
+            <!-- Notifications List -->
+            <div class="max-h-96 overflow-y-auto px-6 py-2">
+              <template v-if="notifications.length > 0">
+                <!-- TODAY -->
+                <div v-if="groupedNotifications.today.length">
+                  <p class="text-sm text-gray-500 font-semibold mt-2 mb-1">Today</p>
+                  <ul>
+                    <li
+                      v-for="n in groupedNotifications.today"
+                      :key="n._id"
+                      class="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0"
+                    >
+                      <div>
+                        <div
+                          v-if="n.isGeneral"
+                          class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center"
+                        >
+                          <iconify-icon icon="flowbite:laptop-code-solid" class="text-lg text-gray-700" />
+                        </div>
+                        <img
+                          v-else
+                          :src="n.avatar || '/profile.svg'"
+                          alt="avatar"
+                          class="w-10 h-10 rounded-full object-cover"
+                        />
+                      </div>
+
+                      <div class="flex-1">
+                        <p class="text-gray-900 font-medium">{{ n.title }}</p>
+                        <p class="text-sm text-gray-600">{{ n.message }}</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ formatDate(n.createdAt) }}</p>
+                      </div>
+
+                      <button
+                        v-if="!n.read"
+                        @click.stop="markAsRead(n._id)"
+                        class="text-gray-400 hover:text-gray-600"
+                      >
+                        <iconify-icon icon="mdi:check-circle-outline" />
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- YESTERDAY -->
+                <div v-if="groupedNotifications.yesterday.length">
+                  <p class="text-sm text-gray-500 font-semibold mt-4 mb-1">Yesterday</p>
+                  <ul>
+                    <li
+                      v-for="n in groupedNotifications.yesterday"
+                      :key="n._id"
+                      class="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0"
+                    >
+                      <div>
+                        <div
+                          v-if="n.isGeneral"
+                          class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center"
+                        >
+                          <iconify-icon icon="flowbite:laptop-code-solid" class="text-lg text-gray-700" />
+                        </div>
+                        <img
+                          v-else
+                          :src="n.avatar || '/profile.svg'"
+                          alt="avatar"
+                          class="w-10 h-10 rounded-full object-cover"
+                        />
+                      </div>
+
+                      <div class="flex-1">
+                        <p class="text-gray-900 font-medium">{{ n.title }}</p>
+                        <p class="text-sm text-gray-600">{{ n.message }}</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ formatDate(n.createdAt) }}</p>
+                      </div>
+
+                      <button
+                        v-if="!n.read"
+                        @click.stop="markAsRead(n._id)"
+                        class="text-gray-400 hover:text-gray-600"
+                      >
+                        <iconify-icon icon="mdi:check-circle-outline" />
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- EARLIER -->
+                <div v-if="groupedNotifications.earlier.length">
+                  <p class="text-sm text-gray-500 font-semibold mt-4 mb-1">Earlier</p>
+                  <ul>
+                    <li
+                      v-for="n in groupedNotifications.earlier"
+                      :key="n._id"
+                      class="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0"
+                    >
+                      <div>
+                        <div
+                          v-if="n.isGeneral"
+                          class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center"
+                        >
+                          <iconify-icon icon="flowbite:laptop-code-solid" class="text-lg text-gray-700" />
+                        </div>
+                        <img
+                          v-else
+                          :src="n.avatar || '/profile.svg'"
+                          alt="avatar"
+                          class="w-10 h-10 rounded-full object-cover"
+                        />
+                      </div>
+
+                      <div class="flex-1">
+                        <p class="text-gray-900 font-medium">{{ n.title }}</p>
+                        <p class="text-sm text-gray-600">{{ n.message }}</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ formatDate(n.createdAt) }}</p>
+                      </div>
+
+                      <button
+                        v-if="!n.read"
+                        @click.stop="markAsRead(n._id)"
+                        class="text-gray-400 hover:text-gray-600"
+                      >
+                        <iconify-icon icon="mdi:check-circle-outline" />
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </template>
+
+              <!-- Empty State -->
+              <div v-else class="text-center py-10 text-gray-500">
+                <iconify-icon icon="mingcute:notification-off-line" class="h-10 w-10 mx-auto mb-2" />
+                <p>No notifications available.</p>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div
+              v-if="notifications.length >= 5"
+              class="px-6 py-3 border-t border-gray-100 text-right bg-white rounded-b-lg"
+            >
+              <router-link to="/student/notifications" class="text-sm text-[#102A71] hover:underline">
+                View all
+              </router-link>
+            </div>
+          </div>
+        </Transition>
+      </div>
+
+      <!-- Profile -->
+      <div class="relative">
+        <button
+          @click="toggleProfileMenu"
+          class="flex items-center space-x-3 p-2  rounded-lg transition-colors"
         >
-        <!-- Header -->
-        <div class="px-6 py-4 flex justify-between items-center">
-          <h3 class="text-xl font-bold text-gray-900">Notification</h3>
-        </div>
-        
-        <!-- Notifications List (matches Notifications.vue content) -->
-        <div class="max-h-96 overflow-y-auto px-6 py-2">
-          <!-- Today -->
-          <section class="mb-4">
-            <h2 class="text-sm font-semibold text-gray-800">Today</h2>
-            <ul class="mt-1">
-              <li class="flex items-start gap-3 py-3">
-                <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
-                <div class="flex-1">
-                  <p class="text-gray-900">Professor Alvarez is <span class="font-semibold">Available.</span></p>
-                  <p class="text-xs text-gray-500">30mins</p>
-                </div>
-              </li>
-              <hr class="border-gray-200" />
-              <li class="flex items-start gap-3 py-3">
-                <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
-                <div class="flex-1">
-                  <p class="text-gray-900">You successfully edit your profile picture.</p>
-                  <p class="text-xs text-gray-500">1hr ago</p>
-                </div>
-              </li>
-              <hr class="border-gray-200" />
-              <li class="flex items-start gap-3 py-3">
-                <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
-                <div class="flex-1">
-                  <p class="text-gray-900">You successfully sent a message to Prof. Lopez.</p>
-                  <p class="text-xs text-gray-500">1hr ago</p>
-                </div>
-              </li>
-              <hr class="border-gray-200" />
-              <li class="flex items-start gap-3 py-3">
-                <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
-                <div class="flex-1">
-                  <p class="text-gray-900">Sir Elmer sent a message.</p>
-                  <p class="text-xs text-gray-500">1hr ago</p>
-                </div>
-              </li>
-            </ul>
-          </section>
+          <!-- Profile Picture -->
+          <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center overflow-hidden">
+            <span class="text-sm font-semibold text-blue-600">{{ initials }}</span>
+          </div>
+          
+          <!-- Profile Info -->
+          <div class="flex flex-col items-start">
+            <span class="text-sm font-semibold text-gray-900">{{ user.firstName }} {{ user.lastName }}</span>
+            <span class="text-xs text-gray-500">{{ user.emailAddress }}</span>
+          </div>
+          
+          <!-- Dropdown Icon -->
+          <iconify-icon icon="lucide:chevron-down" class="h-4 w-4 text-gray-400" />
+        </button>
 
-          <!-- Yesterday -->
-          <section>
-            <h2 class="text-sm font-semibold text-gray-800">Yesterday</h2>
-            <ul class="mt-1">
-              <li class="flex items-start gap-3 py-3">
-                <img src="/profile.svg" alt="avatar" class="w-10 h-10 rounded-full object-cover" />
-                <div class="flex-1">
-                  <p class="text-gray-900">You successfully sent a message to Prof. Lopez.</p>
-                  <p class="text-xs text-gray-500">1hr ago</p>
-                </div>
-              </li>
-            </ul>
-          </section>
-        </div>
-        <!-- Footer -->
-        <div v-if="notifications.length >= 5" class="px-6 py-3 border-t border-gray-100 text-right bg-white rounded-b-lg">
-          <router-link to="/student/notifications" class="text-sm text-[#102A71] hover:underline">View all</router-link>
-        </div>
-        </div>
-      </Transition>
-    </div>
-
-    <!-- Profile -->
-    <div class="relative">
-      <button
-        @click="toggleProfileMenu"
-        class="flex items-center space-x-3 p-2  rounded-lg transition-colors"
-      >
-        <!-- Profile Picture -->
-        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center overflow-hidden">
-          <span class="text-sm font-semibold text-blue-600">JD</span>
-        </div>
-        
-        <!-- Profile Info -->
-        <div class="flex flex-col items-start">
-          <span class="text-sm font-semibold text-gray-900">John Doe</span>
-          <span class="text-xs text-gray-500">john.doe@student.edu</span>
-        </div>
-        
-        <!-- Dropdown Icon -->
-        <iconify-icon icon="lucide:chevron-down" class="h-4 w-4 text-gray-400" />
-      </button>
-
-      <!-- Profile Dropdown Menu -->
-      <Transition name="dropdown">
-        <div
-          v-if="showProfileMenu"
-          class="absolute right-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-50"
-        >
-        <div class="py-1">
-          <router-link
-            to="/student/profile"
-            class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-            @click="showProfileMenu = false"
+        <!-- Profile Dropdown Menu -->
+        <Transition name="dropdown">
+          <div
+            v-if="showProfileMenu"
+            class="absolute right-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-50"
           >
-            <iconify-icon icon="lucide:user" class="mr-2 h-4 w-4" />
-            View Profile
-          </router-link>
-          <div class="border-t border-gray-100"></div>
-          <router-link
-            to="/student/settings"
-            class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-            @click="showProfileMenu = false"
-          >
-            <iconify-icon icon="mingcute:settings-1-line" class="mr-2 h-4 w-4" />
-            Settings
-          </router-link>
-          <div class="border-t border-gray-100"></div>
-          <router-link
-            to="/student/support"
-            class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-            @click="showProfileMenu = false"
-          >
-            <iconify-icon icon="ix:about" class="mr-2 h-4 w-4" />
-            Support & About
-          </router-link>
-          <div class="border-t border-gray-100"></div>
-          <button
-            @click="showSignOutModal = true"
-            class="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition-colors"
-          >
-            <iconify-icon icon="material-symbols:logout-rounded" class="mr-2 h-4 w-4" />
-            Sign Out
-          </button>
-        </div>
-        </div>
-      </transition>
-    </div>
+            <div class="py-1">
+              <router-link
+                to="/student/profile"
+                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                @click="showProfileMenu = false"
+              >
+                <iconify-icon icon="lucide:user" class="mr-2 h-4 w-4" />
+                View Profile
+              </router-link>
+              <div class="border-t border-gray-100"></div>
+              <button
+                @click="showSignOutModal = true"
+                class="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition-colors"
+              >
+                <iconify-icon icon="lucide:log-out" class="mr-2 h-4 w-4" />
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </Transition>
+      </div>
     </div>
   </div>
 
@@ -195,40 +265,93 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useNotifications } from '@/composables/useNotifications'
+import api from '@/utils/api'
+import dayjs from 'dayjs'
 
 const router = useRouter()
 const route = useRoute()
 
 const showProfileMenu = ref(false)
 const showNotifications = ref(false)
-const notificationCount = ref(3)
 const showSignOutModal = ref(false)
 
-// Check if current page is Dashboard
-const isDashboard = computed(() => {
-  return route.path.includes('/dashboard')
+const user = ref({
+  firstName: '',
+  lastName: '',
+  role: '',
+  emailAddress: ''
 })
 
-// Page information based on current route
-const currentPageTitle = ref('Dashboard')
-const currentPageDescription = ref('Welcome to your student dashboard')
+// --- Use global composable store ---
+const { notifications, count, addNotification, markAsRead, clearAll } = useNotifications()
 
-import { useNotifications } from '@/composables/useNotifications'
-const { notifications, count } = useNotifications()
-notificationCount.value = count.value
+// --- Fetch notifications from backend ---
+const fetchNotifications = async () => {
+  try {
+    const storedUser = localStorage.getItem('user')
+    if (!storedUser) return console.error('❌ No user found in localStorage')
 
+    const userData = JSON.parse(storedUser)
+    const studentId = userData._id || userData.id
+
+    const { data } = await api.get(`/notification/get-notification?studentId=${studentId}`)
+    if (data.success) {
+      notifications.value = data.data
+    } else {
+      console.warn('⚠️ Failed to fetch notifications:', data.message)
+    }
+  } catch (error) {
+    console.error('❌ Error fetching notifications:', error)
+  }
+}
+
+// --- Utility: format date nicely ---
+const formatDate = (dateStr) => {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMinutes = Math.floor(diffMs / 60000)
+  if (diffMinutes < 1) return 'just now'
+  if (diffMinutes < 60) return `${diffMinutes}m ago`
+  const diffHours = Math.floor(diffMinutes / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+  const diffDays = Math.floor(diffHours / 24)
+  return `${diffDays}d ago`
+}
+
+// --- Group by Today / Yesterday / Earlier ---
+const groupedNotifications = computed(() => {
+  const today = dayjs().startOf('day')
+  const yesterday = dayjs().subtract(1, 'day').startOf('day')
+  const groups = { today: [], yesterday: [], earlier: [] }
+
+  notifications.value.forEach(n => {
+    const created = dayjs(n.createdAt)
+    if (created.isAfter(today)) groups.today.push(n)
+    else if (created.isAfter(yesterday)) groups.yesterday.push(n)
+    else groups.earlier.push(n)
+  })
+
+  for (const key in groups) {
+    groups[key].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  }
+  return groups
+})
+
+// --- UI Toggles ---
 const toggleProfileMenu = () => {
   showProfileMenu.value = !showProfileMenu.value
   showNotifications.value = false
 }
 
-const toggleNotifications = () => {
+const toggleNotifications = async () => {
   showNotifications.value = !showNotifications.value
   showProfileMenu.value = false
+  if (showNotifications.value) await fetchNotifications()
 }
 
 const logout = () => {
-  console.log('Logging out...')
   router.push('/auth/login')
 }
 
@@ -244,11 +367,16 @@ const handleClickOutside = (event) => {
   }
 }
 
-// Update page title and description based on current route
+// --- Page Info Handling ---
+const isDashboard = computed(() => route.path.includes('/dashboard'))
+
+const currentPageTitle = ref('Dashboard')
+const currentPageDescription = ref('Welcome to your student dashboard')
+
 const updatePageInfo = () => {
   const path = route.path
   if (path.includes('/dashboard')) {
-    currentPageTitle.value = 'Welcome back, John!'
+    currentPageTitle.value = `Welcome back, ${user.value.firstName}!`
     currentPageDescription.value = 'Manage your professor inquiries and track availability'
   } else if (path.includes('/locate-professor')) {
     currentPageTitle.value = 'Locate Professor'
@@ -265,24 +393,28 @@ const updatePageInfo = () => {
   }
 }
 
-// Watch for route changes
+// --- Initials for Avatar ---
+const initials = computed(() => {
+  const first = user.value.firstName?.charAt(0).toUpperCase() || ''
+  const last = user.value.lastName?.charAt(0).toUpperCase() || ''
+  return first + last
+})
+
+// --- Watch for Route Change ---
 watch(() => route.path, updatePageInfo)
 
-onMounted(() => {
+// --- Lifecycle ---
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
+  const storedUser = localStorage.getItem('user')
+  if (storedUser) user.value = JSON.parse(storedUser)
   updatePageInfo()
+  await fetchNotifications()
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
-
-const getStatusIcon = (status) => {
-  if (status === 'available') return 'lucide:check'
-  if (status === 'message') return 'lucide:message-circle'
-  if (status === 'busy') return 'lucide:x'
-  return 'lucide:circle'
-}
 </script>
 
 <style scoped>

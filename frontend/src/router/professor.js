@@ -15,6 +15,7 @@ const professorRoutes = [
   {
     path: '/professor',
     component: ProfessorLayout,
+    meta: { requiresAuth: true, role: 'professor' },
     children: [
       {
         path: '',

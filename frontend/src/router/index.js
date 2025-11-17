@@ -21,4 +21,49 @@ const router = createRouter({
   ],
 })
 
+// ✅ Navigation Guard (Middleware)
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+  const userRole = localStorage.getItem('role')
+
+  const clearSession = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('role')
+    localStorage.removeItem('user')
+  }
+
+  // Check if the route needs authentication
+  const requiresAuth = to.matched.some(record => record.meta?.requiresAuth)
+
+  // 🧩 If route requires login but no token
+  if (requiresAuth && !token) {
+    clearSession()
+    return next('/auth/login')
+  }
+
+  // 👮 If route has role restrictions
+  const requiredRoles = to.matched
+    .filter(record => record.meta?.role)
+    .map(record => record.meta.role)
+
+  // ⚙️ Allow login process to complete first before redirect
+  // If the route has a required role but we don't yet have one, skip check temporarily
+  if (requiredRoles.length > 0) {
+    if (!userRole) {
+      // Let first-time navigation after login finish
+      return next()
+    }
+
+    // If user role does not match required role
+    if (!requiredRoles.includes(userRole)) {
+      clearSession()
+      return next('/unauthorized')
+    }
+  }
+
+  // Allow visiting /login and /register even if already authenticated
+
+  return next()
+})
+
 export default router

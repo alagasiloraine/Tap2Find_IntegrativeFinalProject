@@ -107,11 +107,11 @@
       <div class="relative">
         <button @click="toggleProfileMenu" class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
           <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center overflow-hidden">
-            <span class="text-sm font-semibold text-blue-600">PA</span>
+            <span class="text-sm font-semibold text-blue-600">{{ initials }}</span>
           </div>
           <div class="flex flex-col items-start">
-            <span class="text-sm font-semibold text-gray-900">Prof. Alvarez</span>
-            <span class="text-xs text-gray-500">pauline.alvarez@univ.edu</span>
+            <span class="text-sm font-semibold text-gray-900">Prof. {{ user.firstName }} {{ user.lastName }}</span>
+            <span class="text-xs text-gray-500">{{ user.emailAddress }}</span>
           </div>
           <iconify-icon icon="lucide:chevron-down" class="h-4 w-4 text-gray-400" />
         </button>
@@ -169,6 +169,14 @@ const showNotifications = ref(false)
 const notificationCount = ref(0)
 const showSignOutModal = ref(false)
 
+const user = ref({
+  firstName: '',
+  lastName: '',
+  role: '',
+  emailAddress: '',
+  status: ''
+})
+
 const isDashboard = computed(() => route.path === '/professor')
 
 const currentPageTitle = ref('Dashboard')
@@ -218,7 +226,7 @@ const handleClickOutside = (event) => {
 const updatePageInfo = () => {
   const path = route.path
   if (path === '/professor') {
-    currentPageTitle.value = 'Welcome back, Professor!'
+    currentPageTitle.value = `Welcome back, ${user.value.firstName || 'Professor'}!`
     currentPageDescription.value = 'Manage inquiries, availability, and schedule'
   } else if (path.includes('/availability')) {
     currentPageTitle.value = 'Set Availability Status'
@@ -235,10 +243,32 @@ const updatePageInfo = () => {
   }
 }
 
+// Watch for route changes and update page info
 watch(() => route.path, updatePageInfo)
+
+// Watch for user data changes and update page info when user loads
+watch(user, () => {
+  updatePageInfo()
+}, { deep: true })
+
+const initials = computed(() => {
+  const first = user.value.firstName?.charAt(0).toUpperCase() || ''
+  const last = user.value.lastName?.charAt(0).toUpperCase() || ''
+  return first + last
+})
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  
+  // Load user from localStorage FIRST
+  const storedUser = localStorage.getItem('user')
+  console.log('Stored user:', storedUser) // Debug log
+  if (storedUser) {
+    user.value = JSON.parse(storedUser)
+    console.log('User data loaded:', user.value) // Debug log
+  }
+  
+  // THEN call updatePageInfo
   updatePageInfo()
 })
 

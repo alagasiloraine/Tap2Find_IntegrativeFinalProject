@@ -141,6 +141,33 @@
                 </div>
               </div>
               <div>
+                <label class="block text-sm text-gray-600 mb-1">Program</label>
+                <div class="relative dropdown-container">
+                  <button
+                    type="button"
+                    @click="isEditing && (openProgram = !openProgram)"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-left flex items-center justify-between disabled:opacity-60 disabled:cursor-not-allowed"
+                    :disabled="!isEditing"
+                  >
+                    <span>{{ form.program }}</span>
+                    <iconify-icon icon="mdi:chevron-down" class="text-lg transition-transform duration-200" :class="{ 'rotate-180': openProgram }" />
+                  </button>
+                  <Transition name="dropdown">
+                    <div v-if="openProgram" class="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 overflow-hidden">
+                      <button
+                        v-for="p in programs"
+                        :key="p"
+                        @click="form.program = p; openProgram = false"
+                        class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50"
+                        :class="{ 'bg-blue-50 text-[#102A71]': form.program === p }"
+                      >
+                        {{ p }}
+                      </button>
+                    </div>
+                  </Transition>
+                </div>
+              </div>
+              <div>
                 <label class="block text-sm text-gray-600 mb-1">Year Level</label>
                 <div class="relative dropdown-container">
                   <button
@@ -304,6 +331,9 @@ const isEditing = ref(false)
 const isSaving = ref(false)
 const isResetting = ref(false)
 const isLoading = ref(true)
+const openProgram = ref(false)
+const openYear = ref(false)
+const openSection = ref(false)
 
 // Toast helper (top-center, smooth slide/fade, spinner + progress bar)
 const showToast = (message, type = 'success', duration = 2500) => {

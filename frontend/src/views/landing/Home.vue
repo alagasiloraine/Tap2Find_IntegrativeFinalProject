@@ -14,7 +14,7 @@
             </p>
             <div class="flex justify-center gap-4 flex-wrap">
               <router-link 
-                to="/auth/register"
+                :to="{ name: 'register' }"
                 class="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
               >
                 🚀 Get Started
@@ -61,7 +61,7 @@
               Join thousands of users who are already using Tap2Find to achieve their goals.
             </p>
             <router-link 
-              to="/auth/register"
+              :to="{ name: 'register' }"
               class="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors inline-block"
             >
               ➡️ Start Your Journey
@@ -72,3 +72,23 @@
     </section>
   </div>
 </template>
+
+<script setup>
+const features = [
+  {
+    icon: "🔍",
+    title: "Easy Discovery",
+    description: "Quickly find professors, schedules, and key information in just a few taps."
+  },
+  {
+    icon: "⚡",
+    title: "Real-Time Updates",
+    description: "Stay updated with the latest availability and announcements instantly."
+  },
+  {
+    icon: "🤝",
+    title: "Seamless Connection",
+    description: "Connect with the right people at the right time for better collaboration."
+  }
+];
+</script>

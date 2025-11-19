@@ -19,10 +19,10 @@
             class="h-5 w-5"
           />
           <span
-            v-if="count > 0"
+            v-if="notificationCount > 0"
             class="absolute -top-1 -right-1 h-5 w-5 bg-[#F5C400] text-white text-xs rounded-full flex items-center justify-center"
           >
-            {{ count }}
+            {{ notificationCount }}
           </span>
         </button>
 
@@ -36,14 +36,14 @@
             <div class="px-6 py-4 flex justify-between items-center border-b border-gray-100">
               <h3 class="text-xl font-bold text-gray-900">Notifications</h3>
               <button
-                @click="clearAllNotifications"
+                @click.stop="clearAllNotifications"
                 :disabled="notificationsLoading || clearingAll"
                 class="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <span v-if="clearingAll" class="inline-flex items-center">
                   <span class="w-3.5 h-3.5 border-2 border-gray-400/40 border-t-gray-600 rounded-full animate-spin"></span>
                 </span>
-                <span>{{ clearingAll ? 'Clearing...' : 'Clear All' }}</span>
+                <span>{{ clearingAll ? 'Marking...' : 'Mark all as read' }}</span>
               </button>
             </div>
 
@@ -62,7 +62,7 @@
                 </div>
               </div>
 
-              <template v-else-if="notifications.length > 0">
+              <template v-else-if="hasUnread">
                 <!-- TODAY -->
                 <div v-if="groupedNotifications.today.length">
                   <p class="text-sm text-gray-500 font-semibold mt-2 mb-1">Today</p>
@@ -361,6 +361,8 @@ const groupedNotifications = computed(() => {
   const groups = { today: [], yesterday: [], earlier: [] }
 
   notifications.value.forEach(n => {
+    // Only show UNREAD in dropdown
+    if (n.read) return
     const created = dayjs(n.createdAt)
     if (created.isAfter(today)) groups.today.push(n)
     else if (created.isAfter(yesterday)) groups.yesterday.push(n)
@@ -372,6 +374,12 @@ const groupedNotifications = computed(() => {
   }
   return groups
 })
+
+// --- Notification count for badge (unread only) ---
+const notificationCount = computed(() => notifications.value.filter(n => !n.read).length)
+
+// --- Any unread? controls empty state ---
+const hasUnread = computed(() => notifications.value.some(n => !n.read))
 
 // --- UI Toggles ---
 const toggleProfileMenu = () => {
@@ -389,6 +397,8 @@ const clearAllNotifications = async () => {
   try {
     if (clearingAll.value) return
     clearingAll.value = true
+    // Keep dropdown open during action
+    showNotifications.value = true
     const storedUser = localStorage.getItem('user')
     if (!storedUser) return console.error('❌ No user found in localStorage')
 
@@ -398,12 +408,14 @@ const clearAllNotifications = async () => {
 
     await api.post('/notification/mark-all-read', { userId, userRole })
 
-    // Clear local store so UI updates immediately
-    clearAll()
+    // Locally mark all as read so badge goes to 0 and dropdown empties
+    notifications.value = notifications.value.map(n => ({ ...n, read: true }))
   } catch (error) {
     console.error('❌ Error clearing notifications:', error)
   } finally {
     clearingAll.value = false
+    // Ensure dropdown remains open after clearing
+    showNotifications.value = true
   }
 }
 

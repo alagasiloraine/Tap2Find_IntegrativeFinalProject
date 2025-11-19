@@ -10,7 +10,7 @@ import {
 
 export const getStudentNotifications = async (req, res) => {
   try {
-    const { userId, userRole } = req.query;
+    const { userId, userRole, onlyUnread } = req.query;
 
     if (!userId) {
       return res.status(400).json({ success: false, message: "Missing userId" });
@@ -44,20 +44,20 @@ export const getStudentNotifications = async (req, res) => {
       orConditions.push({ userId: targetObjectId });
     }
 
-    // Only return unread notifications for the dropdown
-    const query = {
-      $and: [
-        { $or: orConditions },
-        { read: { $ne: true } },
-      ],
-    };
+    // Build query: unread by default, unless onlyUnread explicitly set to 'false'
+    const andConditions = [{ $or: orConditions }]
+    if (onlyUnread !== 'false') {
+      andConditions.push({ read: { $ne: true } })
+    }
+
+    const query = { $and: andConditions };
 
     const data = await notifications
       .find(query)
       .sort({ createdAt: -1 })
       .toArray();
 
-    console.log(`📢 Fetched ${data.length} notifications for ${userRole} user: ${userId}`);
+    console.log(`📢 Fetched ${data.length} notifications for ${userRole} user: ${userId} (onlyUnread=${onlyUnread !== 'false'})`);
 
     res.json({ success: true, data });
   } catch (error) {
@@ -292,6 +292,52 @@ export const markAllNotificationsRead = async (req, res) => {
     res.json({ success: true, modifiedCount: result.modifiedCount });
   } catch (error) {
     console.error("❌ Error marking notifications as read:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// 🚮 Delete specific notifications by IDs
+export const deleteNotificationsByIds = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: "ids array is required" });
+    }
+
+    const db = getDB();
+    const notifications = db.collection("notifications");
+    const objectIds = ids.map((id) => new ObjectId(id));
+    const result = await notifications.deleteMany({ _id: { $in: objectIds } });
+    res.json({ success: true, deletedCount: result.deletedCount });
+  } catch (error) {
+    console.error("❌ Error deleting notifications:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// 🗑️ Delete ALL notifications for a user (scoped by role and target fields)
+export const deleteAllNotificationsForUser = async (req, res) => {
+  try {
+    const { userId, userRole } = req.body;
+    if (!userId) return res.status(400).json({ success: false, message: "Missing userId" });
+
+    const db = getDB();
+    const notifications = db.collection("notifications");
+    const targetObjectId = new ObjectId(userId);
+
+    const orConditions = [{ isGeneral: true }];
+    if (userRole === "student") {
+      orConditions.push({ targetRole: "student" }, { studentId: targetObjectId });
+    } else if (userRole === "professor") {
+      orConditions.push({ targetRole: "professor" }, { professorId: targetObjectId });
+    } else {
+      orConditions.push({ userId: targetObjectId });
+    }
+
+    const result = await notifications.deleteMany({ $or: orConditions });
+    res.json({ success: true, deletedCount: result.deletedCount });
+  } catch (error) {
+    console.error("❌ Error deleting all notifications:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

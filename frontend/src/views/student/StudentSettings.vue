@@ -122,20 +122,40 @@
 
         <!-- Active sessions -->
         <div class="border rounded-xl">
-          <div class="bg-gray-100 px-4 py-3  text-sm font-medium text-gray-900">Active Sessions / Devices</div>
+          <div class="bg-gray-100 px-4 py-3 flex items-center justify-between text-sm font-medium text-gray-900">
+            <span>Active Sessions / Devices</span>
+            <button class="text-xs text-[#102A71] hover:underline disabled:opacity-60" @click="refreshSessions" :disabled="refreshing">
+              {{ refreshing ? 'Refreshing...' : 'Refresh' }}
+            </button>
+          </div>
           <ul>
-            <li v-for="(s, i) in sessions" :key="i" class="flex items-center justify-between px-4 py-3 border-t text-sm">
-              <div>
-                <div class="text-gray-900">{{ s.device }} — {{ s.location }}</div>
-                <div class="text-xs text-gray-500">{{ s.lastActive }}</div>
+            <li
+              v-for="(s, i) in sessions"
+              :key="s.id || i"
+              class="flex items-start justify-between px-4 py-4 border-t"
+            >
+              <div class="flex flex-col gap-0.5">
+                <div class="flex items-center gap-2 text-sm">
+                  <span class="text-gray-900 font-medium">{{ s.device || 'Unknown Browser' }}</span>
+                  <span v-if="s.isCurrent" class="text-[11px] px-2 py-0.5 rounded-full bg-green-100 text-green-700">Current</span>
+                </div>
+                <div class="text-xs text-gray-500">
+                  <span>{{ s.location || 'Localhost' }}</span>
+                  <span v-if="s.ipAddress"> • {{ s.ipAddress }}</span>
+                </div>
+                <div class="text-xs text-gray-500">Last active: {{ formatRelativeTime(s.lastActive) }}</div>
               </div>
-              <button
-                class="text-xs text-red-600 hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
-                @click="signOutSession(i)"
-                :disabled="signingOutIndex === i || signingOutAll"
-              >
-                {{ signingOutIndex === i ? 'Signing out...' : 'Sign out' }}
-              </button>
+              <div class="text-right">
+                <div v-if="s.isCurrent" class="text-[11px] text-gray-400">Current session</div>
+                <button
+                  v-else
+                  class="text-xs text-red-600 hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
+                  @click="signOutSession(i)"
+                  :disabled="signingOutIndex === i || signingOutAll"
+                >
+                  {{ signingOutIndex === i ? 'Signing out...' : 'Sign out' }}
+                </button>
+              </div>
             </li>
           </ul>
         </div>
@@ -334,6 +354,16 @@ const sessions = ref([])
 const isLoading = ref(true)
 const signingOutIndex = ref(null)
 const signingOutAll = ref(false)
+const refreshing = ref(false)
+
+function getCurrentUserId() {
+  try {
+    const raw = localStorage.getItem('user') || localStorage.getItem('student') || localStorage.getItem('currentUser')
+    if (!raw) return null
+    const obj = JSON.parse(raw)
+    return obj._id || obj.id || null
+  } catch { return null }
+}
 
 function authHeaders() {
   const token = localStorage.getItem('token') || localStorage.getItem('t2f_token')
@@ -345,51 +375,67 @@ function authHeaders() {
 
 // (2FA removed)
 
+function formatRelativeTime(input) {
+  try {
+    const ts = new Date(input)
+    const now = new Date()
+    const diff = Math.max(0, (now - ts) / 1000)
+    if (diff < 60) return 'Just now'
+    const mins = Math.floor(diff / 60)
+    if (mins < 60) return `${mins} minute${mins===1?'':'s'} ago`
+    const hrs = Math.floor(mins / 60)
+    if (hrs < 24) return `${hrs} hour${hrs===1?'':'s'} ago`
+    const days = Math.floor(hrs / 24)
+    return `${days} day${days===1?'':'s'} ago`
+  } catch { return String(input || '') }
+}
+
 async function loadSessions() {
   try {
-    const res = await fetch('http://localhost:3000/api/auth/sessions', { headers: { ...authHeaders() } })
+    const userId = getCurrentUserId()
+    const url = userId ? `http://localhost:3000/api/user-settings/${userId}/sessions` : null
+    if (!url) throw new Error('Missing user')
+    const res = await fetch(url, { headers: { ...authHeaders() } })
     const data = await res.json()
     if (res.ok && data?.success) {
-      sessions.value = (data.sessions || []).map(s => ({
-        _id: s._id,
-        device: s.userAgent || 'Unknown device',
-        location: s.ip || 'Unknown',
-        lastActive: s.lastActive || s.createdAt || ''
+      const list = data.data?.sessions || []
+      sessions.value = list.map(s => ({
+        id: s.id || s._id,
+        device: s.device || 'Unknown Browser',
+        location: s.location || 'Local Network',
+        ipAddress: s.ipAddress || '',
+        lastActive: s.lastActive || s.createdAt || '',
+        isCurrent: !!s.isCurrent
       }))
-      // Try to set current session id based on userAgent if not set yet
-      const currentUA = navigator.userAgent
-      const existing = localStorage.getItem('t2f_session_id')
-      if (!existing) {
-        const match = (data.sessions || []).find(s => (s.userAgent || '') === currentUA)
-        if (match && match._id) {
-          try { localStorage.setItem('t2f_session_id', match._id) } catch {}
-        }
-      }
     }
   } catch {} finally {
     isLoading.value = false
   }
 }
 
+async function refreshSessions() {
+  if (refreshing.value) return
+  refreshing.value = true
+  try { await loadSessions() } finally { refreshing.value = false }
+}
+
 async function signOutSession(index) {
   const sess = sessions.value[index]
-  if (!sess?._id) return
+  if (!sess?.id) return
   try {
     signingOutIndex.value = index
-    const res = await fetch(`http://localhost:3000/api/auth/sessions/${sess._id}`, {
+    const userId = getCurrentUserId()
+    const res = await fetch(`http://localhost:3000/api/user-settings/${userId}/sessions/${sess.id}`, {
       method: 'DELETE',
       headers: { ...authHeaders() }
     })
     const data = await res.json()
     if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to sign out session')
     sessions.value.splice(index, 1)
-    // If signing out the current device, also log out locally
-    const currentId = localStorage.getItem('t2f_session_id')
-    if (currentId && currentId === sess._id) {
+    if (sess.isCurrent) {
       try {
         localStorage.removeItem('t2f_token')
         localStorage.removeItem('t2f_user')
-        localStorage.removeItem('t2f_session_id')
       } catch {}
       router.push('/login')
     }
@@ -405,7 +451,8 @@ async function signOutAll() {
   try {
     if (signingOutAll.value) return
     signingOutAll.value = true
-    const res = await fetch('http://localhost:3000/api/auth/sessions', {
+    const userId = getCurrentUserId()
+    const res = await fetch(`http://localhost:3000/api/user-settings/${userId}/sessions`, {
       method: 'DELETE',
       headers: { ...authHeaders() }
     })

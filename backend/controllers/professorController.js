@@ -130,6 +130,8 @@ export const getRecentConcerns = async (req, res) => {
             `${student.firstName?.charAt(0) || ''}${student.lastName?.charAt(0) || ''}`.toUpperCase() : 
             'US',
           email: student?.emailAddress || '',
+          yearLevel: student?.yearLevel || null,
+          section: student?.section || null,
           status: inquiry.status || 'pending',
           createdAt: inquiry.createdAt,
           updatedAt: inquiry.updatedAt
@@ -192,6 +194,8 @@ export const getAllConcerns = async (req, res) => {
             `${student.firstName?.charAt(0) || ''}${student.lastName?.charAt(0) || ''}`.toUpperCase() : 
             'US',
           email: student?.emailAddress || '',
+          yearLevel: student?.yearLevel || null,
+          section: student?.section || null,
           status: inquiry.status || 'pending',
           createdAt: inquiry.createdAt,
           updatedAt: inquiry.updatedAt,
@@ -434,6 +438,8 @@ export const getConcernDetail = async (req, res) => {
         `${student.firstName?.charAt(0) || ''}${student.lastName?.charAt(0) || ''}`.toUpperCase() : 
         'US',
       email: student?.emailAddress || '',
+      yearLevel: student?.yearLevel || null,
+      section: student?.section || null,
       status: inquiry.status || 'pending',
       createdAt: inquiry.createdAt,
       updatedAt: inquiry.updatedAt,
@@ -757,7 +763,7 @@ export const getProfessorProfile = async (req, res) => {
         birthdate: professor.birthdate || '',
         address: professor.address || '',
         position: professor.position || '',
-        postGraduate: professor.postGraduate || '',
+        department: professor.department || professor.postGraduate || '',
         subjectHandles: professor.subjectHandles || '',
         contactNumber: professor.contactNumber || '',
         emailAddress: professor.emailAddress || '',
@@ -868,7 +874,7 @@ export const updateProfessorProfile = async (req, res) => {
     // Define allowed fields for update
     const allowedFields = [
       'firstName', 'lastName', 'middleName', 'birthdate', 'address',
-      'position', 'postGraduate', 'subjectHandles', 'contactNumber', 
+      'position', 'postGraduate', 'department', 'subjectHandles', 'contactNumber', 
       'emailAddress', 'avatarUrl', 'coverUrl'
     ];
     
@@ -877,6 +883,11 @@ export const updateProfessorProfile = async (req, res) => {
       if (Object.prototype.hasOwnProperty.call(req.body, field) && req.body[field] !== undefined) {
         updates[field] = req.body[field];
       }
+    }
+
+    // Backward compatibility: if department provided, mirror to postGraduate if missing
+    if (updates.department && updates.postGraduate === undefined) {
+      updates.postGraduate = updates.department;
     }
 
     console.log('Fields to update:', updates);
@@ -921,7 +932,7 @@ export const updateProfessorProfile = async (req, res) => {
         birthdate: updatedProfessor.birthdate || '',
         address: updatedProfessor.address || '',
         position: updatedProfessor.position || '',
-        postGraduate: updatedProfessor.postGraduate || '',
+        department: updatedProfessor.department || updatedProfessor.postGraduate || '',
         subjectHandles: updatedProfessor.subjectHandles || '',
         contactNumber: updatedProfessor.contactNumber || '',
         emailAddress: updatedProfessor.emailAddress || '',

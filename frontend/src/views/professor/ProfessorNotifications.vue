@@ -6,22 +6,27 @@
         <h1 class="text-4xl font-semibold text-gray-900">Notification</h1>
         <p class="text-base text-gray-500">
           You have 
-          <span class="text-[#F5C400]">{{ unreadCount }} notification{{ unreadCount !== 1 ? 's' : '' }}</span> 
+          <span class="text-[#F5C400]">{{ totalTodayCount }} notification{{ totalTodayCount !== 1 ? 's' : '' }}</span> 
           today.
         </p>
       </div>
-      <div class="relative" ref="menuRef">
-        <button class="p-2 rounded-full hover:bg-gray-100" aria-label="Filter" @click="toggleMenu">
-          <iconify-icon icon="mage:filter" class="text-2xl" />
-        </button>
-        <transition name="fade">
-          <div v-if="menuOpen" class="absolute right-0 mt-2 w-44 rounded-xl border border-gray-200 bg-white shadow-md overflow-hidden z-10">
-            <button @click="selectFilter(null)" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">All</button>
-            <button @click="selectFilter('today')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Today</button>
-            <button @click="selectFilter('week')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">This Week</button>
-            <button @click="selectFilter('month')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">This Month</button>
-          </div>
-        </transition>
+      <div class="flex items-center gap-2">
+        <button class="px-3 py-2 text-sm rounded-lg border hover:bg-gray-50" @click="toggleSelectMode">{{ selectMode ? 'Cancel' : 'Select' }}</button>
+        <button v-if="selectMode" class="px-3 py-2 text-sm rounded-lg border text-red-600 hover:bg-red-50 disabled:opacity-50" :disabled="selectedIds.length===0 || deletingSelected" @click="deleteSelected">Delete Selected</button>
+        <button v-if="selectMode" class="px-3 py-2 text-sm rounded-lg border text-red-600 hover:bg-red-50 disabled:opacity-50" :disabled="deletingAll" @click="deleteAll">Delete All</button>
+        <div class="relative" ref="menuRef">
+          <button class="p-2 rounded-full hover:bg-gray-100" aria-label="Filter" @click="toggleMenu">
+            <iconify-icon icon="mage:filter" class="text-2xl" />
+          </button>
+          <transition name="fade">
+            <div v-if="menuOpen" class="absolute right-0 mt-2 w-44 rounded-xl border border-gray-200 bg-white shadow-md overflow-hidden z-10">
+              <button @click="selectFilter(null)" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">All</button>
+              <button @click="selectFilter('today')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Today</button>
+              <button @click="selectFilter('week')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">This Week</button>
+              <button @click="selectFilter('month')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">This Month</button>
+            </div>
+          </transition>
+        </div>
       </div>
     </div>
 
@@ -38,6 +43,7 @@
             :key="notification._id"
             class="flex items-start gap-3 py-3"
           >
+            <input v-if="selectMode" type="checkbox" class="mt-2" :value="notification._id" v-model="selectedIds" />
             <!-- System notifications icon -->
             <div v-if="notification.isGeneral" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
               <iconify-icon icon="flowbite:laptop-code-solid" class="text-lg text-gray-700" />
@@ -79,6 +85,7 @@
             :key="notification._id"
             class="flex items-start gap-3 py-3"
           >
+            <input v-if="selectMode" type="checkbox" class="mt-2" :value="notification._id" v-model="selectedIds" />
             <div v-if="notification.isGeneral" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
               <iconify-icon icon="flowbite:laptop-code-solid" class="text-lg text-gray-700" />
             </div>
@@ -118,6 +125,7 @@
             :key="notification._id"
             class="flex items-start gap-3 py-3"
           >
+            <input v-if="selectMode" type="checkbox" class="mt-2" :value="notification._id" v-model="selectedIds" />
             <div v-if="notification.isGeneral" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
               <iconify-icon icon="flowbite:laptop-code-solid" class="text-lg text-gray-700" />
             </div>
@@ -155,6 +163,40 @@
         <p class="text-gray-600">You currently have no notifications.</p>
       </div>
     </div>
+
+    <!-- Delete Selected Confirmation Modal -->
+    <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="showDeleteSelectedModal" class="fixed inset-0 z-[9999]">
+        <div class="absolute inset-0 bg-black/40" @click="cancelDeleteSelected"></div>
+        <div class="relative w-full h-full flex items-center justify-center p-4">
+          <div class="bg-white rounded-xl w-full max-w-sm p-6 shadow-xl text-center">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete selected notifications?</h3>
+            <p class="text-sm text-gray-600 mb-5">Are you sure you want to delete {{ selectedIds.length }} selected notification{{ selectedIds.length !== 1 ? 's' : '' }}?</p>
+            <div class="flex gap-3 justify-center">
+              <button @click="cancelDeleteSelected" class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Cancel</button>
+              <button @click="confirmDeleteSelected" :disabled="deletingSelected" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60">{{ deletingSelected ? 'Deleting…' : 'Delete Selected' }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Delete All Confirmation Modal -->
+    <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="showDeleteAllModal" class="fixed inset-0 z-[9999]">
+        <div class="absolute inset-0 bg-black/40" @click="cancelDeleteAll"></div>
+        <div class="relative w-full h-full flex items-center justify-center p-4">
+          <div class="bg-white rounded-xl w-full max-w-sm p-6 shadow-xl text-center">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete all notifications?</h3>
+            <p class="text-sm text-gray-600 mb-5">Are you sure you want to delete all the notifications? This action cannot be undone.</p>
+            <div class="flex gap-3 justify-center">
+              <button @click="cancelDeleteAll" class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Cancel</button>
+              <button @click="confirmDeleteAll" :disabled="deletingAll" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60">{{ deletingAll ? 'Deleting…' : 'Delete All' }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -167,6 +209,12 @@ const loading = ref(true)
 const menuOpen = ref(false)
 const menuRef = ref(null)
 const notifications = ref([])
+const selectMode = ref(false)
+const selectedIds = ref([])
+const deletingSelected = ref(false)
+const deletingAll = ref(false)
+const showDeleteAllModal = ref(false)
+const showDeleteSelectedModal = ref(false)
 
 // 🧠 Utility: check if date is today
 const isToday = (date) => {
@@ -230,6 +278,11 @@ const unreadCount = computed(() => {
   return todayNotifications.value.filter(n => !n.read).length
 })
 
+// Count ALL notifications for today (read + unread)
+const totalTodayCount = computed(() => {
+  return todayNotifications.value.length
+})
+
 // Filter menu functions
 function toggleMenu() {
   menuOpen.value = !menuOpen.value
@@ -244,6 +297,63 @@ function onClickOutside(e) {
   if (!menuRef.value) return
   if (!menuRef.value.contains(e.target)) {
     menuOpen.value = false
+  }
+}
+
+// Selection mode handlers
+function toggleSelectMode() {
+  selectMode.value = !selectMode.value
+  if (!selectMode.value) selectedIds.value = []
+}
+
+const deleteSelected = () => {
+  if (selectedIds.value.length === 0) return
+  showDeleteSelectedModal.value = true
+}
+
+const cancelDeleteSelected = () => {
+  showDeleteSelectedModal.value = false
+}
+
+const confirmDeleteSelected = async () => {
+  try {
+    if (selectedIds.value.length === 0) return
+    deletingSelected.value = true
+    await api.post('/notification/delete', { ids: selectedIds.value })
+    notifications.value = notifications.value.filter(n => !selectedIds.value.includes(n._id))
+    selectedIds.value = []
+  } catch (error) {
+    console.error('❌ Error deleting selected notifications:', error)
+  } finally {
+    deletingSelected.value = false
+    showDeleteSelectedModal.value = false
+  }
+}
+
+const deleteAll = () => {
+  showDeleteAllModal.value = true
+}
+
+const cancelDeleteAll = () => {
+  showDeleteAllModal.value = false
+}
+
+const confirmDeleteAll = async () => {
+  try {
+    deletingAll.value = true
+    const storedUser = localStorage.getItem('user')
+    if (!storedUser) return console.error('❌ No user found in localStorage')
+    const user = JSON.parse(storedUser)
+    const userId = user._id || user.id
+    const userRole = user.role
+    await api.post('/notification/delete-all', { userId, userRole })
+    notifications.value = []
+    selectedIds.value = []
+  } catch (error) {
+    console.error('❌ Error deleting all notifications:', error)
+  } finally {
+    deletingAll.value = false
+    showDeleteAllModal.value = false
   }
 }
 
@@ -302,7 +412,7 @@ const fetchNotifications = async () => {
     const userRole = user.role // Get user role
 
     // Fetch notifications from backend with role parameter
-    const { data } = await api.get(`/notification/get-notification?userId=${userId}&userRole=${userRole}`)
+    const { data } = await api.get(`/notification/get-notification?userId=${userId}&userRole=${userRole}&onlyUnread=false`)
 
     if (data.success) {
       // Process notifications based on role

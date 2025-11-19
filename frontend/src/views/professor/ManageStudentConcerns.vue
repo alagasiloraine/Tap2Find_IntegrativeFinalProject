@@ -144,7 +144,7 @@
               <thead class="bg-[#102A71] text-white text-xs uppercase tracking-wide">
                 <tr>
                   <th class="text-left px-6 py-4 font-semibold">Student</th>
-                  <th class="text-left px-6 py-4 font-semibold">Year Level</th>
+                  <th class="text-left px-6 py-4 font-semibold">Year Level and Section</th>
                   <th class="text-left px-6 py-4 font-semibold">Message</th>
                   <th class="text-left px-6 py-4 font-semibold">Submitted</th>
                   <th class="text-left px-6 py-4 font-semibold">Status</th>
@@ -166,7 +166,9 @@
                   </td>
                   <td class="px-6 py-4 text-sm text-gray-700">
                     <span class="inline-flex items-center gap-1 px-2 py-1 text-gray-700">
-                      {{ item.yearLevel || 'Not specified' }}
+                      {{ (item.yearLevel && item.section)
+                        ? (item.yearLevel + ' • ' + item.section)
+                        : (item.yearLevel || item.section || 'Not specified') }}
                     </span>
                   </td>
                   <td class="px-6 py-4 text-sm text-gray-700">
@@ -351,6 +353,7 @@ const fetchAllConcerns = async () => {
         createdAt: inquiry.createdAt,
         updatedAt: inquiry.updatedAt,
         yearLevel: inquiry.yearLevel || 'Not specified', // Add default if missing
+        section: inquiry.section || '',
         studentId: inquiry.studentId
       }))
       console.log('Mapped concerns:', concerns.value)
@@ -427,7 +430,8 @@ const filteredConcerns = computed(() => {
       c.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       c.subject.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       c.message.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      (c.yearLevel && c.yearLevel.toLowerCase().includes(searchQuery.value.toLowerCase()))
+      (c.yearLevel && c.yearLevel.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
+      (c.section && c.section.toLowerCase().includes(searchQuery.value.toLowerCase()))
     
     return statusOk && dateOk && searchOk
   })

@@ -97,8 +97,8 @@
                 <input v-model="form.position" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" placeholder="Position" />
               </div>
               <div>
-                <label class="block text-sm text-gray-600 mb-1">Post Graduate</label>
-                <input v-model="form.postGraduate" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" placeholder="Post Graduate" />
+                <label class="block text-sm text-gray-600 mb-1">Department</label>
+                <input v-model="form.department" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" placeholder="Department" />
               </div>
               <div>
                 <label class="block text-sm text-gray-600 mb-1">Subject Handles</label>
@@ -149,7 +149,7 @@ const initialForm = {
   birthdate: '',
   address: '',
   position: '',
-  postGraduate: '',
+  department: '',
   subjectHandles: '',
   contactNumber: '',
   emailAddress: '',
@@ -252,7 +252,7 @@ const fetchProfile = async () => {
         birthdate: professor.birthdate || '',
         address: professor.address || '',
         position: professor.position || '',
-        postGraduate: professor.postGraduate || '',
+        department: professor.department || professor.postGraduate || '',
         subjectHandles: professor.subjectHandles || '',
         contactNumber: professor.contactNumber || '',
         emailAddress: professor.emailAddress || '',
@@ -303,7 +303,7 @@ const onSave = async () => {
       birthdate: form.value.birthdate,
       address: form.value.address,
       position: form.value.position,
-      postGraduate: form.value.postGraduate,
+      department: form.value.department,
       subjectHandles: form.value.subjectHandles,
       contactNumber: form.value.contactNumber,
       emailAddress: form.value.emailAddress,

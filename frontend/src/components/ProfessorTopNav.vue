@@ -17,14 +17,20 @@
             <!-- Header -->
             <div class="px-6 py-4 flex justify-between items-center border-b border-gray-100">
               <h3 class="text-xl font-bold text-gray-900">Notifications</h3>
-              <button @click="clearAll" class="text-sm text-gray-500 hover:text-gray-700">
-                Clear All
+              <button
+                @click.stop="clearAll"
+                :disabled="clearingAll"
+                :aria-busy="clearingAll ? 'true' : 'false'"
+                class="text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span v-if="!clearingAll">Mark all as read</span>
+                <span v-else>Marking...</span>
               </button>
             </div>
 
             <!-- Notifications List -->
             <div class="max-h-96 overflow-y-auto px-6 py-2">
-              <template v-if="notifications.length > 0">
+              <template v-if="hasUnread">
                 <!-- TODAY -->
                 <div v-if="groupedNotifications.today.length">
                   <p class="text-sm text-gray-500 font-semibold mt-2 mb-1">Today</p>
@@ -171,8 +177,9 @@
 
       <div class="relative">
         <button @click="toggleProfileMenu" class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-          <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center overflow-hidden">
-            <span class="text-sm font-semibold text-blue-600">{{ initials }}</span>
+          <div class="w-10 h-10 rounded-xl overflow-hidden bg-blue-100 flex items-center justify-center">
+            <img v-if="user.avatarUrl" :src="user.avatarUrl" alt="Profile" class="w-full h-full object-cover" />
+            <span v-else class="text-sm font-semibold text-blue-600">{{ initials }}</span>
           </div>
           <div class="flex flex-col items-start">
             <span class="text-sm font-semibold text-gray-900">Prof. {{ user.firstName }} {{ user.lastName }}</span>
@@ -228,23 +235,45 @@ const props = defineProps({
   hideActions: { type: Boolean, default: false }
 })
 
+const fetchProfessorAvatar = async () => {
+  try {
+    const storedUser =
+      localStorage.getItem('professor') ||
+      localStorage.getItem('user') ||
+      localStorage.getItem('currentUser')
+    if (!storedUser) return
+    const parsed = JSON.parse(storedUser)
+    const id = parsed.id || parsed._id
+    if (!id) return
+    const { data } = await api.get(`/professors/${id}`)
+    if (data?.success && data.professor) {
+      user.value.avatarUrl = data.professor.avatarUrl || '/profile.svg'
+      if (!user.value.firstName) user.value.firstName = data.professor.firstName || ''
+      if (!user.value.lastName) user.value.lastName = data.professor.lastName || ''
+      if (!user.value.emailAddress) user.value.emailAddress = data.professor.emailAddress || ''
+    }
+  } catch (e) {}
+}
+
 const router = useRouter()
 const route = useRoute()
 
 const showProfileMenu = ref(false)
 const showNotifications = ref(false)
 const showSignOutModal = ref(false)
+const clearingAll = ref(false)
 
 const user = ref({
   firstName: '',
   lastName: '',
   role: '',
   emailAddress: '',
-  status: ''
+  status: '',
+  avatarUrl: '/profile.svg'
 })
 
 // --- Use global composable store ---
-const { notifications, count, addNotification, markAsRead, clearAll } = useNotifications()
+const { notifications, count, addNotification, markAsRead, clearAll: clearLocalNotifications } = useNotifications()
 
 // --- Fetch notifications from backend ---
 const fetchNotifications = async () => {
@@ -307,6 +336,8 @@ const groupedNotifications = computed(() => {
   const groups = { today: [], yesterday: [], earlier: [] }
 
   notifications.value.forEach(n => {
+    // Only show unread notifications in the dropdown
+    if (n.read) return
     const created = dayjs(n.createdAt)
     if (created.isAfter(today)) groups.today.push(n)
     else if (created.isAfter(yesterday)) groups.yesterday.push(n)
@@ -324,6 +355,9 @@ const notificationCount = computed(() => {
   return notifications.value.filter(n => !n.read).length
 })
 
+// --- Has unread? Controls dropdown content vs empty state ---
+const hasUnread = computed(() => notifications.value.some(n => !n.read))
+
 // --- UI Toggles ---
 const toggleProfileMenu = () => {
   showProfileMenu.value = !showProfileMenu.value
@@ -334,6 +368,35 @@ const toggleNotifications = async () => {
   showNotifications.value = !showNotifications.value
   showProfileMenu.value = false
   if (showNotifications.value) await fetchNotifications()
+}
+
+const clearAll = async () => {
+  try {
+    if (clearingAll.value) return
+    clearingAll.value = true
+    // Keep dropdown open during action
+    showNotifications.value = true
+    const storedUser =
+      localStorage.getItem('user') ||
+      localStorage.getItem('professor') ||
+      localStorage.getItem('currentUser')
+    if (!storedUser) return console.error('❌ No user found in localStorage')
+
+    const userData = JSON.parse(storedUser)
+    const userId = userData._id || userData.id
+    const userRole = userData.role
+
+    await api.post('/notification/mark-all-read', { userId, userRole })
+
+    // Locally mark all as read so badge goes to 0 and dropdown empties
+    notifications.value = notifications.value.map(n => ({ ...n, read: true }))
+  } catch (error) {
+    console.error('❌ Error clearing notifications:', error)
+  } finally {
+    clearingAll.value = false
+    // Ensure dropdown remains open after clearing
+    showNotifications.value = true
+  }
 }
 
 const logout = () => {
@@ -409,6 +472,7 @@ onMounted(async () => {
   // THEN call updatePageInfo
   updatePageInfo()
   
+  await fetchProfessorAvatar()
   // Fetch initial notifications
   await fetchNotifications()
 })

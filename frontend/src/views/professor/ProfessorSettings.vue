@@ -81,7 +81,7 @@
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Login & Security</h2>
         <div class="space-y-5">
           <!-- Two-Factor Auth -->
-          <div class="flex items-center justify-between">
+          <!-- <div class="flex items-center justify-between">
             <div>
               <div class="text-sm font-medium text-gray-900">Two-Factor Authentication</div>
               <div class="text-xs text-gray-500">Add an extra layer of security to your account</div>
@@ -92,7 +92,7 @@
                 <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform" :class="security.twoFA ? 'translate-x-5' : ''"></div>
               </div>
             </label>
-          </div>
+          </div> -->
 
           <!-- OTP channels -->
           <div class="grid sm:grid-cols-2 gap-4" v-if="security.twoFA">

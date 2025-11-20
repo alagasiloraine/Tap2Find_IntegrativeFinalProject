@@ -46,10 +46,7 @@ export const updateUser = async (req, res) => {
     const { id } = req.params;
     const db = getDB("tap2find_db");
     const users = db.collection("users");
-<<<<<<< HEAD
     const rfidLogs = db.collection("rfid_logs"); // Add rfid_logs collection
-=======
->>>>>>> origin/kim
 
     const allowed = ["firstName", "lastName", "section", "idNumber", "emailAddress", "isVerified", "contactNumber"];
     const $set = {};
@@ -63,21 +60,17 @@ export const updateUser = async (req, res) => {
       return res.status(400).json({ success: false, message: "No valid fields provided to update" });
     }
 
-<<<<<<< HEAD
     // ✅ NEW: Get the current user data before update to check if RFID is being changed
     const currentUser = await users.findOne({ _id: new ObjectId(id) });
     if (!currentUser) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-=======
->>>>>>> origin/kim
     const result = await users.updateOne({ _id: new ObjectId(id) }, { $set });
     if (result.matchedCount === 0) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-<<<<<<< HEAD
     // ✅ NEW: Update RFID logs if idNumber (RFID) is being changed/added
     if ($set.idNumber) {
       const newRfid = $set.idNumber.toUpperCase().trim();
@@ -129,10 +122,6 @@ export const updateUser = async (req, res) => {
       rfidUpdated: !!$set.idNumber // Indicate if RFID was updated
     });
     
-=======
-    const updated = await users.findOne({ _id: new ObjectId(id) }, { projection: { password: 0, otp: 0, otpExpires: 0 } });
-    return res.status(200).json({ success: true, user: updated });
->>>>>>> origin/kim
   } catch (error) {
     console.error("Error updating user:", error);
     return res.status(500).json({ success: false, message: "Failed to update user", error: error.message });

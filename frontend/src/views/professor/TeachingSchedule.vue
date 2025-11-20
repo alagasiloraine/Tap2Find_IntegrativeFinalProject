@@ -1,11 +1,38 @@
 <template>
   <div class="bg-white min-h-screen pb-20 md:pb-8 p-4 md:p-4">
-<<<<<<< HEAD
     <ProfessorTopNav :hide-actions="true" />
 
     <!-- Main Content: Calendar + Sidebar -->
     <div class="px-4 md:px-6 py-4 min-h-0">
-      <div class="flex flex-col md:flex-row gap-6">
+      <div v-if="loadingSchedule" class="flex flex-col md:flex-row gap-6">
+        <div class="inline-block min-w-full md:min-w-0 md:flex-1">
+          <div class="rounded-lg shadow-xl overflow-hidden p-4">
+            <div class="h-6 w-40 bg-gray-200 rounded animate-pulse mb-3"></div>
+            <div class="grid grid-cols-6 gap-2 mb-2">
+              <div class="h-8 bg-gray-200 rounded animate-pulse" v-for="n in 6" :key="`sk-h-`+n"></div>
+            </div>
+            <div class="space-y-2">
+              <div class="h-16 bg-gray-100 rounded animate-pulse" v-for="n in 6" :key="`sk-r-`+n"></div>
+            </div>
+          </div>
+        </div>
+        <div class="md:w-80 w-full md:sticky md:top-4 space-y-4">
+          <div class="h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+          <div class="bg-white rounded-2xl border border-gray-200 p-4 shadow">
+            <div class="h-5 w-48 bg-gray-200 rounded animate-pulse mb-3"></div>
+            <div class="space-y-3">
+              <div class="flex items-start gap-3" v-for="n in 3" :key="`sk-sb-`+n">
+                <div class="w-11 h-11 rounded-md bg-gray-200 animate-pulse"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div class="h-3 w-40 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else class="flex flex-col md:flex-row gap-6">
         <!-- Calendar Section -->
         <div class="inline-block min-w-full md:min-w-0 md:flex-1">
           <div class="rounded-lg shadow-xl overflow-hidden">
@@ -266,6 +293,113 @@ import { computed, ref, watch, onMounted } from 'vue'
 import ProfessorTopNav from '@/components/ProfessorTopNav.vue'
 import api from "@/utils/api"
 
+// Toast helper (bottom-right)
+const showToast = (message, type = 'success', duration = 2600) => {
+  let container = document.getElementById('t2f-toast-container')
+  if (!container) {
+    container = document.createElement('div')
+    container.id = 't2f-toast-container'
+    container.style.position = 'fixed'
+    container.style.bottom = '16px'
+    container.style.right = '16px'
+    container.style.zIndex = '9999'
+    container.style.display = 'flex'
+    container.style.flexDirection = 'column-reverse'
+    container.style.gap = '10px'
+    document.body.appendChild(container)
+  }
+
+  const colors = type === 'success'
+    ? { border: '#34D399', text: '#065F46', iconBg: '#ECFDF5', iconFg: '#10B981', bar: '#6EE7B7' }
+    : { border: '#F87171', text: '#7F1D1D', iconBg: '#FEF2F2', iconFg: '#EF4444', bar: '#FCA5A5' }
+
+  const toast = document.createElement('div')
+  toast.style.minWidth = '280px'
+  toast.style.maxWidth = '460px'
+  toast.style.background = '#FFFFFF'
+  toast.style.border = `1.5px solid ${colors.border}`
+  toast.style.borderRadius = '14px'
+  toast.style.boxShadow = '0 12px 20px -6px rgba(0,0,0,0.12), 0 6px 10px -4px rgba(0,0,0,0.06)'
+  toast.style.overflow = 'hidden'
+  toast.style.opacity = '0'
+  toast.style.transform = 'translateY(12px)'
+  toast.style.transition = 'opacity 220ms ease, transform 220ms ease'
+
+  const row = document.createElement('div')
+  row.style.display = 'flex'
+  row.style.alignItems = 'center'
+  row.style.gap = '12px'
+  row.style.padding = '12px 16px'
+
+  const iconWrap = document.createElement('div')
+  iconWrap.style.width = '26px'
+  iconWrap.style.height = '26px'
+  iconWrap.style.borderRadius = '50%'
+  iconWrap.style.background = colors.iconBg
+  iconWrap.style.display = 'flex'
+  iconWrap.style.alignItems = 'center'
+  iconWrap.style.justifyContent = 'center'
+  iconWrap.style.flex = '0 0 auto'
+
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  icon.setAttribute('viewBox', '0 0 24 24')
+  icon.setAttribute('width', '16')
+  icon.setAttribute('height', '16')
+  icon.innerHTML = type === 'success'
+    ? `<path d="M9 12.75 11.25 15 15 9.75" fill="none" stroke="${colors.iconFg}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+    : `<path d="M12 8v4m0 4h.01" fill="none" stroke="${colors.iconFg}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" fill="none" stroke="${colors.iconFg}" stroke-width="1.5" opacity="0.25"/>`
+  iconWrap.appendChild(icon)
+
+  const textBlock = document.createElement('div')
+  textBlock.style.display = 'flex'
+  textBlock.style.flexDirection = 'column'
+  textBlock.style.gap = '2px'
+  const title = document.createElement('div')
+  title.textContent = type === 'success' ? 'SUCCESS' : 'ERROR'
+  title.style.fontSize = '12px'
+  title.style.fontWeight = '800'
+  title.style.letterSpacing = '0.04em'
+  title.style.color = colors.text
+  const body = document.createElement('div')
+  body.textContent = message
+  body.style.fontSize = '14px'
+  body.style.fontWeight = '600'
+  body.style.color = '#111827'
+  textBlock.appendChild(title)
+  textBlock.appendChild(body)
+  row.appendChild(iconWrap)
+  row.appendChild(textBlock)
+
+  const barWrap = document.createElement('div')
+  barWrap.style.height = '2px'
+  barWrap.style.background = 'transparent'
+  barWrap.style.width = '100%'
+  const bar = document.createElement('div')
+  bar.style.height = '100%'
+  bar.style.width = '100%'
+  bar.style.background = colors.bar
+  bar.style.transition = `width ${duration}ms linear`
+  barWrap.appendChild(bar)
+
+  toast.appendChild(row)
+  toast.appendChild(barWrap)
+  container.appendChild(toast)
+
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1'
+    toast.style.transform = 'translateY(0)'
+    requestAnimationFrame(() => (bar.style.width = '0%'))
+  })
+
+  setTimeout(() => {
+    toast.style.opacity = '0'
+    toast.style.transform = 'translateY(8px)'
+    setTimeout(() => {
+      toast.remove()
+      if (!container.childElementCount) container.remove()
+    }, 240)
+  }, duration)
+}
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY']
 const backendDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] // Backend expects capitalized
 
@@ -291,10 +425,12 @@ const blockVInset = 2
 
 // Schedule data - now loaded from API
 const scheduleData = ref([])
+const loadingSchedule = ref(false)
 
 // Function to load professor's schedule from API
 const loadProfessorSchedule = async () => {
   try {
+    loadingSchedule.value = true
     // Direct one-liner to get professor ID
     const professorId = JSON.parse(localStorage.getItem('user'))?.id;
     
@@ -327,8 +463,10 @@ const loadProfessorSchedule = async () => {
     if (error.response?.status === 404) {
       scheduleData.value = []
     } else {
-      alert('Failed to load schedule: ' + (error.response?.data?.message || error.message))
+      showToast('Failed to load schedule: ' + (error.response?.data?.message || error.message), 'error')
     }
+  } finally {
+    loadingSchedule.value = false
   }
 }
 
@@ -364,7 +502,7 @@ const convertToBackendFormat = (schedules) => {
 // Function to save ALL schedules to API (bulk save)
 const saveAllSchedules = async () => {
   try {
-    const professorId = getProfessorId()
+    const professorId = JSON.parse(localStorage.getItem('user'))?.id
     if (!professorId) {
       throw new Error('No professor ID found')
     }
@@ -392,14 +530,14 @@ const saveAllSchedules = async () => {
 // Function to add a new schedule entry (local only, then save all)
 const addSchedule = async () => {
   if (selectedDayIndex.value == null) {
-    alert('Please select a day')
+    showToast('Please select a day', 'error')
     return
   }
   
   const sh = parseHour(startTime.value)
   const eh = parseHour(endTime.value)
   if (sh == null || eh == null || eh <= sh) {
-    alert('Please select valid start and end times')
+    showToast('Please select valid start and end times', 'error')
     return
   }
 
@@ -408,13 +546,13 @@ const addSchedule = async () => {
 
   // Validate time range
   if (sh < 7 || eh > 18) {
-    alert('Schedule time must be between 7:00 AM and 6:00 PM.')
+    showToast('Schedule time must be between 7:00 AM and 6:00 PM.', 'error')
     return
   }
 
   // Validate duration (max 4 hours per session)
   if (durationVal > 4) {
-    alert('Schedule duration cannot exceed 4 hours per session.')
+    showToast('Schedule duration cannot exceed 4 hours per session.', 'error')
     return
   }
 
@@ -430,7 +568,7 @@ const addSchedule = async () => {
   })
   
   if (hasOverlap) {
-    alert('This time slot overlaps with an existing schedule on the same day!')
+    showToast('This time slot overlaps with an existing schedule on the same day!', 'error')
     return
   }
 
@@ -466,14 +604,14 @@ const addSchedule = async () => {
     showAddModal.value = false
     resetForm()
     
-    alert(`Schedule added successfully! ${result.scheduleCount} total entries saved.`)
+    showToast('Schedule added successfully', 'success')
   } catch (error) {
     // Remove the added schedule if save failed
     const index = scheduleData.value.findIndex(course => course.id === newCourse.id)
     if (index !== -1) {
       scheduleData.value.splice(index, 1)
     }
-    alert('Failed to save schedule: ' + (error.response?.data?.message || error.message))
+    showToast('Failed to save schedule: ' + (error.response?.data?.message || error.message), 'error')
   }
 }
 
@@ -484,7 +622,7 @@ const updateSchedule = async () => {
   const sh = parseHour(startTime.value)
   const eh = parseHour(endTime.value)
   if (sh == null || eh == null || eh <= sh || selectedDayIndex.value == null) {
-    alert('Please fill all required fields correctly')
+    showToast('Please fill all required fields correctly', 'warning')
     return
   }
   
@@ -493,13 +631,13 @@ const updateSchedule = async () => {
 
   // Validate time range
   if (sh < 7 || eh > 18) {
-    alert('Schedule time must be between 7:00 AM and 6:00 PM.')
+    showToast('Schedule time must be between 7:00 AM and 6:00 PM.', 'warning')
     return
   }
 
   // Validate duration (max 4 hours per session)
   if (durationVal > 4) {
-    alert('Schedule duration cannot exceed 4 hours per session.')
+    showToast('Schedule duration cannot exceed 4 hours per session.', 'warning')
     return
   }
 
@@ -516,7 +654,7 @@ const updateSchedule = async () => {
   })
   
   if (hasOverlap) {
-    alert('This time slot overlaps with an existing schedule on the same day!')
+    showToast('This time slot overlaps with an existing schedule on the same day!', 'warning')
     return
   }
 
@@ -535,11 +673,11 @@ const updateSchedule = async () => {
     // Save ALL schedules to backend
     const result = await saveAllSchedules()
     closeAddModal()
-    alert(`Schedule updated successfully! ${result.scheduleCount} total entries saved.`)
+    showToast(`Schedule updated successfully! ${result.scheduleCount} total entries saved.`, 'success')
   } catch (error) {
     // Revert changes if save failed
     Object.assign(editingCourse.value, originalCourse)
-    alert('Failed to update schedule: ' + (error.response?.data?.message || error.message))
+    showToast('Failed to update schedule: ' + (error.response?.data?.message || error.message), 'error')
   }
 }
 
@@ -560,11 +698,11 @@ const deleteSchedule = async () => {
     // Save ALL schedules to backend
     const result = await saveAllSchedules()
     closeDeleteModal()
-    alert(`Schedule deleted successfully! ${result.scheduleCount} total entries saved.`)
+    showToast(`Schedule deleted successfully! ${result.scheduleCount} total entries saved.`, 'success')
   } catch (error) {
     // Revert changes if save failed
     scheduleData.value = originalSchedules
-    alert('Failed to delete schedule: ' + (error.response?.data?.message || error.message))
+    showToast('Failed to delete schedule: ' + (error.response?.data?.message || error.message), 'error')
   }
 }
 
@@ -759,12 +897,3 @@ const closeDeleteModal = () => {
   courseToDelete.value = null
 }
 </script>
-=======
-    <ProfessorTopNav />
-  </div>
- </template>
-
-<script setup>
-import ProfessorTopNav from '@/components/ProfessorTopNav.vue'
-</script>
->>>>>>> origin/kim

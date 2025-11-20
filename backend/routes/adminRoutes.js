@@ -1,7 +1,6 @@
 import express from "express";
 import { getDashboardStats } from "../controllers/admin/adminDashboardController.js";
 import { getUsers, getUserById, updateUser, deleteUser } from "../controllers/admin/adminUsersController.js";
-<<<<<<< HEAD
 import { 
   getProfessors, 
   uploadProfessorSchedule, 
@@ -12,9 +11,6 @@ import {
   getProfessorFullSchedule,
   addProfessor
 } from "../controllers/admin/adminProfessorController.js";
-=======
-import { getProfessors, uploadProfessorSchedule, downloadProfessorSchedule, getProfessorScheduleMeta } from "../controllers/admin/adminProfessorController.js";
->>>>>>> origin/kim
 import { getConcerns, getConcernById, updateConcernStatus, archiveConcern, deleteConcern } from "../controllers/admin/adminConcernsController.js";
 import { getReportsSummary } from "../controllers/admin/adminReportController.js";
 import multer from "multer";
@@ -33,7 +29,6 @@ router.delete("/users/:id", deleteUser);
 
 // Professors
 router.get("/professors", getProfessors);
-<<<<<<< HEAD
 router.post("/add-professor", addProfessor);
 
 // Manual Schedule Routes (NEW)
@@ -42,10 +37,6 @@ router.post("/professors/:id/schedule/manual", saveProfessorSchedule);
 router.get("/professors/:id/schedule/full", getProfessorFullSchedule);
 
 // File-based Schedule Routes (EXISTING - keep for backward compatibility)
-=======
-
-// Upload professor schedule to MongoDB (GridFS) using memory storage
->>>>>>> origin/kim
 const upload = multer({ storage: multer.memoryStorage() });
 router.post("/professors/:id/schedule", upload.single("file"), uploadProfessorSchedule);
 router.get("/professors/:id/schedule", downloadProfessorSchedule);

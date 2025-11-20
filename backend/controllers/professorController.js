@@ -1,6 +1,6 @@
 import { getDB } from "../db.js";
 import { ObjectId } from "mongodb";
-import { createNotification, createStudentInquiryNotification, createInquiryResolvedNotification } from './notificationController.js';
+import { createNotification, createStudentInquiryNotification, createInquiryStatusNotification } from './notificationController.js';
 
 export const getStatistics = async (req, res) => {
   try {
@@ -218,10 +218,188 @@ export const getAllConcerns = async (req, res) => {
   }
 };
 
+// export const updateConcernStatus = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { status, professorId } = req.body;
+
+//     if (!professorId) {
+//       return res.status(400).json({ success: false, message: "Missing professorId" });
+//     }
+
+//     const db = getDB();
+//     const inquiries = db.collection("inquiries");
+//     const users = db.collection("users");
+
+//     // Verify the inquiry belongs to this professor and get student info
+//     const inquiry = await inquiries.findOne({
+//       _id: new ObjectId(id),
+//       professorId: new ObjectId(professorId)
+//     });
+
+//     if (!inquiry) {
+//       return res.status(404).json({ success: false, message: "Inquiry not found" });
+//     }
+
+//     // Get professor and student details for notification
+//     const professor = await users.findOne({ _id: new ObjectId(professorId) });
+//     const student = await users.findOne({ _id: inquiry.studentId });
+
+//     if (!professor || !student) {
+//       return res.status(404).json({ success: false, message: "Professor or student not found" });
+//     }
+
+//     // Update the status
+//     const result = await inquiries.updateOne(
+//       { _id: new ObjectId(id) },
+//       { 
+//         $set: { 
+//           status: status,
+//           updatedAt: new Date()
+//         } 
+//       }
+//     );
+
+//     if (result.modifiedCount === 0) {
+//       return res.status(400).json({ success: false, message: "Failed to update inquiry status" });
+//     }
+
+//     // 🎯 CREATE NOTIFICATION AND SEND EMAIL BASED ON STATUS
+//     try {
+//       let statusMessage;
+//       let notificationTitle;
+      
+//       switch (status) {
+//         case 'resolved':
+//           statusMessage = 'has been resolved';
+//           notificationTitle = 'Inquiry Resolved';
+          
+//           // Send specific resolved notification with email
+//           await createInquiryResolvedNotification({
+//             title: inquiry.subject,
+//             studentId: inquiry.studentId.toString(),
+//             professorName: `${professor.firstName} ${professor.lastName}`
+//           });
+//           break;
+          
+//         case 'in_progress':
+//           statusMessage = 'is now in progress';
+//           notificationTitle = 'Inquiry In Progress';
+          
+//           await createNotification({
+//             title: notificationTitle,
+//             message: `Your inquiry "${inquiry.subject}" ${statusMessage} by Prof. ${professor.lastName}`,
+//             type: 'inquiry_status_update',
+//             studentId: inquiry.studentId.toString(),
+//             sendEmail: true
+//           });
+//           break;
+          
+//         case 'rejected':
+//           statusMessage = 'has been reviewed and requires more information';
+//           notificationTitle = 'Inquiry Update';
+          
+//           await createNotification({
+//             title: notificationTitle,
+//             message: `Your inquiry "${inquiry.subject}" ${statusMessage} by Prof. ${professor.lastName}. Please provide additional details.`,
+//             type: 'inquiry_status_update',
+//             studentId: inquiry.studentId.toString(),
+//             sendEmail: true
+//           });
+//           break;
+          
+//         default:
+//           statusMessage = `has been updated to ${status}`;
+//           notificationTitle = 'Inquiry Status Updated';
+          
+//           await createNotification({
+//             title: notificationTitle,
+//             message: `Your inquiry "${inquiry.subject}" ${statusMessage} by Prof. ${professor.lastName}`,
+//             type: 'inquiry_status_update',
+//             studentId: inquiry.studentId.toString(),
+//             sendEmail: true
+//           });
+//       }
+
+//       console.log(`📢 Status update notification and email sent to student: ${student.firstName} ${student.lastName}`);
+//     } catch (notifError) {
+//       console.error('❌ Error creating status update notification/email:', notifError);
+//       // Don't fail the main request if notification/email fails
+//     }
+
+//     console.log(`✅ Inquiry ${id} status updated to ${status} by Prof. ${professor.lastName}`);
+
+//     res.json({ 
+//       success: true, 
+//       message: "Inquiry status updated successfully", 
+//       data: { 
+//         status,
+//         studentName: `${student.firstName} ${student.lastName}`,
+//         professorName: `${professor.firstName} ${professor.lastName}`,
+//         inquirySubject: inquiry.subject
+//       } 
+//     });
+//   } catch (error) {
+//     console.error("❌ Error updating concern status:", error);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// };
+
+// export const replyToConcern = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { message, professorId } = req.body;
+
+//     if (!professorId) {
+//       return res.status(400).json({ success: false, message: "Missing professorId" });
+//     }
+
+//     const db = getDB();
+//     const inquiries = db.collection("inquiries");
+
+//     // Verify the inquiry belongs to this professor
+//     const inquiry = await inquiries.findOne({
+//       _id: new ObjectId(id),
+//       professorId: new ObjectId(professorId)
+//     });
+
+//     if (!inquiry) {
+//       return res.status(404).json({ success: false, message: "Inquiry not found" });
+//     }
+
+//     // Add reply to the inquiry
+//     const reply = {
+//       message,
+//       repliedBy: new ObjectId(professorId),
+//       repliedAt: new Date()
+//     };
+
+//     const result = await inquiries.updateOne(
+//       { _id: new ObjectId(id) },
+//       { 
+//         $set: { 
+//           status: "replied",
+//           updatedAt: new Date()
+//         },
+//         $push: { replies: reply }
+//       }
+//     );
+
+//     if (result.modifiedCount === 0) {
+//       return res.status(400).json({ success: false, message: "Failed to send reply" });
+//     }
+
+//     res.json({ success: true, message: "Reply sent successfully", data: { reply } });
+//   } catch (error) {
+//     console.error("❌ Error replying to concern:", error);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// };
+
 export const updateConcernStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, professorId } = req.body;
+    const { status, professorId, replyMessage } = req.body;
 
     if (!professorId) {
       return res.status(400).json({ success: false, message: "Missing professorId" });
@@ -249,82 +427,52 @@ export const updateConcernStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: "Professor or student not found" });
     }
 
-    // Update the status
+    // Prepare update operation
+    const updateOperation = {
+      $set: {
+        status: status,
+        updatedAt: new Date()
+      }
+    };
+
+    // If there's a reply message and status is declined/replied, add it to replies array
+    if (replyMessage && (status === 'replied' || status === 'declined')) {
+      const reply = {
+        message: replyMessage,
+        repliedBy: new ObjectId(professorId),
+        repliedAt: new Date()
+      };
+      
+      updateOperation.$push = { replies: reply };
+    }
+
+    // Update the status (and reply if provided)
     const result = await inquiries.updateOne(
       { _id: new ObjectId(id) },
-      { 
-        $set: { 
-          status: status,
-          updatedAt: new Date()
-        } 
-      }
+      updateOperation
     );
 
     if (result.modifiedCount === 0) {
       return res.status(400).json({ success: false, message: "Failed to update inquiry status" });
     }
 
-    // 🎯 CREATE NOTIFICATION AND SEND EMAIL BASED ON STATUS
+    // 🎯 CREATE NOTIFICATION BASED ON STATUS (WITH PREFERENCE CHECKING)
     try {
-      let statusMessage;
-      let notificationTitle;
-      
-      switch (status) {
-        case 'resolved':
-          statusMessage = 'has been resolved';
-          notificationTitle = 'Inquiry Resolved';
-          
-          // Send specific resolved notification with email
-          await createInquiryResolvedNotification({
-            title: inquiry.subject,
-            studentId: inquiry.studentId.toString(),
-            professorName: `${professor.firstName} ${professor.lastName}`
-          });
-          break;
-          
-        case 'in_progress':
-          statusMessage = 'is now in progress';
-          notificationTitle = 'Inquiry In Progress';
-          
-          await createNotification({
-            title: notificationTitle,
-            message: `Your inquiry "${inquiry.subject}" ${statusMessage} by Prof. ${professor.lastName}`,
-            type: 'inquiry_status_update',
-            studentId: inquiry.studentId.toString(),
-            sendEmail: true
-          });
-          break;
-          
-        case 'rejected':
-          statusMessage = 'has been reviewed and requires more information';
-          notificationTitle = 'Inquiry Update';
-          
-          await createNotification({
-            title: notificationTitle,
-            message: `Your inquiry "${inquiry.subject}" ${statusMessage} by Prof. ${professor.lastName}. Please provide additional details.`,
-            type: 'inquiry_status_update',
-            studentId: inquiry.studentId.toString(),
-            sendEmail: true
-          });
-          break;
-          
-        default:
-          statusMessage = `has been updated to ${status}`;
-          notificationTitle = 'Inquiry Status Updated';
-          
-          await createNotification({
-            title: notificationTitle,
-            message: `Your inquiry "${inquiry.subject}" ${statusMessage} by Prof. ${professor.lastName}`,
-            type: 'inquiry_status_update',
-            studentId: inquiry.studentId.toString(),
-            sendEmail: true
-          });
-      }
+      // Use the new unified notification function for all statuses
+      await createInquiryStatusNotification({
+        title: inquiry.subject,
+        studentId: inquiry.studentId.toString(),
+        professorName: `${professor.firstName} ${professor.lastName}`,
+        studentPhoneNumber: student.contactNumber,
+        studentEmail: student.emailAddress, // Add student email
+        status: status,
+        replyMessage: replyMessage // Include reply message for declined/replied statuses
+      });
 
-      console.log(`📢 Status update notification and email sent to student: ${student.firstName} ${student.lastName}`);
+      console.log(`📢 ${status} notification sent to student: ${student.firstName} ${student.lastName}`);
     } catch (notifError) {
-      console.error('❌ Error creating status update notification/email:', notifError);
-      // Don't fail the main request if notification/email fails
+      console.error('❌ Error creating status update notification:', notifError);
+      // Don't fail the main request if notification fails
     }
 
     console.log(`✅ Inquiry ${id} status updated to ${status} by Prof. ${professor.lastName}`);
@@ -336,7 +484,8 @@ export const updateConcernStatus = async (req, res) => {
         status,
         studentName: `${student.firstName} ${student.lastName}`,
         professorName: `${professor.firstName} ${professor.lastName}`,
-        inquirySubject: inquiry.subject
+        inquirySubject: inquiry.subject,
+        hasReply: !!(replyMessage && (status === 'replied' || status === 'declined'))
       } 
     });
   } catch (error) {
@@ -356,6 +505,7 @@ export const replyToConcern = async (req, res) => {
 
     const db = getDB();
     const inquiries = db.collection("inquiries");
+    const users = db.collection("users");
 
     // Verify the inquiry belongs to this professor
     const inquiry = await inquiries.findOne({
@@ -365,6 +515,14 @@ export const replyToConcern = async (req, res) => {
 
     if (!inquiry) {
       return res.status(404).json({ success: false, message: "Inquiry not found" });
+    }
+
+    // Get student details for notification
+    const professor = await users.findOne({ _id: new ObjectId(professorId) });
+    const student = await users.findOne({ _id: inquiry.studentId });
+
+    if (!professor || !student) {
+      return res.status(404).json({ success: false, message: "Professor or student not found" });
     }
 
     // Add reply to the inquiry
@@ -389,7 +547,33 @@ export const replyToConcern = async (req, res) => {
       return res.status(400).json({ success: false, message: "Failed to send reply" });
     }
 
-    res.json({ success: true, message: "Reply sent successfully", data: { reply } });
+    // 🎯 CREATE NOTIFICATION FOR REPLY (WITH PREFERENCE CHECKING)
+    try {
+      await createNotification({
+        title: `Reply to: ${inquiry.subject}`,
+        message: `Prof. ${professor.lastName} has replied to your inquiry: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"`,
+        type: 'inquiry_reply',
+        studentId: inquiry.studentId.toString(),
+        sendEmail: true,
+        sendSMS: true,
+        phoneNumber: student.phoneNumber // Add phone number for SMS
+      });
+      
+      console.log(`📢 Reply notification sent to student: ${student.firstName} ${student.lastName}`);
+    } catch (notifError) {
+      console.error('❌ Error creating reply notification:', notifError);
+      // Don't fail the main request if notification fails
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Reply sent successfully", 
+      data: { 
+        reply,
+        studentName: `${student.firstName} ${student.lastName}`,
+        professorName: `${professor.firstName} ${professor.lastName}`
+      } 
+    });
   } catch (error) {
     console.error("❌ Error replying to concern:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -673,23 +857,53 @@ export const getAllProfessors = async (req, res) => {
       })
       .toArray();
 
-    // Check if it's weekend
+    // Check if it's weekend and get current time
     const now = new Date();
-    const isWeekend = now.getDay() === 0 || now.getDay() === 6; // 0 = Sunday, 6 = Saturday
+    const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const currentHour = now.getHours();
 
-    const formatted = professors.map(p => {
-      // Determine availability status
+    // Get all professor schedules
+    const professorSchedules = await db.collection("professor_schedules")
+      .find({ scheduleType: 'manual' })
+      .toArray();
+
+    const formatted = await Promise.all(professors.map(async (p) => {
+      // Find professor's schedule
+      const professorSchedule = professorSchedules.find(s => 
+        s.professorId.toString() === p._id.toString()
+      );
+
+      let currentRoom = p.office || "No office assigned"; // Default to office
       let availabilityStatus = "not-available";
-      
-      if (!isWeekend) {
-        // On weekdays, use the professor's actual status
-        if (p.status && p.isVerified !== false) {
+      let hasCurrentSchedule = false;
+
+      if (!isWeekend && professorSchedule) {
+        // Check if professor has schedule for current day and time
+        const todaysSchedule = professorSchedule.schedule?.filter(
+          s => s.day === currentDay
+        ) || [];
+
+        // Find current schedule slot
+        const currentSchedule = todaysSchedule.find(schedule => 
+          currentHour >= schedule.startTime && currentHour < schedule.endTime
+        );
+
+        if (currentSchedule) {
+          hasCurrentSchedule = true;
+          currentRoom = currentSchedule.room || currentSchedule.location || "Scheduled Class";
+          
+          // If professor has a scheduled class, they are busy
+          availabilityStatus = "busy";
+        } else if (p.status && p.isVerified !== false) {
+          // No current schedule, use professor's manual status
           availabilityStatus = p.status.toLowerCase();
-        } else {
-          availabilityStatus = "not-available";
         }
+      } else if (!isWeekend && p.status && p.isVerified !== false) {
+        // No schedule but has manual status on weekday
+        availabilityStatus = p.status.toLowerCase();
       } else {
-        // On weekends, always mark as not available
+        // Weekend or no status
         availabilityStatus = "not-available";
       }
 
@@ -700,15 +914,20 @@ export const getAllProfessors = async (req, res) => {
         office: p.office || "No office assigned",
         email: p.emailAddress,
         available: availabilityStatus,
-        isWeekend: isWeekend // Optional: include weekend info for frontend
+        isWeekend: isWeekend,
+        currentRoom: currentRoom,
+        hasCurrentSchedule: hasCurrentSchedule,
+        currentDay: currentDay,
+        currentHour: currentHour
       };
-    });
+    }));
 
     res.status(200).json({ 
       success: true, 
       professors: formatted,
-      isWeekend: isWeekend, // Include weekend status in response
-      currentDay: now.toLocaleDateString('en-US', { weekday: 'long' })
+      isWeekend: isWeekend,
+      currentDay: currentDay,
+      currentHour: currentHour
     });
 
   } catch (error) {

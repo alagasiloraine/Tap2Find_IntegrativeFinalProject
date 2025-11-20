@@ -4,7 +4,94 @@
     <StudentTopNav />
 
     <div class="px-4 md:px-6 py-4 min-h-0">
-      <div class="space-y-6">
+      <!-- Loading State -->
+      <div v-if="isLoading" class="space-y-6 animate-pulse">
+        <!-- Skeleton: Top Section (Chart + Status Cards) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Chart Skeleton -->
+          <div class="lg:col-span-2">
+            <div class="rounded-xl border border-gray-200 p-8 h-96 bg-gradient-to-b from-slate-200 to-slate-100">
+              <div class="flex items-center justify-between mb-6">
+                <div class="h-6 w-48 bg-white/40 rounded"></div>
+                <div class="flex items-center gap-4">
+                  <div class="h-4 w-16 bg-white/30 rounded"></div>
+                  <div class="h-4 w-16 bg-white/30 rounded"></div>
+                  <div class="h-4 w-16 bg-white/30 rounded"></div>
+                </div>
+              </div>
+              <div class="h-72 flex items-end gap-2">
+                <div v-for="n in 10" :key="n" class="flex-1 bg-white/40 rounded-t" :style="{ height: (40 + n * 3) + 'px' }"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status Cards Skeleton -->
+          <div class="grid grid-cols-2 gap-4">
+            <div
+              v-for="n in 4"
+              :key="n"
+              class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center"
+            >
+              <div class="w-12 h-12 rounded-full bg-gray-100 mr-4"></div>
+              <div class="flex-1 space-y-2">
+                <div class="h-3 w-20 bg-gray-100 rounded"></div>
+                <div class="h-5 w-12 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skeleton: Recent Inquiries Table -->
+        <section>
+          <div class="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="h-6 w-40 bg-gray-200 rounded"></div>
+            <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <div class="h-9 w-full sm:w-72 bg-gray-100 rounded-xl"></div>
+              <div class="h-9 w-28 bg-gray-100 rounded-lg"></div>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto rounded-2xl border border-gray-200">
+            <table class="min-w-full border border-gray-100">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th v-for="n in 5" :key="n" class="px-6 py-3">
+                    <div class="h-3 w-16 bg-gray-200 rounded"></div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr v-for="row in 4" :key="row" class="bg-white">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-full bg-gray-100"></div>
+                      <div class="space-y-2">
+                        <div class="h-3 w-24 bg-gray-100 rounded"></div>
+                        <div class="h-3 w-32 bg-gray-50 rounded"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="h-3 w-28 bg-gray-100 rounded mb-2"></div>
+                    <div class="h-3 w-40 bg-gray-50 rounded"></div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="h-3 w-20 bg-gray-100 rounded"></div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="h-6 w-24 bg-gray-100 rounded-full"></div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="h-3 w-24 bg-gray-100 rounded"></div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <div v-else class="space-y-6">
         <!-- Top Section: Chart + Status Cards -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-2">
@@ -229,6 +316,8 @@ const stats = ref({
 const inquiries = ref([])
 const user = ref({ firstName: '', lastName: '', role: '', emailAddress: '' })
 const studentId = localStorage.getItem('id')
+const isLoading = ref(true)
+const pollInterval = ref(null) // Added for polling
 
 // ==============================
 // 🔹 Dropdown and Filter Config
@@ -292,8 +381,10 @@ const getStatusColor = (status) => {
   const statusLower = status?.toLowerCase() || 'pending';
   
   const colorMap = {
+    'accepted': 'bg-green-50 text-green-700 border-green-200',
     'replied': 'bg-green-50 text-green-700 border-green-200',
     'resolved': 'bg-green-50 text-green-700 border-green-200',
+    'declined': 'bg-red-50 text-red-700 border-red-200',
     'pending': 'bg-amber-50 text-amber-700 border-amber-200',
     'unread': 'bg-blue-50 text-blue-700 border-blue-200',
     'closed': 'bg-gray-50 text-gray-700 border-gray-200',
@@ -307,8 +398,10 @@ const getStatusDot = (status) => {
   const statusLower = status?.toLowerCase() || 'pending';
   
   const dotMap = {
+    'accepted': 'bg-green-500',
     'replied': 'bg-green-500',
     'resolved': 'bg-green-500',
+    'declined': 'bg-red-500',
     'pending': 'bg-amber-500',
     'unread': 'bg-blue-500',
     'in-progress': 'bg-blue-500'
@@ -321,8 +414,10 @@ const getStatusDisplayText = (status) => {
   const statusLower = status?.toLowerCase() || 'pending';
   
   const textMap = {
+    'accepted': 'Accepted',
     'replied': 'Replied',
     'resolved': 'Resolved', 
+    'declined': 'Declined',
     'pending': 'Pending',
     'unread': 'Unread',
     'in-progress': 'In Progress',
@@ -394,9 +489,15 @@ const fetchDashboardData = async () => {
     }
 
     const { data } = await api.get(`/dashboard/student?studentId=${studentId}`)
+    console.log('📊 Dashboard API Response:', data) // Add this for debugging
 
     if (data.success) {
       const d = data.data
+      
+      // Debug log to see what's coming from backend
+      console.log('📈 Stats from backend:', d.stats)
+      console.log('📋 Recent inquiries:', d.recentInquiries)
+      
       stats.value = {
         available: d.stats?.available || 0,
         busy: d.stats?.busy || 0,
@@ -404,11 +505,46 @@ const fetchDashboardData = async () => {
         inquiriesSentCount: d.inquiriesSentCount || 0
       }
       inquiries.value = d.recentInquiries || []
+      
+      console.log('🎯 Final stats:', stats.value)
     } else {
       console.warn('⚠️ Failed to fetch dashboard data:', data.message)
     }
   } catch (err) {
     console.error('❌ Error fetching dashboard:', err)
+    console.error('📋 Error details:', err.response?.data)
+  }
+}
+
+// ==============================
+// 🔹 Polling Functions (NEW)
+// ==============================
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+  }
+  
+  // Start new polling interval (2000ms = 2 seconds)
+  pollInterval.value = setInterval(fetchDashboardData, 2000)
+  console.log('🔄 Started polling dashboard data every 2 seconds')
+}
+
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+    console.log('🛑 Stopped polling dashboard data')
+  }
+}
+
+// Initial data load with loading state
+const initializeData = async () => {
+  try {
+    isLoading.value = true
+    await fetchDashboardData()
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -419,11 +555,18 @@ onMounted(() => {
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.dropdown-container')) openStatus.value = false
   })
-  fetchDashboardData()
+  
+  // Initialize data and start polling
+  initializeData().then(() => {
+    // Start polling after initial load is complete
+    startPolling()
+  })
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', () => {})
+  // Clean up interval when component is destroyed
+  stopPolling()
 })
 </script>
 

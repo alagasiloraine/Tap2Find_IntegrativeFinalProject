@@ -164,6 +164,47 @@
       </div>
     </nav>
 
+    <div class="space-y-1 mt-auto pb-4 border-t border-white/10">
+    <!-- Settings -->
+    <router-link
+      to="/student/settings"
+      class="group flex items-center px-4 py-3 text-base font-normal rounded-lg transition-colors leading-none"
+      :class="[
+        $route.path === '/student/settings'
+          ? 'bg-[#cbd5f1]/20 text-white'
+          : 'text-gray-400 hover:bg-gray-50 hover:text-[#102A71]'
+      ]"
+    >
+      <iconify-icon 
+        :icon="$route.path === '/student/settings' ? 'lucide:settings' : 'lucide:settings'" 
+        class="mr-2 text-xl" 
+      />
+      Settings
+    </router-link>
+
+    <!-- Support / About -->
+    <router-link
+      to="/student/support"
+      class="group flex items-center px-4 py-3 text-base font-normal rounded-lg transition-colors leading-none"
+      :class="[
+        $route.path === '/student/support'
+          ? 'bg-[#cbd5f1]/20 text-white'
+          : 'text-gray-400 hover:bg-gray-50 hover:text-[#102A71]'
+      ]"
+    >
+      <iconify-icon 
+        :icon="$route.path === '/student/support' ? 'lucide:info' : 'lucide:info'" 
+        class="mr-2 text-xl" 
+      />
+      Support & About
+    </router-link>
+  </div>
+
+  <!-- Footer copyright -->
+  <div class="mt-3 px-4 pb-4 text-[11px] text-gray-300/80 leading-tight">
+    © TAP2FIND All Rights Reserved 2025
+  </div>
+
   </div>
 </template>
 

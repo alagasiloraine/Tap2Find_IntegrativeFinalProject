@@ -5,6 +5,8 @@ import { getDB } from "../db.js";
 export const getStudentDashboard = async (req, res) => {
   try {
     const db = getDB();
+    const schedulesColl = db.collection("professor_schedules");
+    const usersColl = db.collection("users");
 
     // ✅ Get student ID from authentication or query
     const studentId = req.user?.id || req.query.studentId;
@@ -15,51 +17,118 @@ export const getStudentDashboard = async (req, res) => {
       });
     }
 
-    // 1️⃣ Professor Status Statistics
-    const professorStats = await db.collection("users")
-      .aggregate([
-        { $match: { role: "professor" } },
-        { $group: { _id: "$status", count: { $sum: 1 } } },
-      ])
-      .toArray();
+    // Get current day and time for real-time availability calculation
+    const now = new Date();
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const currentHour = now.getHours();
+    const isWeekend = now.getDay() === 0 || now.getDay() === 6;
 
-    const stats = {
-      available: professorStats.find((s) => s._id === "Available")?.count || 0,
-      busy: professorStats.find((s) => s._id === "Busy")?.count || 0,
-      notAvailable: professorStats.find((s) => s._id === "Not Available")?.count || 0,
+    // 1️⃣ Get all professors for real-time stats
+    const professors = await usersColl.find(
+      { 
+        role: "professor" // Simplified query
+      },
+      { 
+        projection: { 
+          _id: 1, 
+          firstName: 1, 
+          lastName: 1, 
+          isVerified: 1,
+          status: 1
+        } 
+      }
+    ).toArray();
+
+    console.log('📊 Total professors found:', professors.length);
+    console.log('👨‍🏫 Professor statuses:', professors.map(p => ({ 
+      name: `${p.firstName} ${p.lastName}`, 
+      status: p.status,
+      isVerified: p.isVerified 
+    })));
+
+    // Get all professor schedules for availability calculation
+    const professorSchedules = await schedulesColl.find({
+      scheduleType: 'manual'
+    }).toArray();
+
+    // Initialize stats
+    let overallStats = {
+      available: 0,
+      busy: 0,
+      notAvailable: 0,
+      total: professors.length
     };
 
-    // 2️⃣ Professor Availability Trend Chart
-    const availabilityTrend = await db.collection("professor_status_logs")
-      .aggregate([
-        {
-          $group: {
-            _id: {
-              date: { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } },
-              status: "$status",
-            },
-            count: { $sum: 1 },
-          },
-        },
-        { $sort: { "_id.date": 1 } },
-      ])
-      .toArray();
+    // Calculate real-time availability stats for CURRENT HOUR only
+    if (isWeekend) {
+      // Weekend - all professors not available
+      overallStats = {
+        available: 0,
+        busy: 0,
+        notAvailable: professors.length,
+        total: professors.length
+      };
+    } else {
+      // Weekday - calculate based on schedules and status for current hour only
+      professors.forEach(professor => {
+        const professorSchedule = professorSchedules.find(s => 
+          s.professorId.toString() === professor._id.toString()
+        );
 
-    const groupedByDate = {};
-    for (const entry of availabilityTrend) {
-      const { date, status } = entry._id;
-      if (!groupedByDate[date])
-        groupedByDate[date] = { date, available: 0, busy: 0, notAvailable: 0 };
+        const professorStatus = professor.status?.toLowerCase() || 'not available';
 
-      if (status === "Available") groupedByDate[date].available += entry.count;
-      else if (status === "Busy") groupedByDate[date].busy += entry.count;
-      else if (status === "Not Available")
-        groupedByDate[date].notAvailable += entry.count;
+        // If professor is not verified, mark as not available
+        if (!professor.isVerified) {
+          overallStats.notAvailable++;
+          return;
+        }
+
+        const todaysSchedule = professorSchedule?.schedule?.filter(
+          s => s.day === currentDay
+        ) || [];
+
+        // Check if professor has schedule at current hour
+        const hasSchedule = todaysSchedule.some(schedule => 
+          currentHour >= schedule.startTime && currentHour < schedule.endTime
+        );
+
+        if (professorStatus === 'not available') {
+          overallStats.notAvailable++;
+        } else if (hasSchedule) {
+          overallStats.busy++;
+        } else {
+          if (professorStatus === 'available') {
+            overallStats.available++;
+          } else if (professorStatus === 'busy') {
+            overallStats.busy++;
+          } else {
+            overallStats.notAvailable++;
+          }
+        }
+      });
     }
 
-    const chartData = Object.values(groupedByDate);
+    console.log('🎯 Final calculated stats:', overallStats);
 
-    // 3️⃣ Fetch Student Inquiries (and include professor details)
+    // 2️⃣ Create simple chart data (since we don't have professor_status_logs)
+    // We'll create dummy data for the last 7 days or use current stats
+    const chartData = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateString = date.toISOString().split('T')[0];
+      
+      // Use current stats for all days (or you can modify this logic)
+      chartData.push({
+        date: dateString,
+        available: overallStats.available,
+        busy: overallStats.busy,
+        notAvailable: overallStats.notAvailable
+      });
+    }
+
+    // 3️⃣ Fetch Student Inquiries
     const inquiries = await db.collection("inquiries")
       .find({
         $or: [
@@ -112,14 +181,21 @@ export const getStudentDashboard = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        stats,
+        stats: overallStats, // This now contains the real calculated stats
         chartData,
         inquiriesSentCount,
         recentInquiries,
+        debug: { // Add debug info to help troubleshooting
+          totalProfessors: professors.length,
+          currentHour,
+          currentDay,
+          isWeekend,
+          professorStatuses: professors.map(p => p.status)
+        }
       },
     });
   } catch (error) {
-    console.error("❌ Dashboard controller error:", error);
+    console.error("❌ Combined dashboard controller error:", error);
     res.status(500).json({
       success: false,
       message: "Server error while fetching dashboard data.",
@@ -133,23 +209,20 @@ export const getProfessorAvailability = async (req, res) => {
     const schedulesColl = db.collection("professor_schedules");
     const usersColl = db.collection("users");
 
-    // Get current day and time
+    // Get current Philippine time (UTC+8)
     const now = new Date();
-    const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }); // Monday, Tuesday, etc.
-    const currentHour = now.getHours();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const phTime = new Date(utc + (8 * 3600000));
     
-    // Check if it's weekend
-    const isWeekend = now.getDay() === 0 || now.getDay() === 6; // 0 = Sunday, 6 = Saturday
+    const currentDay = phTime.toLocaleDateString('en-US', { weekday: 'long' });
+    const currentHour = phTime.getHours();
+    const currentMinute = phTime.getMinutes();
+    const isWeekend = phTime.getDay() === 0 || phTime.getDay() === 6;
 
-    // Get all professors with their status
+    // Get all professors
     const professors = await usersColl.find(
       { 
-        $expr: { 
-          $eq: [ 
-            { $toLower: { $trim: { input: "$role" } } }, 
-            "professor" 
-          ] 
-        } 
+        role: "professor"
       },
       { 
         projection: { 
@@ -157,7 +230,7 @@ export const getProfessorAvailability = async (req, res) => {
           firstName: 1, 
           lastName: 1, 
           isVerified: 1,
-          status: 1 // Include status field
+          status: 1
         } 
       }
     ).toArray();
@@ -167,8 +240,8 @@ export const getProfessorAvailability = async (req, res) => {
       scheduleType: 'manual'
     }).toArray();
 
-    // Initialize availability data for each hour (8 AM to 8 PM)
-    const hours = Array.from({ length: 13 }, (_, i) => i + 8); // 8 to 20 (8 PM)
+    // Initialize availability data for each hour (7 AM to 6 PM)
+    const hours = Array.from({ length: 12 }, (_, i) => i + 7); // 7 to 18 (6 PM)
     const availabilityData = {};
 
     hours.forEach(hour => {
@@ -180,7 +253,7 @@ export const getProfessorAvailability = async (req, res) => {
       };
     });
 
-    // If it's weekend, all professors are not available (regardless of status)
+    // If it's weekend, all professors are not available
     if (isWeekend) {
       hours.forEach(hour => {
         availabilityData[hour] = {
@@ -216,7 +289,7 @@ export const getProfessorAvailability = async (req, res) => {
         s.professorId.toString() === professor._id.toString()
       );
 
-      // Get professor's current status (default to 'Not Available' if not set)
+      // Get professor's current status
       const professorStatus = professor.status?.toLowerCase() || 'not available';
 
       // If professor is not verified, mark as not available for all hours
@@ -234,28 +307,22 @@ export const getProfessorAvailability = async (req, res) => {
 
       hours.forEach(hour => {
         // Check if professor has schedule at this hour
-        const hasSchedule = todaysSchedule.some(schedule => 
-          hour >= schedule.startTime && hour < schedule.endTime
-        );
+        const hasSchedule = todaysSchedule.some(schedule => {
+          // Handle both number and string formats for startTime/endTime
+          const startTime = typeof schedule.startTime === 'string' ? parseInt(schedule.startTime) : schedule.startTime;
+          const endTime = typeof schedule.endTime === 'string' ? parseInt(schedule.endTime) : schedule.endTime;
+          return hour >= startTime && hour < endTime;
+        });
 
-        // Determine availability based on both schedule and status
+        // NEW LOGIC: Evaluate availability based on status AND schedule
         if (professorStatus === 'not available') {
           // Professor explicitly set as not available - override everything
           availabilityData[hour].notAvailable++;
         } else if (hasSchedule) {
-          // Professor has scheduled class
-          if (professorStatus === 'busy') {
-            // Professor is busy and has schedule - count as busy
-            availabilityData[hour].busy++;
-          } else if (professorStatus === 'available') {
-            // Professor is available but has schedule - count as busy (teaching)
-            availabilityData[hour].busy++;
-          } else {
-            // Default behavior for other statuses
-            availabilityData[hour].busy++;
-          }
+          // Professor has scheduled class - always mark as busy regardless of status
+          availabilityData[hour].busy++;
         } else {
-          // Professor has no schedule at this hour
+          // No schedule at this hour - use professor's manual status
           if (professorStatus === 'available') {
             // Professor is explicitly available and free - count as available
             availabilityData[hour].available++;

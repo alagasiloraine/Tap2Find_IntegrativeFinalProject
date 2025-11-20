@@ -10,6 +10,34 @@
       <h1 class="text-4xl font-semibold text-gray-900 ">Settings</h1>
       <p class="text-base text-gray-500 mb-6">Manage your account preferences, notifications, and security.</p>
 
+    <!-- Skeleton Loading -->
+    <div v-if="isLoading" class="space-y-6 animate-pulse">
+      <section class="bg-white shadow rounded-xl p-5">
+        <div class="h-5 w-40 bg-gray-200 rounded mb-4"></div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="h-10 bg-gray-100 rounded sm:col-span-2"></div>
+          <div class="h-10 bg-gray-100 rounded"></div>
+          <div class="h-10 bg-gray-100 rounded"></div>
+        </div>
+      </section>
+      <section class="bg-white shadow rounded-xl p-5">
+        <div class="h-5 w-48 bg-gray-200 rounded mb-4"></div>
+        <div class="h-10 bg-gray-100 rounded mb-3"></div>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div class="h-16 bg-gray-100 rounded"></div>
+          <div class="h-16 bg-gray-100 rounded"></div>
+        </div>
+      </section>
+      <section class="bg-white shadow rounded-xl p-5">
+        <div class="h-5 w-52 bg-gray-200 rounded mb-4"></div>
+        <div class="h-10 bg-gray-100 rounded mb-2"></div>
+        <div class="h-10 bg-gray-100 rounded mb-2"></div>
+      </section>
+    </div>
+
+    <!-- Main Content -->
+    <div v-else>
+
     <!-- Change Password -->
     <section class="bg-white shadow rounded-xl p-5 mb-6">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Change Password</h2>
@@ -28,9 +56,17 @@
         </div>
       </div>
       <div class="mt-4 flex justify-end">
-        <button @click="savePassword" class="px-4 py-2 rounded-lg bg-[#102A71] text-white hover:bg-[#102A71]/90">Update Password</button>
+        <button
+          @click="savePassword"
+          :disabled="savingPassword"
+          class="px-4 py-2 rounded-lg bg-[#102A71] text-white hover:bg-[#102A71]/90 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <span v-if="savingPassword" class="inline-flex items-center">
+            <span class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+          </span>
+          <span>{{ savingPassword ? 'Updating...' : 'Update Password' }}</span>
+        </button>
       </div>
-      <p v-if="passwordMessage" class="text-sm mt-2" :class="passwordOk ? 'text-green-600' : 'text-red-600'">{{ passwordMessage }}</p>
     </section>
 
     <!-- Notifications -->
@@ -65,7 +101,16 @@
         </div>
       </div>
       <div class="mt-4 flex justify-end">
-        <button @click="saveNotifications" class="px-4 py-2 rounded-lg bg-[#102A71] text-white hover:bg-[#102A71]/90">Save Preferences</button>
+        <button
+          @click="saveNotifications"
+          :disabled="savingNotifications"
+          class="px-4 py-2 rounded-lg bg-[#102A71] text-white hover:bg-[#102A71]/90 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <span v-if="savingNotifications" class="inline-flex items-center">
+            <span class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+          </span>
+          <span>{{ savingNotifications ? 'Saving...' : 'Save Preferences' }}</span>
+        </button>
       </div>
     </section>
 
@@ -78,176 +123,416 @@
         <!-- Active sessions -->
         <div class="border rounded-xl">
           <div class="bg-gray-100 px-4 py-3  text-sm font-medium text-gray-900">Active Sessions / Devices</div>
-          <ul>
-            <li v-for="(s, i) in sessions" :key="i" class="flex items-center justify-between px-4 py-3 border-t text-sm">
-              <div>
-                <div class="text-gray-900">{{ s.device }} — {{ s.location }}</div>
-                <div class="text-xs text-gray-500">{{ s.lastActive }}</div>
+          <ul  v-if="sessions.length > 0">
+            <li v-for="session in sessions" :key="session.id" class="flex items-center justify-between px-4 py-3 border-t text-sm">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-900 font-medium">{{ session.device }}</span>
+                  <span v-if="session.isCurrent" class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                    Current
+                  </span>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">
+                  {{ session.location }} • {{ session.ipAddress }}
+                </div>
+                <div class="text-xs text-gray-400 mt-1">
+                  Last active: {{ formatRelativeTime(session.lastActive) }}
+                </div>
               </div>
-              <button class="text-xs text-red-600 hover:underline" @click="signOutSession(i)">Sign out</button>
+              <button 
+                v-if="!session.isCurrent"
+                @click="signOutSession(session.id)" 
+                class="text-xs text-red-600 hover:text-red-800 hover:underline ml-4"
+                :disabled="loading.sessionSignOut"
+              >
+                Sign out
+              </button>
+              <span v-else class="text-xs text-gray-400 ml-4">Current session</span>
             </li>
           </ul>
         </div>
 
         <div class="flex justify-end">
-          <button class="px-4 py-2 rounded-xl bg-red-50 text-red-700 hover:bg-red-200 mr-2" @click="signOutAll">Sign out of all devices</button>
+          <button
+            class="px-4 py-2 rounded-xl bg-red-50 text-red-700 hover:bg-red-200 mr-2 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            @click="signOutAll"
+            :disabled="signingOutAll"
+          >
+            <span v-if="signingOutAll" class="inline-flex items-center">
+              <span class="w-4 h-4 border-2 border-red-400/40 border-t-red-500 rounded-full animate-spin"></span>
+            </span>
+            <span>{{ signingOutAll ? 'Signing out...' : 'Sign out of all devices' }}</span>
+          </button>
         </div>
       </div>
     </section>
+    </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import api from "@/utils/api"
 
 const router = useRouter()
+
+// Get current user data from localStorage
+const getUserData = () => {
+  try {
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      return JSON.parse(userData)
+    }
+    return null
+  } catch (error) {
+    console.error('Error parsing user data from localStorage:', error)
+    return null
+  }
+}
+
+// Reactive user data
+const userData = reactive({
+  id: '',
+  emailAddress: '',
+  contactNumber: '',
+  firstName: '',
+  lastName: '',
+  role: ''
+})
+
 const goBack = () => {
   router.back()
 }
+
+// Loading states
+const loading = ref({
+  password: false,
+  notifications: false,
+  security: false,
+  sessions: false,
+  sessionSignOut: false,
+  signOutAll: false
+})
+
+const isLoading = ref(true)
+const savingNotifications = ref(false)
 
 // Change Password
 const password = ref({ current: '', new: '', confirm: '' })
 const passwordMessage = ref('')
 const passwordOk = ref(false)
+
 const savePassword = async () => {
-  passwordOk.value = false
-  passwordMessage.value = ''
   if (!password.value.current || !password.value.new || !password.value.confirm) {
+    passwordOk.value = false
     passwordMessage.value = 'Please complete all fields.'
     return
   }
+  
   if (password.value.new !== password.value.confirm) {
+    passwordOk.value = false
     passwordMessage.value = 'New passwords do not match.'
     return
   }
-  if (password.value.new.length < 8) {
-    passwordMessage.value = 'New password must be at least 8 characters.'
-    return
-  }
-  const token = localStorage.getItem('t2f_token')
-  if (!token) {
-    passwordMessage.value = 'Not authenticated. Please log in again.'
-    return
-  }
-  try {
-    const res = await fetch('http://localhost:3000/api/auth/change-password', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        currentPassword: password.value.current,
-        newPassword: password.value.new,
-        confirmPassword: password.value.confirm,
-      })
-    })
-    const data = await res.json()
-    if (!res.ok || data.success === false) {
-      throw new Error(data.message || 'Failed to update password')
-    }
-    passwordOk.value = true
-    passwordMessage.value = 'Password updated successfully.'
-    password.value = { current: '', new: '', confirm: '' }
-  } catch (err) {
+
+  if (password.value.new.length < 6) {
     passwordOk.value = false
-    passwordMessage.value = err.message
+    passwordMessage.value = 'New password must be at least 6 characters long.'
+    return
+  }
+
+  loading.value.password = true
+  passwordMessage.value = ''
+
+  try {
+    const user = getUserData()
+    if (!user || !user.id) {
+      throw new Error('User not authenticated. Please log in again.')
+    }
+
+    console.log('🔄 Changing password for user:', user.id)
+
+    const response = await api.post(`/user-settings/${user.id}/password/change`, {
+      currentPassword: password.value.current,
+      newPassword: password.value.new
+    })
+
+    if (response.data.success) {
+      passwordOk.value = true
+      passwordMessage.value = response.data.message
+      password.value = { current: '', new: '', confirm: '' }
+    } else {
+      throw new Error(response.data.message)
+    }
+  } catch (error) {
+    passwordOk.value = false
+    passwordMessage.value = error.response?.data?.message || error.message || 'Failed to update password'
+    console.error('❌ Password change error:', error)
+  } finally {
+    loading.value.password = false
   }
 }
 
 // Notifications
 const notify = ref({ enabled: true, channels: { email: true, sms: false } })
-const saveNotifications = () => {
-  // Placeholder to persist
-  console.log('Saved notification prefs', notify.value)
+const notificationMessage = ref('')
+const notificationOk = ref(false)
+
+const loadNotificationPreferences = async () => {
+  try {
+    isLoading.value = true
+    const user = getUserData()
+    if (!user || !user.id) {
+      console.warn('No user data found for loading notifications')
+      return
+    }
+
+    console.log('🔄 Loading notification preferences for user:', user.id)
+
+    const response = await api.get(`/user-settings/${user.id}/notifications`)
+    
+    if (response.data.success) {
+      notify.value = response.data.data.preferences
+      console.log('✅ Loaded notification preferences:', notify.value)
+      isLoading.value = false
+    }
+  } catch (error) {
+    console.error('❌ Failed to load notification preferences:', error)
+    isLoading.value = false
+  }
+}
+
+const saveNotifications = async () => {
+  loading.value.notifications = true
+  notificationMessage.value = ''
+  saveNotifications.value = false
+
+  try {
+    saveNotifications.value = true
+    const user = getUserData()
+    if (!user || !user.id) {
+      throw new Error('User not authenticated. Please log in again.')
+    }
+
+    console.log('🔄 Saving notification preferences for user:', user.id)
+
+    const response = await api.put(`/user-settings/${user.id}/notifications`, {
+      preferences: notify.value
+    })
+
+    if (response.data.success) {
+      notificationOk.value = true
+      notificationMessage.value = response.data.message
+      console.log('✅ Notification preferences saved')
+      savingNotifications.value = false
+    } else {
+      throw new Error(response.data.message)
+      savingNotifications.value = false
+    }
+  } catch (error) {
+    notificationOk.value = false
+    notificationMessage.value = error.response?.data?.message || error.message || 'Failed to save notification preferences'
+    console.error('❌ Save notification preferences error:', error)
+    savingNotifications.value = false
+  } finally {
+    loading.value.notifications = false
+    savingNotifications.value = false
+  }
 }
 
 // Login & Security
+const security = ref({ twoFA: false, otpChannel: 'email' })
+const securityMessage = ref('')
+const securityOk = ref(false)
+
+// Load security settings
+const loadSecuritySettings = async () => {
+  try {
+    const user = getUserData()
+    if (!user || !user.id) {
+      console.warn('No user data found for loading security settings')
+      return
+    }
+
+    console.log('🔄 Loading security settings for user:', user.id)
+
+    const response = await api.get(`/user-settings/${user.id}/security`)
+    
+    if (response.data.success) {
+      security.value = response.data.data
+      console.log('✅ Loaded security settings:', security.value)
+    }
+  } catch (error) {
+    console.error('❌ Failed to load security settings:', error)
+  }
+}
+
+const saveSecuritySettings = async () => {
+  loading.value.security = true
+  securityMessage.value = ''
+
+  try {
+    const user = getUserData()
+    if (!user || !user.id) {
+      throw new Error('User not authenticated. Please log in again.')
+    }
+
+    console.log('🔄 Saving security settings for user:', user.id)
+
+    // Validate SMS channel if selected
+    if (security.value.twoFA && security.value.otpChannel === 'sms' && !userData.contactNumber) {
+      securityOk.value = false
+      securityMessage.value = 'Phone number is required for SMS notifications. Please update your profile first.'
+      return
+    }
+
+    const response = await api.put(`/user-settings/${user.id}/security`, {
+      twoFA: security.value.twoFA,
+      otpChannel: security.value.otpChannel
+    })
+
+    if (response.data.success) {
+      securityOk.value = true
+      securityMessage.value = response.data.message
+      console.log('✅ Security settings saved')
+    } else {
+      throw new Error(response.data.message)
+    }
+  } catch (error) {
+    securityOk.value = false
+    securityMessage.value = error.response?.data?.message || error.message || 'Failed to save security settings'
+    console.error('❌ Save security settings error:', error)
+  } finally {
+    loading.value.security = false
+  }
+}
+
+// Sessions management
 const sessions = ref([])
+const sessionMessage = ref('')
+const sessionOk = ref(false)
 
-function authHeaders() {
-  const token = localStorage.getItem('t2f_token')
-  const headers = token ? { Authorization: `Bearer ${token}` } : {}
-  const sid = localStorage.getItem('t2f_session_id')
-  if (sid) headers['x-session-id'] = sid
-  return headers
+const formatRelativeTime = (dateString) => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMins < 1) return 'Just now'
+  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`
+  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
+  
+  return date.toLocaleDateString()
 }
 
-// (2FA removed)
-
-async function loadSessions() {
+const loadSessions = async () => {
   try {
-    const res = await fetch('http://localhost:3000/api/auth/sessions', { headers: { ...authHeaders() } })
-    const data = await res.json()
-    if (res.ok && data?.success) {
-      sessions.value = (data.sessions || []).map(s => ({
-        _id: s._id,
-        device: s.userAgent || 'Unknown device',
-        location: s.ip || 'Unknown',
-        lastActive: s.lastActive || s.createdAt || ''
-      }))
-      // Try to set current session id based on userAgent if not set yet
-      const currentUA = navigator.userAgent
-      const existing = localStorage.getItem('t2f_session_id')
-      if (!existing) {
-        const match = (data.sessions || []).find(s => (s.userAgent || '') === currentUA)
-        if (match && match._id) {
-          try { localStorage.setItem('t2f_session_id', match._id) } catch {}
-        }
-      }
+    const user = getUserData()
+    if (!user || !user.id) {
+      console.warn('No user data found for loading sessions')
+      return
     }
-  } catch {}
-}
 
-async function signOutSession(index) {
-  const sess = sessions.value[index]
-  if (!sess?._id) return
-  try {
-    const res = await fetch(`http://localhost:3000/api/auth/sessions/${sess._id}`, {
-      method: 'DELETE',
-      headers: { ...authHeaders() }
-    })
-    const data = await res.json()
-    if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to sign out session')
-    sessions.value.splice(index, 1)
-    // If signing out the current device, also log out locally
-    const currentId = localStorage.getItem('t2f_session_id')
-    if (currentId && currentId === sess._id) {
-      try {
-        localStorage.removeItem('t2f_token')
-        localStorage.removeItem('t2f_user')
-        localStorage.removeItem('t2f_session_id')
-      } catch {}
-      router.push('/login')
+    loading.value.sessions = true
+    console.log('🔄 Loading active sessions for user:', user.id)
+
+    const response = await api.get(`/user-settings/${user.id}/sessions`)
+    
+    if (response.data.success) {
+      sessions.value = response.data.data.sessions
+      console.log('✅ Loaded sessions:', sessions.value.length)
+    } else {
+      throw new Error(response.data.message)
     }
-  } catch (e) {
-    alert(e.message)
+  } catch (error) {
+    console.error('❌ Failed to load sessions:', error)
+    sessionMessage.value = error.response?.data?.message || 'Failed to load sessions'
+    sessionOk.value = false
+  } finally {
+    loading.value.sessions = false
   }
 }
 
-async function signOutAll() {
+const signOutSession = async (sessionId) => {
   try {
-    const res = await fetch('http://localhost:3000/api/auth/sessions', {
-      method: 'DELETE',
-      headers: { ...authHeaders() }
-    })
-    const data = await res.json()
-    if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to sign out all devices')
-    sessions.value = []
-    // Also sign out this device
-    try {
-      localStorage.removeItem('t2f_token')
-      localStorage.removeItem('t2f_user')
-    } catch {}
-    router.push('/login')
-  } catch (e) {
-    alert(e.message)
+    const user = getUserData()
+    if (!user || !user.id) {
+      throw new Error('User not authenticated')
+    }
+
+    loading.value.sessionSignOut = true
+    console.log('🔄 Signing out session:', sessionId)
+
+    const response = await api.delete(`/user-settings/${user.id}/sessions/${sessionId}`)
+
+    if (response.data.success) {
+      sessionMessage.value = response.data.message
+      sessionOk.value = true
+      sessions.value = sessions.value.filter(s => s.id !== sessionId)
+      console.log('✅ Session signed out')
+    } else {
+      throw new Error(response.data.message)
+    }
+  } catch (error) {
+    console.error('❌ Failed to sign out session:', error)
+    sessionMessage.value = error.response?.data?.message || 'Failed to sign out session'
+    sessionOk.value = false
+  } finally {
+    loading.value.sessionSignOut = false
   }
 }
 
+const signOutAll = async () => {
+  try {
+    const user = getUserData()
+    if (!user || !user.id) {
+      throw new Error('User not authenticated')
+    }
+
+    if (!confirm('Are you sure you want to sign out of all other devices? You will remain signed in on this device.')) {
+      return
+    }
+
+    loading.value.signOutAll = true
+    sessionMessage.value = ''
+    console.log('🔄 Signing out all sessions for user:', user.id)
+
+    const response = await api.delete(`/user-settings/${user.id}/sessions`)
+
+    if (response.data.success) {
+      sessionMessage.value = response.data.message
+      sessionOk.value = true
+      await loadSessions()
+      console.log('✅ All sessions signed out')
+    } else {
+      throw new Error(response.data.message)
+    }
+  } catch (error) {
+    console.error('❌ Failed to sign out all sessions:', error)
+    sessionMessage.value = error.response?.data?.message || 'Failed to sign out sessions'
+    sessionOk.value = false
+  } finally {
+    loading.value.signOutAll = false
+  }
+}
+
+// Initialize user data and load settings when component mounts
 onMounted(() => {
-  loadSessions()
+  const user = getUserData()
+  if (user) {
+    Object.assign(userData, user)
+    console.log('👤 User data loaded:', userData)
+    loadSessions()
+  } else {
+    console.error('❌ No user data found in localStorage')
+  }
+
+  loadNotificationPreferences()
+  loadSecuritySettings()
 })
 </script>

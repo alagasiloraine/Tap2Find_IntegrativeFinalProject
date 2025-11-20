@@ -9,7 +9,41 @@
       </div>
       <h1 class="text-4xl font-semibold text-gray-900 ">Settings</h1>
       <p class="text-base text-gray-500 mb-6">Manage your account preferences, notifications, and security.</p>
+      <!-- Page skeleton while loading -->
+      <div v-if="initialLoading" class="space-y-6">
+        <section class="bg-white shadow rounded-xl p-5">
+          <div class="h-5 w-48 bg-gray-200 rounded animate-pulse mb-4"></div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="sm:col-span-2 h-10 bg-gray-200 rounded animate-pulse"></div>
+            <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+            <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div class="mt-4 flex justify-end">
+            <div class="h-10 w-40 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </section>
 
+        <section class="bg-white shadow rounded-xl p-5">
+          <div class="h-5 w-56 bg-gray-200 rounded animate-pulse mb-4"></div>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div class="h-20 bg-gray-200 rounded animate-pulse"></div>
+            <div class="h-20 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div class="mt-4 flex justify-end">
+            <div class="h-10 w-40 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </section>
+
+        <section class="bg-white shadow rounded-xl p-5">
+          <div class="h-5 w-48 bg-gray-200 rounded animate-pulse mb-4"></div>
+          <div class="space-y-4">
+            <div class="h-12 bg-gray-200 rounded animate-pulse"></div>
+            <div class="h-24 bg-gray-200 rounded animate-pulse"></div>
+            <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </section>
+      </div>
+      <div v-else class="space-y-6">
       <!-- Change Password -->
       <section class="bg-white shadow rounded-xl p-5 mb-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Change Password</h2>
@@ -32,7 +66,6 @@
             {{ loading.password ? 'Updating...' : 'Update Password' }}
           </button>
         </div>
-        <p v-if="passwordMessage" class="text-sm mt-2" :class="passwordOk ? 'text-green-600' : 'text-red-600'">{{ passwordMessage }}</p>
       </section>
 
       <!-- Notifications -->
@@ -73,7 +106,6 @@
             {{ loading.notifications ? 'Saving...' : 'Save Preferences' }}
           </button>
         </div>
-        <p v-if="notificationMessage" class="text-sm mt-2" :class="notificationOk ? 'text-green-600' : 'text-red-600'">{{ notificationMessage }}</p>
       </section>
 
       <!-- Login & Security -->
@@ -81,7 +113,7 @@
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Login & Security</h2>
         <div class="space-y-5">
           <!-- Two-Factor Auth -->
-          <div class="flex items-center justify-between">
+          <!-- <div class="flex items-center justify-between">
             <div>
               <div class="text-sm font-medium text-gray-900">Two-Factor Authentication</div>
               <div class="text-xs text-gray-500">Add an extra layer of security to your account</div>
@@ -92,7 +124,7 @@
                 <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform" :class="security.twoFA ? 'translate-x-5' : ''"></div>
               </div>
             </label>
-          </div>
+          </div> -->
 
           <!-- OTP channels -->
           <div class="grid sm:grid-cols-2 gap-4" v-if="security.twoFA">
@@ -183,9 +215,9 @@
             </div>
           </div>
           <p v-if="securityMessage" class="text-sm mt-2 text-right" :class="securityOk ? 'text-green-600' : 'text-red-600'">{{ securityMessage }}</p>
-          <p v-if="sessionMessage" class="text-sm mt-2 text-right" :class="sessionOk ? 'text-green-600' : 'text-red-600'">{{ sessionMessage }}</p>
         </div>
       </section>
+      </div>
     </div>
   </div>
 </template>
@@ -196,6 +228,116 @@ import { useRouter } from 'vue-router'
 import api from "@/utils/api"
 
 const router = useRouter()
+
+// Toast helper (styled like global design)
+const showToast = (message, type = 'success', duration = 2600) => {
+  let container = document.getElementById('t2f-toast-container')
+  if (!container) {
+    container = document.createElement('div')
+    container.id = 't2f-toast-container'
+    container.style.position = 'fixed'
+    container.style.bottom = '16px'
+    container.style.right = '16px'
+    container.style.zIndex = '9999'
+    container.style.display = 'flex'
+    container.style.flexDirection = 'column-reverse'
+    container.style.gap = '10px'
+    document.body.appendChild(container)
+  }
+
+  const colors = type === 'success'
+    ? { border: '#34D399', text: '#065F46', iconBg: '#ECFDF5', iconFg: '#10B981', bar: '#6EE7B7' }
+    : { border: '#F87171', text: '#7F1D1D', iconBg: '#FEF2F2', iconFg: '#EF4444', bar: '#FCA5A5' }
+
+  const toast = document.createElement('div')
+  toast.style.minWidth = '280px'
+  toast.style.maxWidth = '460px'
+  toast.style.background = '#FFFFFF'
+  toast.style.border = `1.5px solid ${colors.border}`
+  toast.style.borderRadius = '14px'
+  toast.style.boxShadow = '0 12px 20px -6px rgba(0,0,0,0.12), 0 6px 10px -4px rgba(0,0,0,0.06)'
+  toast.style.overflow = 'hidden'
+  toast.style.opacity = '0'
+  toast.style.transform = 'translateY(12px)'
+  toast.style.transition = 'opacity 220ms ease, transform 220ms ease'
+
+  const row = document.createElement('div')
+  row.style.display = 'flex'
+  row.style.alignItems = 'center'
+  row.style.gap = '12px'
+  row.style.padding = '12px 16px'
+
+  const iconWrap = document.createElement('div')
+  iconWrap.style.width = '26px'
+  iconWrap.style.height = '26px'
+  iconWrap.style.borderRadius = '50%'
+  iconWrap.style.background = colors.iconBg
+  iconWrap.style.display = 'flex'
+  iconWrap.style.alignItems = 'center'
+  iconWrap.style.justifyContent = 'center'
+  iconWrap.style.flex = '0 0 auto'
+
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  icon.setAttribute('viewBox', '0 0 24 24')
+  icon.setAttribute('width', '16')
+  icon.setAttribute('height', '16')
+  icon.innerHTML = type === 'success'
+    ? `<path d="M9 12.75 11.25 15 15 9.75" fill="none" stroke="${colors.iconFg}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+    : `<path d="M12 8v4m0 4h.01" fill="none" stroke="${colors.iconFg}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" fill="none" stroke="${colors.iconFg}" stroke-width="1.5" opacity="0.25"/>`
+  iconWrap.appendChild(icon)
+
+  const textBlock = document.createElement('div')
+  textBlock.style.display = 'flex'
+  textBlock.style.flexDirection = 'column'
+  textBlock.style.gap = '2px'
+  const title = document.createElement('div')
+  title.textContent = type === 'success' ? 'SUCCESS' : 'ERROR'
+  title.style.fontSize = '12px'
+  title.style.fontWeight = '800'
+  title.style.letterSpacing = '0.04em'
+  title.style.color = colors.text
+  const body = document.createElement('div')
+  body.textContent = message
+  body.style.fontSize = '14px'
+  body.style.fontWeight = '600'
+  body.style.color = '#111827'
+  textBlock.appendChild(title)
+  textBlock.appendChild(body)
+  row.appendChild(iconWrap)
+  row.appendChild(textBlock)
+
+  const barWrap = document.createElement('div')
+  barWrap.style.height = '2px'
+  barWrap.style.background = 'transparent'
+  barWrap.style.width = '100%'
+  const bar = document.createElement('div')
+  bar.style.height = '100%'
+  bar.style.width = '100%'
+  bar.style.background = colors.bar
+  bar.style.transition = `width ${duration}ms linear`
+  barWrap.appendChild(bar)
+
+  toast.appendChild(row)
+  toast.appendChild(barWrap)
+  container.appendChild(toast)
+
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1'
+    toast.style.transform = 'translateY(0)'
+    requestAnimationFrame(() => (bar.style.width = '0%'))
+  })
+
+  setTimeout(() => {
+    toast.style.opacity = '0'
+    toast.style.transform = 'translateY(8px)'
+    setTimeout(() => {
+      toast.remove()
+      if (!container.childElementCount) container.remove()
+    }, 240)
+  }, duration)
+}
+
+const initialLoading = ref(true)
 
 // Get current user data from localStorage
 const getUserData = () => {
@@ -244,18 +386,21 @@ const savePassword = async () => {
   if (!password.value.current || !password.value.new || !password.value.confirm) {
     passwordOk.value = false
     passwordMessage.value = 'Please complete all fields.'
+    showToast('Please complete all fields.', 'error')
     return
   }
   
   if (password.value.new !== password.value.confirm) {
     passwordOk.value = false
     passwordMessage.value = 'New passwords do not match.'
+    showToast('New passwords do not match.', 'error')
     return
   }
 
   if (password.value.new.length < 6) {
     passwordOk.value = false
     passwordMessage.value = 'New password must be at least 6 characters long.'
+    showToast('New password must be at least 6 characters long.', 'error')
     return
   }
 
@@ -279,6 +424,7 @@ const savePassword = async () => {
       passwordOk.value = true
       passwordMessage.value = response.data.message
       password.value = { current: '', new: '', confirm: '' }
+      showToast(response.data.message || 'Password updated successfully', 'success')
     } else {
       throw new Error(response.data.message)
     }
@@ -286,6 +432,7 @@ const savePassword = async () => {
     passwordOk.value = false
     passwordMessage.value = error.response?.data?.message || error.message || 'Failed to update password'
     console.error('❌ Password change error:', error)
+    showToast(passwordMessage.value, 'error')
   } finally {
     loading.value.password = false
   }
@@ -337,6 +484,7 @@ const saveNotifications = async () => {
       notificationOk.value = true
       notificationMessage.value = response.data.message
       console.log('✅ Notification preferences saved')
+      showToast(response.data.message || 'Preferences saved', 'success')
     } else {
       throw new Error(response.data.message)
     }
@@ -344,6 +492,7 @@ const saveNotifications = async () => {
     notificationOk.value = false
     notificationMessage.value = error.response?.data?.message || error.message || 'Failed to save notification preferences'
     console.error('❌ Save notification preferences error:', error)
+    showToast(notificationMessage.value, 'error')
   } finally {
     loading.value.notifications = false
   }
@@ -482,6 +631,7 @@ const signOutSession = async (sessionId) => {
       sessionOk.value = true
       sessions.value = sessions.value.filter(s => s.id !== sessionId)
       console.log('✅ Session signed out')
+      showToast(response.data.message || 'Session signed out successfully', 'success')
     } else {
       throw new Error(response.data.message)
     }
@@ -489,6 +639,7 @@ const signOutSession = async (sessionId) => {
     console.error('❌ Failed to sign out session:', error)
     sessionMessage.value = error.response?.data?.message || 'Failed to sign out session'
     sessionOk.value = false
+    showToast(sessionMessage.value, 'error')
   } finally {
     loading.value.sessionSignOut = false
   }
@@ -516,6 +667,7 @@ const signOutAll = async () => {
       sessionOk.value = true
       await loadSessions()
       console.log('✅ All sessions signed out')
+      showToast(response.data.message || 'Signed out of all devices', 'success')
     } else {
       throw new Error(response.data.message)
     }
@@ -523,23 +675,28 @@ const signOutAll = async () => {
     console.error('❌ Failed to sign out all sessions:', error)
     sessionMessage.value = error.response?.data?.message || 'Failed to sign out sessions'
     sessionOk.value = false
+    showToast(sessionMessage.value, 'error')
   } finally {
     loading.value.signOutAll = false
   }
 }
 
 // Initialize user data and load settings when component mounts
-onMounted(() => {
+onMounted(async () => {
   const user = getUserData()
   if (user) {
     Object.assign(userData, user)
     console.log('👤 User data loaded:', userData)
-    loadSessions()
   } else {
     console.error('❌ No user data found in localStorage')
   }
 
-  loadNotificationPreferences()
-  loadSecuritySettings()
+  // Load initial data in parallel
+  await Promise.all([
+    loadSessions(),
+    loadNotificationPreferences(),
+    loadSecuritySettings()
+  ]).catch(() => {})
+  initialLoading.value = false
 })
 </script>

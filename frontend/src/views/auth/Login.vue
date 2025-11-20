@@ -20,26 +20,37 @@
             v-model="form.email"
             type="email"
             required
-            class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#102A71] focus:ring-opacity-100 transition-colors"
-            :class="form.email ? 'border-black text-black' : 'border-gray-400 text-gray-400'"
+            :disabled="isLoading"
+            :class="[
+              'w-full px-3 py-2 border rounded-xl focus:outline-none transition-colors',
+              isLoading ? 'opacity-50 cursor-not-allowed bg-gray-50' : '',
+              isEmailFocused && !isLoading ? 'focus:ring-1 focus:ring-[#102A71]' : '',
+              errors.email ? 'border-red-500' : form.email ? 'border-black' : 'border-gray-400'
+            ]"
             @focus="isEmailFocused = true"
             @blur="isEmailFocused = false"
           />
-          <label 
-            for="email" 
-            class="absolute left-3 transition-all duration-200 pointer-events-none"
-            :class="(form.email || isEmailFocused) ? '-top-2 text-xs text-black bg-white px-1' : 'top-2 text-sm text-gray-400'"
+          <label
+            for="email"
+            class="absolute left-3 transition-all duration-200 pointer-events-none bg-white px-1"
+            :class="[
+              (form.email || isEmailFocused) ? '-top-2 text-xs text-black' : 'top-2 text-sm text-gray-400',
+              isLoading ? 'opacity-50' : ''
+            ]"
           >
             Email Address
           </label>
-          <!-- Example text visible when focused but empty -->
-          <div 
-            v-if="isEmailFocused && !form.email"
+
+          <!-- Example Placeholder -->
+          <div
+            v-if="isEmailFocused && !form.email && !isLoading"
             class="absolute left-3 top-2 text-sm text-gray-300 pointer-events-none"
-            style="z-index: 1;"
           >
             john@example.com
           </div>
+
+          <!-- Error Message -->
+          <p v-if="errors.email" class="text-xs text-red-500 mt-1">{{ errors.email }}</p>
         </div>
 
         <!-- Password Field -->
@@ -49,42 +60,59 @@
             v-model="form.password"
             type="password"
             required
-            class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#102A71] focus:ring-opacity-100 transition-colors"
-            :class="form.password ? 'border-black text-black' : 'border-gray-400 text-gray-400'"
+            :disabled="isLoading"
+            :class="[
+              'w-full px-3 py-2 border rounded-xl focus:outline-none transition-colors',
+              isLoading ? 'opacity-50 cursor-not-allowed bg-gray-50' : '',
+              isPasswordFocused && !isLoading ? 'focus:ring-1 focus:ring-[#102A71]' : '',
+              errors.password ? 'border-red-500' : form.password ? 'border-black' : 'border-gray-400'
+            ]"
             @focus="isPasswordFocused = true"
             @blur="isPasswordFocused = false"
           />
-          <label 
-            for="password" 
-            class="absolute left-3 transition-all duration-200 pointer-events-none"
-            :class="(form.password || isPasswordFocused) ? '-top-2 text-xs text-black bg-white px-1' : 'top-2 text-sm text-gray-400'"
+          <label
+            for="password"
+            class="absolute left-3 transition-all duration-200 pointer-events-none bg-white px-1"
+            :class="[
+              (form.password || isPasswordFocused) ? '-top-2 text-xs text-black' : 'top-2 text-sm text-gray-400',
+              isLoading ? 'opacity-50' : ''
+            ]"
           >
             Password
           </label>
-          <!-- Example text visible when focused but empty -->
-          <div 
-            v-if="isPasswordFocused && !form.password"
+
+          <!-- Example Placeholder -->
+          <div
+            v-if="isPasswordFocused && !form.password && !isLoading"
             class="absolute left-3 top-2 text-sm text-gray-300 pointer-events-none"
-            style="z-index: 1;"
           >
             ••••••••
           </div>
+
+          <!-- Error Message -->
+          <p v-if="errors.password" class="text-xs text-red-500 mt-1">{{ errors.password }}</p>
         </div>
 
         <!-- Remember Me & Forgot Password -->
         <div class="flex items-center justify-between">
-          <div class="flex items-center">
+          <!-- <div class="flex items-center">
             <input
               id="remember"
               v-model="form.remember"
               type="checkbox"
-              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              :disabled="isLoading"
+              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors"
+              :class="isLoading ? 'opacity-50 cursor-not-allowed' : ''"
             />
-            <label for="remember" class="ml-2 block text-sm text-gray-700">
+            <label for="remember" class="ml-2 block text-sm text-gray-700" :class="isLoading ? 'opacity-50' : ''">
               Remember me
             </label>
-          </div>
-          <router-link to="/forgot-password" class="text-sm text-blue-600 hover:text-blue-500">
+          </div> -->
+          <router-link 
+            to="/forgot-password" 
+            class="text-sm text-blue-600 hover:text-blue-500 transition-colors"
+            :class="isLoading ? 'pointer-events-none opacity-50' : ''"
+          >
             Forgot password?
           </router-link>
         </div>
@@ -106,7 +134,7 @@
       </form>
 
       <!-- Divider -->
-      <div class="mt-6">
+      <!-- <div class="mt-6">
         <div class="relative">
           <div class="absolute inset-0 flex items-center">
             <div class="w-full border-t border-gray-300" />
@@ -115,16 +143,20 @@
             <span class="px-2 bg-white text-gray-500">Or continue with</span>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- Social Login -->
-      <div class="mt-6">
-        <button class="w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-xl bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+      <!-- <div class="mt-6">
+        <button 
+          :disabled="isLoading"
+          class="w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-xl bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+          :class="isLoading ? 'opacity-50 cursor-not-allowed hover:bg-white' : ''"
+        >
           <span class="sr-only">Sign in with Gmail</span>
           <Mail class="w-4 h-4 mr-2" />
           Gmail
         </button>
-      </div>
+      </div> -->
 
       <!-- Sign Up Link -->
       <div class="mt-6 text-center">
@@ -147,6 +179,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Mail } from 'lucide-vue-next'
+import api from '@/utils/api'
 
 const router = useRouter()
 
@@ -156,11 +189,14 @@ const form = ref({
   remember: false
 })
 
-// Focus states for floating labels
+const errors = ref({
+  email: '',
+  password: ''
+})
+
 const isEmailFocused = ref(false)
 const isPasswordFocused = ref(false)
-
-const loading = ref(false)
+const isLoading = ref(false)
 
 const handleLogin = async () => {
   if (isLoading.value) return
@@ -242,7 +278,7 @@ const handleLogin = async () => {
       errors.value.email = msg || 'Login failed. Please try again.'
       
   } finally {
-    loading.value = false
+    isLoading.value = false
   }
 }
 </script>

@@ -5,18 +5,49 @@
       <div class="space-y-6">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-xl bg-gray-50  p-5 ">
            <div class="flex items-center gap-3">
-    <div class="flex items-center gap-2">
-      <div class="w-3 h-3 rounded-full" :class="statusDotClass"></div>
-      <span class="text-sm font-medium" :class="statusTextClass">
-        {{ statusDisplayText }}
-      </span>
-    </div>
-  </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full" :class="statusDotClass"></div>
+              <span class="text-sm font-medium" :class="statusTextClass">
+                {{ statusDisplayText }}
+              </span>
+            </div>
+          </div>
           <!-- Removed change status dropdown -->
         </div>
 
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Skeletons -->
+          <template v-if="loading">
+            <div class="rounded-xl shadow p-5">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gray-200 animate-pulse"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+                  <div class="h-6 bg-gray-200 rounded w-16 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+            <div class="rounded-xl shadow p-5">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gray-200 animate-pulse"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
+                  <div class="h-6 bg-gray-200 rounded w-16 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+            <div class="rounded-xl shadow p-5">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gray-200 animate-pulse"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                  <div class="h-6 bg-gray-200 rounded w-16 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          </template>
+          <template v-else>
           <div class="rounded-xl shadow p-5">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 grid place-items-center">
@@ -59,6 +90,7 @@
               </div>
             </div>
           </div>
+          </template>
         </div>
 
         <!-- Recent Student Concerns -->
@@ -71,6 +103,20 @@
             </div>
           </div>
           <div class="mt-3">
+            <!-- Skeleton list -->
+            <div v-if="loading" class="divide-y divide-gray-200">
+              <div v-for="n in 4" :key="`sk-rc-`+n" class="flex items-center justify-between gap-3 px-5 py-3">
+                <div class="flex items-start gap-3 flex-1">
+                  <div class="w-9 h-9 rounded-full bg-gray-200 animate-pulse"></div>
+                  <div class="flex-1">
+                    <div class="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+                    <div class="h-3 bg-gray-200 rounded w-40 mt-2 animate-pulse"></div>
+                    <div class="h-3 bg-gray-200 rounded w-24 mt-2 animate-pulse"></div>
+                  </div>
+                  <div class="h-5 w-20 bg-gray-200 rounded-full animate-pulse"></div>
+                </div>
+              </div>
+            </div>
             <div
               v-for="(item, idx) in recentConcerns"
               :key="item.id"
@@ -92,9 +138,6 @@
             <div v-if="recentConcerns.length === 0 && !loading" class="px-5 py-8 text-center text-gray-500">
               No recent concerns found
             </div>
-            <div v-if="loading" class="px-5 py-8 text-center text-gray-500">
-              Loading concerns...
-            </div>
           </div>
         </div>
       </div>
@@ -112,6 +155,7 @@ const openMenuId = ref(null)
 const concerns = ref([])
 const recentConcerns = ref([])
 const loading = ref(false)
+const pollInterval = ref(null) // Added for polling
 
 const user = ref({
   id: '',
@@ -181,7 +225,6 @@ const fetchCurrentUserStatus = async () => {
 // Fetch statistics for the professor
 const fetchStatistics = async () => {
   try {
-    loading.value = true
     const professorId = user.value.id
     if (!professorId) {
       console.error('No professorId found for statistics')
@@ -202,8 +245,6 @@ const fetchStatistics = async () => {
   } catch (error) {
     console.error('Error fetching statistics:', error)
     console.error('Error details:', error.response?.data)
-  } finally {
-    loading.value = false
   }
 }
 
@@ -243,7 +284,48 @@ const fetchRecentConcerns = async () => {
   }
 }
 
-// Real-time status polling
+// ==============================
+// 🔹 Polling Functions (NEW)
+// ==============================
+const fetchDashboardData = async () => {
+  // Fetch all data that needs to be updated in real-time
+  await Promise.all([
+    fetchCurrentUserStatus(),
+    fetchStatistics(),
+    fetchRecentConcerns()
+  ])
+}
+
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+  }
+  
+  // Start new polling interval (2000ms = 2 seconds)
+  pollInterval.value = setInterval(fetchDashboardData, 2000)
+  console.log('🔄 Started polling dashboard data every 2 seconds')
+}
+
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+    console.log('🛑 Stopped polling dashboard data')
+  }
+}
+
+// Initial data load with loading state
+const initializeData = async () => {
+  try {
+    loading.value = true
+    await fetchDashboardData()
+  } finally {
+    loading.value = false
+  }
+}
+
+// Real-time status polling (existing function - kept for backward compatibility)
 let statusPollingInterval = null
 const startStatusPolling = () => {
   // Poll every 5 seconds for status updates
@@ -275,8 +357,12 @@ const getStatusClass = (status) => {
   switch (status) {
     case 'resolved':
       return 'bg-green-100 text-green-800'
+    case 'accepted':
+      return 'bg-green-100 text-green-800'
     case 'replied':
       return 'bg-blue-100 text-blue-800'
+    case 'declined':
+      return 'bg-red-100 text-red-800'
     case 'in-progress':
       return 'bg-yellow-100 text-yellow-800'
     default:
@@ -288,8 +374,12 @@ const getStatusText = (status) => {
   switch (status) {
     case 'resolved':
       return 'Resolved'
+    case 'accepted':
+      return 'Accepted'
     case 'replied':
       return 'Replied'
+    case 'declined':
+      return 'Declined'
     case 'in-progress':
       return 'In Progress'
     default:
@@ -333,14 +423,13 @@ onMounted(async () => {
     user.value = JSON.parse(storedUser)
     console.log('Dashboard - User loaded:', user.value)
     
-    // Fetch initial status from backend
-    await fetchCurrentUserStatus()
+    // Initialize data and start polling
+    await initializeData()
     
-    // Fetch data after user is loaded
-    await fetchStatistics()
-    await fetchRecentConcerns()
+    // Start polling after initial load is complete
+    startPolling()
     
-    // Start real-time status polling
+    // Keep the existing status polling for backward compatibility
     startStatusPolling()
   } else {
     console.error('Dashboard - No user found in localStorage')
@@ -352,5 +441,7 @@ onUnmounted(() => {
   if (statusPollingInterval) {
     clearInterval(statusPollingInterval)
   }
+  // Clean up the new polling interval
+  stopPolling()
 })
 </script>

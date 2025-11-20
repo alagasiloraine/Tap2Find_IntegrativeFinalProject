@@ -4,10 +4,7 @@ import ManageUsers from '@/views/admin/ManageUsers.vue'
 import ProfessorManagement from '@/views/admin/ProfessorManagement.vue'
 import ManageStudentConcerns from '@/views/admin/ManageStudentConcerns.vue'
 import GenerateReports from '@/views/admin/GenerateReports.vue'
-<<<<<<< HEAD
 import AdminProfile from '@/views/admin/AdminProfile.vue'
-=======
->>>>>>> origin/kim
 
 const Placeholder = (title) => ({
   template: `<div class="p-4"><h1 class="text-2xl font-semibold text-gray-900">${title}</h1><p class="mt-2 text-gray-600">Content coming soon.</p></div>`
@@ -48,15 +45,12 @@ const adminRoutes = [
         name: 'admin-reports',
         component: GenerateReports,
         meta: { requiresAuth: true, role: 'admin' }
-<<<<<<< HEAD
       },
       {
         path: 'profile',
         name: 'admin-profile',
         component: AdminProfile,
         meta: { requiresAuth: true, role: 'admin' }
-=======
->>>>>>> origin/kim
       }
     ],
   },

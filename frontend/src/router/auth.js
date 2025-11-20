@@ -42,11 +42,7 @@ const authRoutes = [
     ],
   },
   {
-<<<<<<< HEAD
     path: '/:random/verify-email',
-=======
-    path: '/verify-email',
->>>>>>> origin/kim
     component: AuthLayout,
     children: [
       {

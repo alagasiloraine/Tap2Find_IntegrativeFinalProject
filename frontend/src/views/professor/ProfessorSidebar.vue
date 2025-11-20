@@ -34,7 +34,7 @@
 
         <!-- Set Availability Status -->
         <router-link
-          to="/professor/availability/status"
+          to="/professor/availability/tap"
           class="group flex items-center px-4 py-3 text-base font-normal rounded-lg transition-colors leading-none"
           :class="[
             $route.path.startsWith('/professor/availability')

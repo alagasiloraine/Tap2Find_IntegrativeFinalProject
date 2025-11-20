@@ -5,176 +5,185 @@
 
     <!-- Content Division -->
     <div class="px-4 md:px-6 py-4 min-h-0">
+      <div v-if="isLoading" class="space-y-4 animate-pulse">
+        <!-- Search bar skeleton -->
+        <div class="mb-4">
+          <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1 flex gap-2 items-center">
+              <div class="h-10 w-80 max-w-full bg-gray-100 rounded-full"></div>
+              <div class="h-9 w-9 rounded-full bg-gray-100"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cards skeleton -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div v-for="n in 3" :key="n" class="bg-gray-50 rounded-lg p-4">
+            <div class="flex items-center gap-4">
+              <div class="w-32 h-32 rounded-lg bg-gray-200"></div>
+              <div class="flex-1 space-y-3">
+                <div class="h-4 w-40 bg-gray-200 rounded"></div>
+                <div class="h-3 w-32 bg-gray-100 rounded"></div>
+                <div class="h-5 w-28 bg-gray-200 rounded-lg"></div>
+                <div class="flex items-center justify-between mt-2">
+                  <div class="h-3 w-24 bg-gray-100 rounded"></div>
+                  <div class="h-9 w-28 bg-gray-200 rounded-lg"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Search and Filter Section -->
+      <div v-else>
       <!-- Search and Filter Section -->
       <div>
       <!-- Search Bar -->
-      <div class="mb-4">
-        <div class="flex flex-col md:flex-row gap-4">
-          <div class="flex-1">
-            <div class="relative flex gap-2">
-              <div class="relative">
-                <iconify-icon icon="fluent:search-16-filled" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="text"
-                  v-model="searchQuery"
-                  @focus="showSearchDropdown = true"
-                  @blur="hideSearchDropdown"
-                  placeholder="Search professor name..."
-                  class="w-96 pl-10 pr-4 py-2 rounded-full bg-gray-50 focus:outline-none"
-                />
-              
-              <!-- Search Dropdown -->
-              <transition
-                enter-active-class="transition ease-out duration-200"
-                enter-from-class="opacity-0 scale-95"
-                enter-to-class="opacity-100 scale-100"
-                leave-active-class="transition ease-in duration-150"
-                leave-from-class="opacity-100 scale-100"
-                leave-to-class="opacity-0 scale-95"
-              >
-                <div
-                  v-if="showSearchDropdown && searchQuery && searchResults.length > 0"
-                  class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
+        <div class="mb-4">
+          <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+              <div class="relative flex gap-2">
+                <div class="relative">
+                  <iconify-icon icon="fluent:search-16-filled" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <input
+                    type="text"
+                    v-model="searchQuery"
+                    @focus="showSearchDropdown = true"
+                    @blur="hideSearchDropdown"
+                    placeholder="Search professor name..."
+                    class="w-96 pl-10 pr-4 py-2 rounded-full bg-gray-50 focus:outline-none"
+                  />
+                
+                <!-- Search Dropdown -->
+                <transition
+                  enter-active-class="transition ease-out duration-200"
+                  enter-from-class="opacity-0 scale-95"
+                  enter-to-class="opacity-100 scale-100"
+                  leave-active-class="transition ease-in duration-150"
+                  leave-from-class="opacity-100 scale-100"
+                  leave-to-class="opacity-0 scale-95"
                 >
                   <div
-                    v-for="professor in searchResults"
-                    :key="professor.id"
-                    @click="selectProfessor(professor)"
-                    class="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    v-if="showSearchDropdown && searchQuery && searchResults.length > 0"
+                    class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
                   >
-                    <!-- Profile Picture -->
-                    <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mr-3">
-                      <span class="text-white text-sm font-bold">{{ professor.name.split(' ').map(n => n[0]).join('') }}</span>
-                    </div>
-                    
-                    <!-- Professor Info -->
-                    <div class="flex-1">
-                      <p class="font-medium text-gray-900">{{ professor.name }}</p>
-                      <p class="text-sm text-gray-600">{{ professor.department }}</p>
-                    </div>
-                    
-                    <!-- Status Indicator -->
-                    <div class="ml-2">
-                      <span class="w-2 h-2 rounded-full"
-                        :class="getStatusDotClass(professor)"
-                      ></span>
+                    <div
+                      v-for="professor in searchResults"
+                      :key="professor.id"
+                      @click="selectProfessor(professor)"
+                      class="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    >
+                      <!-- Profile Picture -->
+                      <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mr-3">
+                        <span class="text-white text-sm font-bold">{{ professor.name.split(' ').map(n => n[0]).join('') }}</span>
+                      </div>
+                      
+                      <!-- Professor Info -->
+                      <div class="flex-1">
+                        <p class="font-medium text-gray-900">{{ professor.name }}</p>
+                        <p class="text-sm text-gray-600">{{ professor.department }}</p>
+                      </div>
+                      
+                      <!-- Status Indicator -->
+                      <div class="ml-2">
+                        <span class="w-2 h-2 rounded-full"
+                          :class="getStatusDotClass(professor)"
+                        ></span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </transition>
-            </div>
-              
-              <!-- Filter Icon -->
-              <div class="flex items-center">
-                <iconify-icon
-                  @click="toggleFilterSlider"
-                  icon="mage:filter-fill"
-                  class="text-xl cursor-pointer transition-colors"
-                  :class="(showFilterSlider || selectedYearLevel !== '' || selectedStatus !== null) ? 'text-[#102A71]' : 'text-gray-600'"
-                ></iconify-icon>
+                </transition>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> origin/kim
-      <!-- Applied Filters -->
-      <div v-if="selectedYearLevel !== '' || selectedStatus !== null" class="mb-6">
-        <div class="flex flex-wrap gap-2">
-          <span 
-            v-if="selectedYearLevel !== ''"
-            class="px-3 py-3 bg-gray-50 text-gray-700 rounded-lg text-sm"
-          >
-            {{ selectedYearLevelText }}
-          </span>
-          <span 
-            v-if="selectedStatus !== null"
-            class="px-3 py-3 bg-gray-50 text-gray-700 rounded-lg text-sm"
-          >
-            {{ getStatusText(selectedStatus) }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Results -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div
-          v-for="professor in filteredProfessors"
-          :key="professor.id"
-          :data-professor-id="professor.id"
-<<<<<<< HEAD
-          class="bg-gray-50 rounded-lg p-4 transition-shadow"
-        >
-=======
-          class="bg-gray-50 rounded-lg p-4 transition-shadow relative"
-        >
-          <div class="absolute top-6 right-4 text-[11px] text-gray-500 flex items-center gap-1">
-            <iconify-icon icon="mingcute:time-line" class="text-base" />
-            <span>Updated {{ formatRelativeTime(professor.statusUpdatedAt) }}</span>
-          </div>
->>>>>>> origin/kim
-          <div class="flex items-center gap-4">
-            <!-- Professor Avatar -->
-            <div class="flex-shrink-0 flex items-center justify-center">
-              <div class="w-32 h-32 bg-gradient-to-br from-blue-300 to-blue-500 rounded-lg flex items-center justify-center">
-                <span class="text-white text-2xl font-bold">{{ professor.name.split(' ').map(n => n[0]).join('') }}</span>
-            </div>
-          </div>
-          
-            <!-- Professor Info -->
-            <div class="flex-1 flex flex-col min-w-0">
-              <!-- Name -->
-              <h3 class="font-medium text-gray-900 text-xl truncate">{{ professor.name }}</h3>
-              
-              <!-- Course/Department -->
-<<<<<<< HEAD
-              <p class="text-sm text-gray-600 mb-2 truncate">{{ professor.department }}</p>
-=======
-              <p class="text-sm text-gray-600 mb-2 truncate">{{ professor.position }}</p>
->>>>>>> origin/kim
-              
-              <!-- Status Badge -->
-              <span class="px-2 py-1 rounded-lg text-xs font-medium w-fit inline-flex items-center gap-1"
-                :class="getStatusBadgeClass(professor)"
-              >
-                <iconify-icon :icon="getStatusIcon(professor)" class="h-3 w-3" />
-                <span>{{ getStatusDisplayText(professor) }}</span>
-              </span>
-              
-              <!-- Location and Send Inquiry Button -->
-              <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center text-sm text-gray-400">
-                  <iconify-icon icon="lucide:map-pin" class="h-3 w-3 mr-1 flex-shrink-0" />
-<<<<<<< HEAD
-                  <span class="truncate">{{ professor.office }}</span>
-=======
-                  <span class="truncate">{{ professor.inFaculty ? 'Faculty' : 'Not in Faculty' }}</span>
->>>>>>> origin/kim
-                </div>
                 
-                <button
-                  @click="contactProfessor(professor)"
-                  :disabled="!isProfessorAvailable(professor)"
-                  class="py-2 px-4 rounded-lg text-sm flex items-center justify-center flex-shrink-0 transition-all"
-                  :class="isProfessorAvailable(professor)
-                    ? 'bg-[#102A71] text-white hover:bg-[#102A71]/80'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
-                >
-                  <iconify-icon icon="lucide:send" class="mr-2 h-4 w-4" />
-                  {{ isProfessorAvailable(professor) ? 'Send Inquiry' : 'Not Available' }}
-                </button>
-
+                <!-- Filter Icon -->
+                <div class="flex items-center">
+                  <iconify-icon
+                    @click="toggleFilterSlider"
+                    icon="mage:filter-fill"
+                    class="text-xl cursor-pointer transition-colors"
+                    :class="(showFilterSlider || selectedYearLevel !== '' || selectedStatus !== null) ? 'text-[#102A71]' : 'text-gray-600'"
+                  ></iconify-icon>
+                </div>
               </div>
             </div>
-<<<<<<< HEAD
-=======
+          </div>
+        </div>
+
+        <!-- Applied Filters -->
+        <div v-if="selectedYearLevel !== '' || selectedStatus !== null" class="mb-6">
+          <div class="flex flex-wrap gap-2">
+            <span 
+              v-if="selectedYearLevel !== ''"
+              class="px-3 py-3 bg-gray-50 text-gray-700 rounded-lg text-sm"
+            >
+              {{ selectedYearLevelText }}
+            </span>
+            <span 
+              v-if="selectedStatus !== null"
+              class="px-3 py-3 bg-gray-50 text-gray-700 rounded-lg text-sm"
+            >
+              {{ getStatusText(selectedStatus) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            v-for="professor in filteredProfessors"
+            :key="professor.id"
+            :data-professor-id="professor.id"
+            class="bg-gray-50 rounded-lg p-4 transition-shadow"
+          >
+            <div class="flex items-center gap-4">
+              <!-- Professor Avatar -->
+              <div class="flex-shrink-0 flex items-center justify-center">
+                <div class="w-32 h-32 bg-gradient-to-br from-blue-300 to-blue-500 rounded-lg flex items-center justify-center">
+                  <span class="text-white text-2xl font-bold">{{ professor.name.split(' ').map(n => n[0]).join('') }}</span>
+              </div>
             </div>
+            
+              <!-- Professor Info -->
+              <div class="flex-1 flex flex-col min-w-0">
+                <!-- Name -->
+                <h3 class="font-medium text-gray-900 text-xl truncate">{{ professor.name }}</h3>
+                
+                <!-- Course/Department -->
+                <p class="text-sm text-gray-600 mb-2 truncate">{{ professor.department }}</p>
+                
+                <!-- Status Badge -->
+                <span class="px-2 py-1 rounded-lg text-xs font-medium w-fit inline-flex items-center gap-1"
+                  :class="getStatusBadgeClass(professor)"
+                >
+                  <iconify-icon :icon="getStatusIcon(professor)" class="h-3 w-3" />
+                  <span>{{ getStatusDisplayText(professor) }}</span>
+                </span>
+                
+                <!-- Location and Send Inquiry Button -->
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center text-sm text-gray-400">
+                    <iconify-icon icon="lucide:map-pin" class="h-3 w-3 mr-1 flex-shrink-0" />
+                    <span class="truncate" :title="professor.currentRoom">
+                      {{ professor.currentRoom }}
+                      <span v-if="professor.hasCurrentSchedule" class="text-blue-500 ml-1">• In Class</span>
+                    </span>
+                  </div>
+                  
+                  <button
+                    @click="contactProfessor(professor)"
+                    :disabled="!isProfessorAvailable(professor)"
+                    class="py-2 px-4 rounded-lg text-sm flex items-center justify-center flex-shrink-0 transition-all"
+                    :class="isProfessorAvailable(professor)
+                      ? 'bg-[#102A71] text-white hover:bg-[#102A71]/80'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
+                  >
+                    <iconify-icon icon="lucide:send" class="mr-2 h-4 w-4" />
+                    {{ isProfessorAvailable(professor) ? 'Send Inquiry' : 'Not Available' }}
+                  </button>
+
+                </div>
+              </div>
             </div>
->>>>>>> origin/kim
           </div>
         </div>
       </div>
@@ -302,7 +311,6 @@
           leave-to-class="opacity-0 scale-95 transform translate-y-4"
         >
           <div class="bg-white rounded-xl w-full max-w-md">
-<<<<<<< HEAD
             <!-- Modal Header -->
             <div class="bg-white border-b border-gray-200 rounded-t-xl px-6 py-4 flex items-center justify-between">
               <h3 class="text-xl font-bold text-gray-900">Send Inquiry</h3>
@@ -337,23 +345,8 @@
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 ></textarea>
               </div>
-=======
-        <!-- Modal Header -->
-        <div class="bg-white border-b border-gray-200 rounded-t-xl px-6 py-4 flex items-center justify-between">
-          <h3 class="text-xl font-bold text-gray-900">Send Inquiry</h3>
-        </div>
-
-        <!-- Modal Body -->
-        <div class="px-6 py-4">
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">To:</label>
-            <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg">
-              <p class="font-medium text-gray-900">{{ selectedProfessor?.name }}</p>
-              <p class="text-sm text-gray-600">{{ selectedProfessor?.position }}</p>
->>>>>>> origin/kim
             </div>
 
-<<<<<<< HEAD
             <!-- Modal Footer -->
             <div class="px-6 py-4  flex justify-end space-x-3">
               <button
@@ -364,43 +357,18 @@
               </button>
               <button
                 @click="submitInquiry"
-                class="px-4 py-2 bg-[#102A71] text-white rounded-lg hover:bg-[#102A71]/90 transition-colors flex items-center"
+                :disabled="isSending"
+                class="px-4 py-2 bg-[#102A71] text-white rounded-lg hover:bg-[#102A71]/90 transition-colors flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <iconify-icon icon="lucide:send" class="mr-2 h-4 w-4" />
-                Send Inquiry
+                <span v-if="isSending" class="mr-2 inline-flex items-center">
+                  <span class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+                </span>
+                <span v-else class="mr-2">
+                  <iconify-icon icon="lucide:send" class="h-4 w-4" />
+                </span>
+                <span>{{ isSending ? 'Sending...' : 'Send Inquiry' }}</span>
               </button>
             </div>
-=======
-
-
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Message:</label>
-            <textarea
-              v-model="inquiryForm.message"
-              rows="5"
-              placeholder="Type your message here..."
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            ></textarea>
-          </div>
-        </div>
-
-        <!-- Modal Footer -->
-        <div class="px-6 py-4  flex justify-end space-x-3">
-          <button
-            @click="closeInquiryModal"
-            class="bg-gray-50 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            @click="submitInquiry"
-            class="px-4 py-2 bg-[#102A71] text-white rounded-lg hover:bg-[#102A71]/90 transition-colors flex items-center"
-          >
-            <iconify-icon icon="lucide:send" class="mr-2 h-4 w-4" />
-            Send Inquiry
-          </button>
-      </div>
->>>>>>> origin/kim
           </div>
         </transition>
       </div>
@@ -431,17 +399,12 @@
       </div>
     </transition>
 
-    
-
-<<<<<<< HEAD
     </div>
   </div>
-=======
->>>>>>> origin/kim
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import StudentTopNav from '@/components/StudentTopNav.vue'
 import api from '@/utils/api'
 
@@ -456,6 +419,9 @@ const showSearchDropdown = ref(false)
 const showYearLevelDropdown = ref(false)
 const showFilterSlider = ref(false)
 const isWeekend = ref(false)
+const isLoading = ref(false)
+const isSending = ref(false)
+const pollInterval = ref(null) // Added for polling
 
 const inquiryForm = ref({
   subject: '',
@@ -480,60 +446,7 @@ const statusOptions = ref([
   { value: 'busy', label: 'Busy' }
 ])
 
-<<<<<<< HEAD
 const professors = ref([])
-=======
-const professors = ref([
-  {
-    id: 1,
-    name: 'Prof. Pauline Alvarez',
-    email: 'paulina.alvarez@university.edu',
-    department: 'Computer Science',
-    office: 'IT Room 202',
-    position: 'Professor',
-    inFaculty: true,
-    yearLevel: 'first-year',
-    available: 'available',
-    statusUpdatedAt: Date.now() - 5 * 60 * 1000
-  },
-  {
-    id: 2,
-    name: 'Dr. Jane Doe',
-    email: 'jane.doe@university.edu',
-    department: 'Mathematics',
-    office: 'Building B, Room 205',
-    position: 'Associate Professor',
-    inFaculty: true,
-    yearLevel: 'second-year',
-    available: 'available',
-    statusUpdatedAt: Date.now() - 35 * 60 * 1000
-  },
-  {
-    id: 3,
-    name: 'Dr. Robert Johnson',
-    email: 'robert.johnson@university.edu',
-    department: 'Physics',
-    office: 'Building C, Room 310',
-    position: 'Lecturer',
-    inFaculty: false,
-    yearLevel: 'third-year',
-    available: 'busy',
-    statusUpdatedAt: Date.now() - 2 * 60 * 60 * 1000
-  },
-  {
-    id: 4,
-    name: 'Dr. Emily Williams',
-    email: 'emily.williams@university.edu',
-    department: 'Chemistry',
-    office: 'Building D, Room 415',
-    position: 'Assistant Professor',
-    inFaculty: false,
-    yearLevel: 'fourth-year',
-    available: 'not-available',
-    statusUpdatedAt: Date.now() - 26 * 60 * 60 * 1000
-  }
-])
->>>>>>> origin/kim
 
 const selectedYearLevelText = computed(() => {
   const option = yearLevelOptions.value.find(opt => opt.value === selectedYearLevel.value)
@@ -615,14 +528,7 @@ const contactProfessor = (professor) => {
   console.log("🧠 Selected professor:", professor)
   selectedProfessor.value = professor
   showInquiryModal.value = true
-<<<<<<< HEAD
   inquiryForm.value = { subject: '', message: '' }
-=======
-  inquiryForm.value = {
-    subject: professor.position,
-    message: ''
-  }
->>>>>>> origin/kim
 }
 
 const closeInquiryModal = () => {
@@ -632,6 +538,8 @@ const closeInquiryModal = () => {
 
 const submitInquiry = async () => {
   try {
+    isSending.value = true
+
     const professor = selectedProfessor.value
     const userData = JSON.parse(localStorage.getItem("user"))
 
@@ -682,18 +590,22 @@ const submitInquiry = async () => {
       inquiryForm.value.subject = ''
       inquiryForm.value.message = ''
       showInquiryModal.value = false
+      isSending.value = false
     } else {
       console.error("❌ Inquiry failed:", response.data)
       alert(response.data.message || "Failed to send inquiry.")
+      isSending.value = false
     }
 
   } catch (error) {
     if (error.response) {
       console.error("🚨 Server responded with error:", error.response.data)
       alert(error.response.data.message || "Server error occurred.")
+      isSending.value = false
     } else {
       console.error("🚨 Unexpected error:", error)
       alert("Unexpected error while sending inquiry.")
+      isSending.value = false
     }
   }
 }
@@ -722,12 +634,16 @@ const viewProfile = (professor) => {
 // Updated status methods to handle weekend display
 const getStatusDisplayText = (professor) => {
   if (professor.isWeekend) {
-    return "Not Available (It's Weekend)"
+    return "Not Available (Weekend)"
+  }
+  if (professor.hasCurrentSchedule) {
+    return "In Class"
   }
   if (professor.available === 'available') return 'Available'
   if (professor.available === 'busy') return 'Busy'
   return 'Not Available'
 }
+
 
 const getStatusText = (status) => {
   if (status === 'available') return 'Available'
@@ -737,6 +653,7 @@ const getStatusText = (status) => {
 
 const getStatusIcon = (professor) => {
   if (professor.isWeekend) return 'lucide:calendar-x'
+  if (professor.hasCurrentSchedule) return 'lucide:book-open'
   if (professor.available === 'available') return 'lucide:circle-check'
   if (professor.available === 'busy') return 'lucide:clock'
   return 'lucide:circle-x'
@@ -746,6 +663,9 @@ const getStatusBadgeClass = (professor) => {
   if (professor.isWeekend) {
     return 'bg-gray-100 text-gray-700'
   }
+  if (professor.hasCurrentSchedule) {
+    return 'bg-blue-100 text-blue-700'
+  }
   if (professor.available === 'available') {
     return 'bg-green-100 text-green-700'
   }
@@ -754,14 +674,13 @@ const getStatusBadgeClass = (professor) => {
   }
   return 'bg-gray-100 text-gray-700'
 }
-<<<<<<< HEAD
-=======
-</script>
->>>>>>> origin/kim
 
 const getStatusDotClass = (professor) => {
   if (professor.isWeekend) {
     return 'bg-gray-500'
+  }
+  if (professor.hasCurrentSchedule) {
+    return 'bg-blue-500'
   }
   if (professor.available === 'available') {
     return 'bg-green-500'
@@ -773,11 +692,15 @@ const getStatusDotClass = (professor) => {
 }
 
 const isProfessorAvailable = (professor) => {
-  // Professor is only available if it's not weekend AND their status is 'available'
-  return !professor.isWeekend && professor.available === 'available'
+  // Professor is only available if it's not weekend AND 
+  // they don't have current schedule AND their status is 'available'
+  return !professor.isWeekend && !professor.hasCurrentSchedule && professor.available === 'available'
 }
 
-onMounted(async () => {
+// ==============================
+// 🔹 Polling Functions (NEW)
+// ==============================
+const fetchProfessorsData = async () => {
   try {
     const res = await api.get("/professors");
 
@@ -785,12 +708,53 @@ onMounted(async () => {
       professors.value = res.data.professors;
       isWeekend.value = res.data.isWeekend || false;
       
-      console.log('Loaded professors:', professors.value.length)
+      console.log('🔄 Polled professors:', professors.value.length)
       console.log('Is weekend:', isWeekend.value)
     }
   } catch (err) {
-    console.error("Error loading professors:", err);
+    console.error("Error polling professors:", err);
   }
-});
+}
 
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+  }
+  
+  // Start new polling interval (2000ms = 2 seconds)
+  pollInterval.value = setInterval(fetchProfessorsData, 2000)
+  console.log('🔄 Started polling professors every 2 seconds')
+}
+
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+    console.log('🛑 Stopped polling professors')
+  }
+}
+
+// Initial data load with loading state
+const initializeData = async () => {
+  try {
+    isLoading.value = true
+    await fetchProfessorsData()
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Lifecycle hooks
+onMounted(async () => {
+  // Initialize data and start polling
+  await initializeData()
+  // Start polling after initial load is complete
+  startPolling()
+})
+
+onUnmounted(() => {
+  // Clean up interval when component is destroyed
+  stopPolling()
+})
 </script>

@@ -40,9 +40,10 @@ export const createInquiry = async (req, res) => {
         message: message,
         studentId: studentId,
         professorId: professorId,
-        studentName: `${student.firstName} ${student.lastName}`
+        studentName: `${student.firstName} ${student.lastName}`,
+        professorPhoneNumber: professor.contactNumber // Add professor's phone number for SMS
       });
-      console.log(`📢 Inquiry notification and email sent to Prof. ${professor.lastName}`);
+      console.log(`📢 Inquiry notification sent to Prof. ${professor.lastName}`);
     } catch (notifError) {
       console.error('❌ Error creating inquiry notification/email:', notifError);
       // Don't fail the main request if notification/email fails
@@ -203,8 +204,4 @@ export const getInquiriesByStudent = async (req, res) => {
 //     });
 //   }
 // };
-
-
-
-
 

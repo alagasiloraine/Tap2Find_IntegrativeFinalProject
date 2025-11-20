@@ -9,13 +9,29 @@
           <span>Back</span>
         </button>
       </div>
-      <div class="bg-white shadow rounded-xl p-6">
+      <!-- Skeleton Loading -->
+      <div v-if="isLoading" class="space-y-6 animate-pulse">
+        <div class="bg-white shadow rounded-xl p-6">
+          <div class="rounded-xl bg-gray-200 h-40 md:h-56"></div>
+          <div class="mt-4 flex flex-col items-center text-center">
+            <div class="-mt-12 w-32 h-32 rounded-full ring-4 ring-white bg-gray-200"></div>
+            <div class="mt-4 h-5 w-40 bg-gray-200 rounded mb-2"></div>
+            <div class="h-4 w-56 bg-gray-100 rounded mb-1"></div>
+            <div class="h-3 w-32 bg-gray-100 rounded"></div>
+          </div>
+        </div>
+        <div class="bg-white shadow rounded-xl p-6">
+          <div class="h-5 w-48 bg-gray-200 rounded mb-4"></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div v-for="n in 4" :key="n" class="h-10 bg-gray-100 rounded"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div v-else class="bg-white shadow rounded-xl p-6">
         <div class="relative rounded-xl overflow-hidden h-40 md:h-56">
-<<<<<<< HEAD
           <img v-if="form.coverUrl" :key="form.coverUrl" :src="form.coverUrl" alt="Cover" class="w-full h-full object-cover" />
-=======
-          <img v-if="form.coverUrl" :src="form.coverUrl" alt="Cover" class="w-full h-full object-cover" />
->>>>>>> origin/kim
           <div v-else class="w-full h-full bg-gradient-to-b from-indigo-400 to-indigo-900"></div>
           <button
             v-if="isEditing"
@@ -29,12 +45,8 @@
         </div>
         <div class="mt-4 flex flex-col items-center text-center">
           <div class="-mt-12 w-32 h-32 rounded-full ring-4 ring-white overflow-hidden bg-white relative z-20 mx-auto">
-<<<<<<< HEAD
             <img v-if="form.avatarUrl" :key="form.avatarUrl" :src="form.avatarUrl" alt="Profile" class="h-full w-full object-cover" />
             <img v-else src="/profile.svg" alt="Profile placeholder" class="h-full w-full object-cover" />
-=======
-            <img :src="form.avatarUrl" alt="Profile" class="h-full w-full object-cover" />
->>>>>>> origin/kim
             <button 
               v-if="isEditing"
               @click="triggerAvatarSelect"
@@ -45,31 +57,48 @@
             </button>
             <input ref="avatarInput" type="file" accept="image/*" class="hidden" @change="onAvatarSelected" />
           </div>
-<<<<<<< HEAD
           <p v-if="isEditing" class="mt-2 text-xs text-gray-500">Profile and Cover photo: Max 10 MB • JPG, PNG, or WebP</p>
-=======
->>>>>>> origin/kim
           <div class="mt-2 flex items-center justify-center gap-2">
             <h2 class="text-2xl font-bold text-gray-900">{{ fullName }}</h2>
             <iconify-icon icon="lucide:badge-check" class="text-green-500" />
           </div>
           <div class="text-base text-gray-900 font-semibold ">{{ form.program }} | {{ form.yearLevel }} | {{ form.section }}</div>
-<<<<<<< HEAD
           <div class="text-base text-gray-600 font-medium">{{ displayId }}</div>
-=======
-          <div class="text-base text-gray-600 font-medium">MCC{{ form.idNumber }}</div>
->>>>>>> origin/kim
           <div class="mt-4 flex items-center justify-center gap-3">
-            <button v-if="!isEditing" class="px-4 py-2 rounded-full bg-[#F5C400] text-white shadow-sm text-sm font-medium hover:opacity-90" @click="startEdit">Edit Profile</button>
+            <button
+              v-if="!isEditing"
+              class="px-4 py-2 rounded-full bg-[#F5C400] text-white shadow-sm text-sm font-medium hover:opacity-90"
+              @click="startEdit"
+            >
+              Edit Profile
+            </button>
             <template v-else>
-              <button class="px-4 py-2 rounded-full border border-gray-300 shadow-sm text-sm font-medium hover:bg-gray-50" @click="onReset">Reset</button>
-              <button class="px-4 py-2 rounded-full bg-[#102A71] text-white shadow-sm text-sm font-medium hover:opacity-90" @click="onSave">Save Changes</button>
+              <button
+                class="px-4 py-2 rounded-full border border-gray-300 shadow-sm text-sm font-medium hover:bg-gray-50 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                @click="onReset"
+                :disabled="isSaving || isResetting"
+              >
+                <span v-if="isResetting" class="inline-flex items-center">
+                  <span class="w-4 h-4 border-2 border-gray-400/40 border-t-gray-500 rounded-full animate-spin"></span>
+                </span>
+                <span>{{ isResetting ? 'Resetting...' : 'Reset' }}</span>
+              </button>
+              <button
+                class="px-4 py-2 rounded-full bg-[#102A71] text-white shadow-sm text-sm font-medium hover:opacity-90 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                @click="onSave"
+                :disabled="isSaving || isResetting"
+              >
+                <span v-if="isSaving" class="inline-flex items-center">
+                  <span class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+                </span>
+                <span>{{ isSaving ? 'Saving...' : 'Save Changes' }}</span>
+              </button>
             </template>
           </div>
         </div>
       </div>
 
-      <div class="mt-6">
+      <div v-if="!isLoading" class="mt-6">
         <div class="space-y-6">
           <div class="bg-white shadow rounded-xl p-6">
             <div class="flex items-center justify-between mb-2">
@@ -108,7 +137,34 @@
                 <label class="block text-sm text-gray-600 mb-1">ID Number</label>
                 <div class="flex">
                   <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-700 text-sm">MCC</span>
-                  <input v-model="form.idNumber" @input="onIdInput" type="text" inputmode="numeric" pattern="\\d{4}-\\d{4}" maxlength="9" placeholder="2022-0206" class="w-full px-3 py-2 rounded-r-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" />
+                  <input v-model="form.idNumber" @input="onIdInput" type="text" placeholder="22-0121" class="w-full px-3 py-2 rounded-r-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600 mb-1">Program</label>
+                <div class="relative dropdown-container">
+                  <button
+                    type="button"
+                    @click="isEditing && (openProgram = !openProgram)"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-left flex items-center justify-between disabled:opacity-60 disabled:cursor-not-allowed"
+                    :disabled="!isEditing"
+                  >
+                    <span>{{ form.program }}</span>
+                    <iconify-icon icon="mdi:chevron-down" class="text-lg transition-transform duration-200" :class="{ 'rotate-180': openProgram }" />
+                  </button>
+                  <Transition name="dropdown">
+                    <div v-if="openProgram" class="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 overflow-hidden">
+                      <button
+                        v-for="p in programs"
+                        :key="p"
+                        @click="form.program = p; openProgram = false"
+                        class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50"
+                        :class="{ 'bg-blue-50 text-[#102A71]': form.program === p }"
+                      >
+                        {{ p }}
+                      </button>
+                    </div>
+                  </Transition>
                 </div>
               </div>
               <div>
@@ -176,8 +232,8 @@
               <div>
                 <label class="block text-sm text-gray-600 mb-1">Contact Number</label>
                 <div class="flex items-center gap-2">
-                  <input v-model="form.contactNumber" @input="onContactInput" type="text" inputmode="numeric" pattern="\\d*" maxlength="11" class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" placeholder="09xxxxxxxxx" />
-
+                  <input v-model="form.contactNumber" type="text" class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" placeholder="+63 9xx xxx xxxx" />
+                  <span class="text-xs" :class="form.contactVerified ? 'text-green-600' : 'text-gray-500'">Status: {{ form.contactVerified ? 'Verified' : 'Unverified' }}</span>
                 </div>
               </div>
               <div>
@@ -190,64 +246,23 @@
             </div>
           </div>
 
-          <div class="bg-white shadow rounded-xl p-6">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-lg font-semibold text-gray-900">RFID & Access</h3>
-            </div>
-            <div class="flex flex-col gap-3">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-600">RFID / Card UID</span>
-                <span class="text-sm font-medium">{{ form.rfidUid }}</span>
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm text-gray-600 mb-1">Email</label>
-              <div class="flex items-center gap-2">
-                <input v-model="form.email" type="email" class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" placeholder="name@school.edu">
-                <span class="text-xs" :class="form.emailVerified ? 'text-green-600' : 'text-gray-500'">Status: {{ form.emailVerified ? 'Verified' : 'Unverified' }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white shadow rounded-xl p-6">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-lg font-semibold text-gray-900">Notification Preferences</h3>
-            </div>
-            <div class="space-y-3 text-sm">
-              <label class="flex items-center gap-2"><input type="checkbox" v-model="form.notify.professorReplies" class="h-4 w-4" :disabled="!isEditing" /> Professor Replies</label>
-              <label class="flex items-center gap-2"><input type="checkbox" v-model="form.notify.inquiryUpdates" class="h-4 w-4" :disabled="!isEditing" /> Inquiry Updates</label>
-              <label class="flex items-center gap-2"><input type="checkbox" v-model="form.notify.systemAlerts" class="h-4 w-4" :disabled="!isEditing" /> System Alerts</label>
-            </div>
-          </div>
-
-          
         </div>
-<<<<<<< HEAD
-=======
-        <div class="mt-4 text-sm text-gray-500">   </div>
->>>>>>> origin/kim
       </div>
     </div>
   </div>
+  
 </template>
 
 <script setup>
-<<<<<<< HEAD
 import { ref, computed, onMounted } from 'vue'
-=======
-import { ref, computed, onMounted, onUnmounted } from 'vue'
->>>>>>> origin/kim
 import { useRouter } from 'vue-router'
 import StudentTopNav from '@/components/StudentTopNav.vue'
 
 const router = useRouter()
-<<<<<<< HEAD
 const programs = ['BSIT', 'BSCS', 'BSCpE']
-=======
-const programs = ['BSIT', 'BSCS', 'BSECE']
->>>>>>> origin/kim
 const years = ['1st Year', '2nd Year', '3rd Year', '4th Year']
-const sections = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6']
+const sections = ['F1', 'F2', 'F3', 'F4','F5', 'F6', 'F7']
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
 
 const initialForm = {
   firstName: '',
@@ -259,17 +274,12 @@ const initialForm = {
   program: '',
   yearLevel: '',
   section: '',
-  contactNumber: '',
+  contactNumber: '+63 9xx xxx xxxx',
   contactVerified: true,
   email: '',
   emailVerified: true,
-<<<<<<< HEAD
   rfidUid: '04:A1:C3:..',
   avatarUrl: '',
-=======
-  rfidUid: '',
-  avatarUrl: '/profile.svg',
->>>>>>> origin/kim
   coverUrl: '',
   notify: {
     professorReplies: true,
@@ -280,19 +290,19 @@ const initialForm = {
   currentPassword: '',
   newPassword: '',
   confirmPassword: '',
-<<<<<<< HEAD
   lastLogin: '26 Oct 2025, 08:07 PM (Chrome • Desktop)',
   lastLoginAgent: ''
-=======
-  lastLogin: ''
->>>>>>> origin/kim
 }
 
 const form = ref(JSON.parse(JSON.stringify(initialForm)))
 const snapshot = ref(JSON.parse(JSON.stringify(initialForm)))
 const isEditing = ref(false)
-<<<<<<< HEAD
 const isSaving = ref(false)
+const isResetting = ref(false)
+const isLoading = ref(true)
+const openProgram = ref(false)
+const openYear = ref(false)
+const openSection = ref(false)
 
 // Toast helper (top-center, smooth slide/fade, spinner + progress bar)
 const showToast = (message, type = 'success', duration = 2500) => {
@@ -426,94 +436,6 @@ const displayId = computed(() => {
   }
   return `MCC-${upper}`
 })
-=======
-
-const fullName = computed(() => `${form.value.firstName} ${form.value.lastName}`.trim())
-const loading = ref(false)
-
-function formatDateTime(iso) {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  if (isNaN(d.getTime())) return '—'
-  const month = d.toLocaleString('en-US', { month: 'long' })
-  const day = d.getDate()
-  const year = d.getFullYear()
-  let hours = d.getHours()
-  const minutes = String(d.getMinutes()).padStart(2, '0')
-  const ampm = hours >= 12 ? 'pm' : 'am'
-  hours = hours % 12
-  if (hours === 0) hours = 12
-  return `${month} ${day}, ${year} ${hours}:${minutes}${ampm}`
-}
-
-const formattedLastLogin = computed(() => formatDateTime(form.value.lastLogin))
-
-// Dropdown open states for School Details custom selects
-const openProgram = ref(false)
-const openYear = ref(false)
-const openSection = ref(false)
-const collapsed = ref({
-  personal: true,
-  school: true,
-  contact: true,
-  rfid: true,
-  notify: true,
-  account: true
-})
-
-// Close dropdowns when clicking outside of any dropdown-container
-function onClickOutside(e) {
-  const containers = document.querySelectorAll('.dropdown-container')
-  let inside = false
-  containers.forEach(c => { if (c.contains(e.target)) inside = true })
-  if (!inside) {
-    openProgram.value = false
-    openYear.value = false
-    openSection.value = false
-  }
-}
-onMounted(async () => {
-  document.addEventListener('click', onClickOutside)
-  const token = localStorage.getItem('t2f_token')
-  if (!token) {
-    router.push('/login')
-    return
-  }
-  try {
-    loading.value = true
-    const sid = localStorage.getItem('t2f_session_id')
-    const res = await fetch('http://localhost:3000/api/auth/me', {
-      headers: { 'Authorization': `Bearer ${token}`, 'x-session-id': sid || '' }
-    })
-    const data = await res.json()
-    if (!res.ok || data.success === false) {
-      throw new Error(data.message || 'Failed to load profile')
-    }
-    const u = data.user || {}
-    form.value.firstName = u.firstName || ''
-    form.value.lastName = u.lastName || ''
-    form.value.middleName = u.middleName || ''
-    form.value.birthdate = (u.birthdate || '').slice(0,10)
-    form.value.address = u.address || ''
-    form.value.idNumber = u.idNumber || ''
-    form.value.contactNumber = u.contactNumber || ''
-    form.value.program = u.program || ''
-    form.value.yearLevel = u.yearLevel || ''
-    form.value.section = u.section || ''
-    form.value.email = u.emailAddress || ''
-    form.value.avatarUrl = u.avatarUrl || '/profile.svg'
-    form.value.coverUrl = u.coverUrl || ''
-    form.value.lastLogin = u.lastLogin || ''
-    snapshot.value = JSON.parse(JSON.stringify(form.value))
-  } catch (err) {
-    alert(err.message)
-    if (String(err.message).toLowerCase().includes('token')) router.push('/login')
-  } finally {
-    loading.value = false
-  }
-})
-onUnmounted(() => document.removeEventListener('click', onClickOutside))
->>>>>>> origin/kim
 
 const startEdit = () => {
   snapshot.value = JSON.parse(JSON.stringify(form.value))
@@ -521,24 +443,47 @@ const startEdit = () => {
 }
 
 const onReset = () => {
+  if (isResetting.value || isSaving.value) return
+  isResetting.value = true
   form.value = JSON.parse(JSON.stringify(snapshot.value))
-<<<<<<< HEAD
   if (avatarInput.value) avatarInput.value.value = ''
   if (coverInput.value) coverInput.value.value = ''
   isEditing.value = false
   showToast('Changes discarded', 'success')
-=======
->>>>>>> origin/kim
+  // small delay so the spinner is perceivable
+  setTimeout(() => {
+    isResetting.value = false
+  }, 300)
 }
 
+import api from '@/utils/api'
+
 const onSave = async () => {
-  const token = localStorage.getItem('t2f_token')
-  if (!token) {
-    router.push('/login')
-    return
-  }
+  if (isSaving.value) return
+  isSaving.value = true
   try {
-    loading.value = true
+    const token = localStorage.getItem('token')
+    // Basic validation for Account & Security section
+    const hasAnyPassword = Boolean(
+      (form.value.currentPassword || '').trim() ||
+      (form.value.newPassword || '').trim() ||
+      (form.value.confirmPassword || '').trim()
+    )
+
+    if (hasAnyPassword) {
+      if (!form.value.currentPassword || !form.value.newPassword || !form.value.confirmPassword) {
+        showToast('Please fill Current, New, and Confirm Password to change password', 'error')
+        return
+      }
+      if (form.value.newPassword !== form.value.confirmPassword) {
+        showToast('New password and Confirm password do not match', 'error')
+        return
+      }
+      if (String(form.value.newPassword).length < 8) {
+        showToast('New password must be at least 8 characters', 'error')
+        return
+      }
+    }
     const payload = {
       firstName: form.value.firstName,
       lastName: form.value.lastName,
@@ -553,43 +498,36 @@ const onSave = async () => {
       emailAddress: form.value.email,
       avatarUrl: form.value.avatarUrl,
       coverUrl: form.value.coverUrl,
+      // Account & Security
+      username: form.value.username || undefined,
+      currentPassword: hasAnyPassword ? form.value.currentPassword : undefined,
+      newPassword: hasAnyPassword ? form.value.newPassword : undefined,
     }
-    const sid = localStorage.getItem('t2f_session_id')
-    const res = await fetch('http://localhost:3000/api/auth/profile', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'x-session-id': sid || ''
-      },
-      body: JSON.stringify(payload)
+    const res = await api.put('/auth/profile', payload, {
+      headers: { Authorization: `Bearer ${token}` },
     })
-    const data = await res.json()
-    if (!res.ok || data.success === false) {
-      throw new Error(data.message || 'Failed to update profile')
+    if (res.data?.success && res.data.user) {
+      const prev = (() => { try { return JSON.parse(localStorage.getItem('user')||'{}') } catch { return {} } })()
+      const merged = { ...prev, ...res.data.user }
+      // never lose existing avatar/cover if backend returns empty/undefined
+      if (!res.data.user.avatarUrl && prev.avatarUrl) merged.avatarUrl = prev.avatarUrl
+      if (!res.data.user.coverUrl && prev.coverUrl) merged.coverUrl = prev.coverUrl
+      if (res.data.user.username || form.value.username) {
+        merged.username = res.data.user.username || form.value.username
+      }
+      localStorage.setItem('user', JSON.stringify(merged))
+      // Clear sensitive password inputs after success
+      form.value.currentPassword = ''
+      form.value.newPassword = ''
+      form.value.confirmPassword = ''
+      snapshot.value = JSON.parse(JSON.stringify(form.value))
+      isEditing.value = false
+      showToast('Profile updated successfully', 'success')
     }
-    const u = data.user || {}
-    form.value.firstName = u.firstName || ''
-    form.value.lastName = u.lastName || ''
-    form.value.middleName = u.middleName || ''
-    form.value.birthdate = u.birthdate || ''
-    form.value.address = u.address || ''
-    form.value.idNumber = u.idNumber || ''
-    form.value.contactNumber = u.contactNumber || ''
-    form.value.program = u.program || ''
-    form.value.yearLevel = u.yearLevel || ''
-    form.value.section = u.section || ''
-    form.value.email = u.emailAddress || ''
-    form.value.avatarUrl = u.avatarUrl || '/profile.svg'
-    form.value.coverUrl = u.coverUrl || ''
-    form.value.lastLogin = u.lastLogin || ''
-    snapshot.value = JSON.parse(JSON.stringify(form.value))
-    isEditing.value = false
-    alert('Profile updated')
-  } catch (err) {
-    alert(err.message)
+  } catch (e) {
+    showToast(e?.response?.data?.message || 'Failed to update profile', 'error')
   } finally {
-    loading.value = false
+    isSaving.value = false
   }
 }
 
@@ -607,14 +545,11 @@ const triggerAvatarSelect = () => {
 const onAvatarSelected = (e) => {
   const file = e.target.files && e.target.files[0]
   if (!file) return
-<<<<<<< HEAD
   if (file.size > MAX_IMAGE_BYTES) {
     showToast('Profile photo exceeds 2 MB limit', 'error')
     e.target.value = ''
     return
   }
-=======
->>>>>>> origin/kim
   const reader = new FileReader()
   reader.onload = () => {
     form.value.avatarUrl = reader.result
@@ -629,14 +564,11 @@ const triggerCoverSelect = () => {
 const onCoverSelected = (e) => {
   const file = e.target.files && e.target.files[0]
   if (!file) return
-<<<<<<< HEAD
   if (file.size > MAX_IMAGE_BYTES) {
     showToast('Cover photo exceeds 2 MB limit', 'error')
     e.target.value = ''
     return
   }
-=======
->>>>>>> origin/kim
   const reader = new FileReader()
   reader.onload = () => {
     form.value.coverUrl = reader.result
@@ -644,32 +576,17 @@ const onCoverSelected = (e) => {
   reader.readAsDataURL(file)
 }
 
-<<<<<<< HEAD
-=======
-const onIdInput = (e) => {
-  // Keep digits only, format as YYYY-NNNN
-  const digits = (e.target.value || '').replace(/\D/g, '').slice(0, 8)
-  const year = digits.slice(0, 4)
-  const seq = digits.slice(4, 8)
-  form.value.idNumber = year + (seq ? '-' + seq : '')
-}
-
-const onContactInput = (e) => {
-  // Digits only, limit to 11 digits (PH mobile format like 09xxxxxxxxx)
-  const digitsOnly = (e.target.value || '').replace(/\D/g, '').slice(0, 11)
-  form.value.contactNumber = digitsOnly
-}
-
->>>>>>> origin/kim
 const goBack = () => {
   if (window.history.length > 1) router.back()
   else router.push('/')
 }
-<<<<<<< HEAD
 
 onMounted(() => {
   const storedUser = localStorage.getItem('user')
-  if (!storedUser) return
+  if (!storedUser) {
+    isLoading.value = false
+    return
+  }
   try {
     const u = JSON.parse(storedUser)
     if (u.firstName) form.value.firstName = u.firstName
@@ -735,50 +652,11 @@ onMounted(() => {
         }
       })
       .catch(() => {})
+      .finally(() => {
+        isLoading.value = false
+      })
+  } else {
+    isLoading.value = false
   }
 })
 </script>
-
-=======
-</script>
-
-<style scoped>
-/* Dropdown Fade + Slide Down Transition (same as StudentDashboard.vue) */
-.dropdown-enter-active,
-.dropdown-leave-active {
-  transition: all 0.3s ease;
-}
-.dropdown-enter-from {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-.dropdown-enter-to {
-  opacity: 1;
-  transform: translateY(0);
-}
-.dropdown-leave-from {
-  opacity: 1;
-  transform: translateY(0);
-}
-.dropdown-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-/* Section content fade in/out */
-.section-enter-active,
-.section-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-.section-enter-from,
-.section-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
-}
-.section-enter-to,
-.section-leave-from {
-  opacity: 1;
-  transform: translateY(0);
-}
-</style>
-
->>>>>>> origin/kim

@@ -6,21 +6,26 @@
         <h1 class="text-4xl font-semibold text-gray-900">Notification</h1>
         <p class="text-base text-gray-500">
           You have 
-          <span class="text-[#F5C400]">{{ unreadCount }} notification{{ unreadCount !== 1 ? 's' : '' }}</span> 
+          <span class="text-[#F5C400]">{{ totalTodayCount }} notification{{ totalTodayCount !== 1 ? 's' : '' }}</span> 
           today.
         </p>
       </div>
-      <div class="relative" ref="menuRef">
-        <button class="p-2 rounded-full hover:bg-gray-100" aria-label="Filter" @click="toggleMenu">
-          <iconify-icon icon="mage:filter" class="text-2xl" />
-        </button>
-        <transition name="fade">
-          <div v-if="menuOpen" class="absolute right-0 mt-2 w-44 rounded-xl border border-gray-200 bg-white shadow-md overflow-hidden z-10">
-            <button @click="selectFilter(null)" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">All</button>
-            <button @click="selectFilter('today')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Today</button>
-            <button @click="selectFilter('week')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">This Week</button>
-          </div>
-        </transition>
+      <div class="flex items-center gap-2">
+        <button class="px-3 py-2 text-sm rounded-lg border hover:bg-gray-50" @click="toggleSelectMode">{{ selectMode ? 'Cancel' : 'Select' }}</button>
+        <button v-if="selectMode" class="px-3 py-2 text-sm rounded-lg border text-red-600 hover:bg-red-50 disabled:opacity-50" :disabled="selectedIds.length===0 || deletingSelected" @click="deleteSelected">Delete Selected</button>
+        <button v-if="selectMode" class="px-3 py-2 text-sm rounded-lg border text-red-600 hover:bg-red-50 disabled:opacity-50" :disabled="deletingAll" @click="deleteAll">Delete All</button>
+        <div class="relative" ref="menuRef">
+          <button class="p-2 rounded-full hover:bg-gray-100" aria-label="Filter" @click="toggleMenu">
+            <iconify-icon icon="mage:filter" class="text-2xl" />
+          </button>
+          <transition name="fade">
+            <div v-if="menuOpen" class="absolute right-0 mt-2 w-44 rounded-xl border border-gray-200 bg-white shadow-md overflow-hidden z-10">
+              <button @click="selectFilter(null)" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">All</button>
+              <button @click="selectFilter('today')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Today</button>
+              <button @click="selectFilter('week')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">This Week</button>
+            </div>
+          </transition>
+        </div>
       </div>
     </div>
 
@@ -28,6 +33,23 @@
 
     <!-- Notifications List -->
     <div class="mt-6 space-y-6">
+      <!-- Skeleton Loading -->
+      <div v-if="loading" class="space-y-6 animate-pulse">
+        <section>
+          <div class="h-4 w-24 bg-gray-200 rounded mb-3"></div>
+          <div v-for="n in 3" :key="n" class="flex items-start gap-3 py-3">
+            <div class="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-3 w-40 bg-gray-200 rounded"></div>
+              <div class="h-3 w-56 bg-gray-100 rounded"></div>
+              <div class="h-2 w-24 bg-gray-100 rounded"></div>
+            </div>
+            <div class="w-5 h-5 bg-gray-200 rounded-full flex-shrink-0"></div>
+          </div>
+        </section>
+      </div>
+
+      <div v-else class="space-y-6">
       <!-- Today Section -->
       <section v-if="todayNotifications.length > 0">
         <h2 class="text-lg font-semibold">Today</h2>
@@ -37,6 +59,7 @@
             :key="notification._id"
             class="flex items-start gap-3 py-3"
           >
+            <input v-if="selectMode" type="checkbox" class="mt-2" :value="notification._id" v-model="selectedIds" />
             <!-- System notifications icon -->
             <div v-if="notification.isGeneral" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
               <iconify-icon icon="flowbite:laptop-code-solid" class="text-lg text-gray-700" />
@@ -78,6 +101,7 @@
             :key="notification._id"
             class="flex items-start gap-3 py-3"
           >
+            <input v-if="selectMode" type="checkbox" class="mt-2" :value="notification._id" v-model="selectedIds" />
             <div v-if="notification.isGeneral" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
               <iconify-icon icon="flowbite:laptop-code-solid" class="text-lg text-gray-700" />
             </div>
@@ -117,6 +141,7 @@
             :key="notification._id"
             class="flex items-start gap-3 py-3"
           >
+            <input v-if="selectMode" type="checkbox" class="mt-2" :value="notification._id" v-model="selectedIds" />
             <div v-if="notification.isGeneral" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
               <iconify-icon icon="flowbite:laptop-code-solid" class="text-lg text-gray-700" />
             </div>
@@ -153,7 +178,42 @@
         <h3 class="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
         <p class="text-gray-600">You currently have no notifications.</p>
       </div>
+      </div>
     </div>
+
+    <!-- Delete Selected Confirmation Modal -->
+    <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="showDeleteSelectedModal" class="fixed inset-0 z-[9999]">
+        <div class="absolute inset-0 bg-black/40" @click="cancelDeleteSelected"></div>
+        <div class="relative w-full h-full flex items-center justify-center p-4">
+          <div class="bg-white rounded-xl w-full max-w-sm p-6 shadow-xl text-center">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete selected notifications?</h3>
+            <p class="text-sm text-gray-600 mb-5">Are you sure you want to delete {{ selectedIds.length }} selected notification{{ selectedIds.length !== 1 ? 's' : '' }}?</p>
+            <div class="flex gap-3 justify-center">
+              <button @click="cancelDeleteSelected" class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Cancel</button>
+              <button @click="confirmDeleteSelected" :disabled="deletingSelected" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60">{{ deletingSelected ? 'Deleting…' : 'Delete Selected' }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Delete All Confirmation Modal -->
+    <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="showDeleteAllModal" class="fixed inset-0 z-[9999]">
+        <div class="absolute inset-0 bg-black/40" @click="cancelDeleteAll"></div>
+        <div class="relative w-full h-full flex items-center justify-center p-4">
+          <div class="bg-white rounded-xl w-full max-w-sm p-6 shadow-xl text-center">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete all notifications?</h3>
+            <p class="text-sm text-gray-600 mb-5">Are you sure you want to delete all the notifications? This action cannot be undone.</p>
+            <div class="flex gap-3 justify-center">
+              <button @click="cancelDeleteAll" class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Cancel</button>
+              <button @click="confirmDeleteAll" :disabled="deletingAll" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60">{{ deletingAll ? 'Deleting…' : 'Delete All' }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -168,6 +228,125 @@ const loading = ref(true)
 const menuOpen = ref(false)
 const menuRef = ref(null)
 const { notifications, markAsRead } = useNotifications()
+const selectMode = ref(false)
+const selectedIds = ref([])
+const deletingSelected = ref(false)
+const deletingAll = ref(false)
+const showDeleteAllModal = ref(false)
+const showDeleteSelectedModal = ref(false)
+const pollInterval = ref(null) // Added for polling
+
+// Toast helper (bottom-right, white card, icon + title, progress line)
+const showToast = (message, type = 'success', duration = 2800) => {
+  let container = document.getElementById('t2f-toast-container')
+  if (!container) {
+    container = document.createElement('div')
+    container.id = 't2f-toast-container'
+    container.style.position = 'fixed'
+    container.style.bottom = '16px'
+    container.style.right = '16px'
+    container.style.zIndex = '9999'
+    container.style.display = 'flex'
+    container.style.flexDirection = 'column-reverse'
+    container.style.gap = '10px'
+    document.body.appendChild(container)
+  }
+
+  const colors = type === 'success'
+    ? { border: '#34D399', text: '#065F46', iconBg: '#ECFDF5', iconFg: '#10B981', bar: '#6EE7B7' }
+    : { border: '#F87171', text: '#7F1D1D', iconBg: '#FEF2F2', iconFg: '#EF4444', bar: '#FCA5A5' }
+
+  const toast = document.createElement('div')
+  toast.style.minWidth = '280px'
+  toast.style.maxWidth = '460px'
+  toast.style.background = '#FFFFFF'
+  toast.style.border = `1.5px solid ${colors.border}`
+  toast.style.borderRadius = '14px'
+  toast.style.boxShadow = '0 12px 20px -6px rgba(0,0,0,0.12), 0 6px 10px -4px rgba(0,0,0,0.06)'
+  toast.style.overflow = 'hidden'
+  toast.style.opacity = '0'
+  toast.style.transform = 'translateY(12px)'
+  toast.style.transition = 'opacity 220ms ease, transform 220ms ease'
+
+  const row = document.createElement('div')
+  row.style.display = 'flex'
+  row.style.alignItems = 'center'
+  row.style.gap = '12px'
+  row.style.padding = '12px 16px'
+
+  const iconWrap = document.createElement('div')
+  iconWrap.style.width = '26px'
+  iconWrap.style.height = '26px'
+  iconWrap.style.borderRadius = '50%'
+  iconWrap.style.background = colors.iconBg
+  iconWrap.style.display = 'flex'
+  iconWrap.style.alignItems = 'center'
+  iconWrap.style.justifyContent = 'center'
+  iconWrap.style.flex = '0 0 auto'
+
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  icon.setAttribute('viewBox', '0 0 24 24')
+  icon.setAttribute('width', '16')
+  icon.setAttribute('height', '16')
+  icon.innerHTML = type === 'success'
+    ? `<path d="M9 12.75 11.25 15 15 9.75" fill="none" stroke="${colors.iconFg}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+    : `<path d="M12 8v4m0 4h.01" fill="none" stroke="${colors.iconFg}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" fill="none" stroke="${colors.iconFg}" stroke-width="1.5" opacity="0.25"/>`
+  iconWrap.appendChild(icon)
+
+  const textBlock = document.createElement('div')
+  textBlock.style.display = 'flex'
+  textBlock.style.flexDirection = 'column'
+  textBlock.style.gap = '2px'
+
+  const title = document.createElement('div')
+  title.textContent = type === 'success' ? 'SUCCESS' : 'ERROR'
+  title.style.fontSize = '12px'
+  title.style.fontWeight = '800'
+  title.style.letterSpacing = '0.04em'
+  title.style.color = colors.text
+
+  const body = document.createElement('div')
+  body.textContent = message
+  body.style.fontSize = '14px'
+  body.style.fontWeight = '600'
+  body.style.color = '#111827'
+
+  textBlock.appendChild(title)
+  textBlock.appendChild(body)
+
+  row.appendChild(iconWrap)
+  row.appendChild(textBlock)
+
+  const barWrap = document.createElement('div')
+  barWrap.style.height = '2px'
+  barWrap.style.background = 'transparent'
+  barWrap.style.width = '100%'
+  const bar = document.createElement('div')
+  bar.style.height = '100%'
+  bar.style.width = '100%'
+  bar.style.background = colors.bar
+  bar.style.transition = `width ${duration}ms linear`
+  barWrap.appendChild(bar)
+
+  toast.appendChild(row)
+  toast.appendChild(barWrap)
+  container.appendChild(toast)
+
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1'
+    toast.style.transform = 'translateY(0)'
+    requestAnimationFrame(() => (bar.style.width = '0%'))
+  })
+
+  setTimeout(() => {
+    toast.style.opacity = '0'
+    toast.style.transform = 'translateY(8px)'
+    setTimeout(() => {
+      toast.remove()
+      if (!container.childElementCount) container.remove()
+    }, 240)
+  }, duration)
+}
 
 // 🧠 Utility: check if date is today
 const isToday = (date) => {
@@ -230,6 +409,11 @@ const unreadCount = computed(() => {
   return todayNotifications.value.filter(n => !n.read).length
 })
 
+// Count ALL notifications for today (read + unread)
+const totalTodayCount = computed(() => {
+  return todayNotifications.value.length
+})
+
 // Filter menu functions
 function toggleMenu() {
   menuOpen.value = !menuOpen.value
@@ -244,6 +428,68 @@ function onClickOutside(e) {
   if (!menuRef.value) return
   if (!menuRef.value.contains(e.target)) {
     menuOpen.value = false
+  }
+}
+
+// Selection mode handlers
+function toggleSelectMode() {
+  selectMode.value = !selectMode.value
+  if (!selectMode.value) selectedIds.value = []
+}
+
+const deleteSelected = () => {
+  if (selectedIds.value.length === 0) return
+  showDeleteSelectedModal.value = true
+}
+
+const cancelDeleteSelected = () => {
+  showDeleteSelectedModal.value = false
+}
+
+const confirmDeleteSelected = async () => {
+  try {
+    if (selectedIds.value.length === 0) return
+    deletingSelected.value = true
+    const count = selectedIds.value.length
+    await api.post('/notification/delete', { ids: selectedIds.value })
+    notifications.value = notifications.value.filter(n => !selectedIds.value.includes(n._id))
+    selectedIds.value = []
+    showToast(`${count} notification${count !== 1 ? 's' : ''} deleted`, 'success')
+  } catch (error) {
+    console.error('❌ Error deleting selected notifications:', error)
+    showToast('Failed to delete selected notifications', 'error')
+  } finally {
+    deletingSelected.value = false
+    showDeleteSelectedModal.value = false
+  }
+}
+
+const deleteAll = () => {
+  showDeleteAllModal.value = true
+}
+
+const cancelDeleteAll = () => {
+  showDeleteAllModal.value = false
+}
+
+const confirmDeleteAll = async () => {
+  try {
+    deletingAll.value = true
+    const storedUser = localStorage.getItem('user')
+    if (!storedUser) return console.error('❌ No user found in localStorage')
+    const user = JSON.parse(storedUser)
+    const userId = user._id || user.id
+    const userRole = user.role
+    await api.post('/notification/delete-all', { userId, userRole })
+    notifications.value = []
+    selectedIds.value = []
+    showToast('All notifications deleted', 'success')
+  } catch (error) {
+    console.error('❌ Error deleting all notifications:', error)
+    showToast('Failed to delete all notifications', 'error')
+  } finally {
+    deletingAll.value = false
+    showDeleteAllModal.value = false
   }
 }
 
@@ -294,7 +540,7 @@ const fetchNotifications = async () => {
     const userRole = user.role // Get user role
 
     // Fetch notifications from backend with role parameter
-    const { data } = await api.get(`/notification/get-notification?userId=${userId}&userRole=${userRole}`)
+    const { data } = await api.get(`/notification/get-all-notifications?userId=${userId}&userRole=${userRole}&onlyUnread=false`)
 
     if (data.success) {
       // General notifications → seen by all
@@ -309,6 +555,36 @@ const fetchNotifications = async () => {
     }
   } catch (error) {
     console.error('❌ Error fetching notifications:', error)
+  }
+}
+
+// ==============================
+// 🔹 Polling Functions (NEW)
+// ==============================
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+  }
+  
+  // Start new polling interval (2000ms = 2 seconds)
+  pollInterval.value = setInterval(fetchNotifications, 2000)
+  console.log('🔄 Started polling notifications every 2 seconds')
+}
+
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+    console.log('🛑 Stopped polling notifications')
+  }
+}
+
+// Initial data load with loading state
+const initializeData = async () => {
+  try {
+    loading.value = true
+    await fetchNotifications()
   } finally {
     loading.value = false
   }
@@ -316,12 +592,19 @@ const fetchNotifications = async () => {
 
 // ✅ On mount: load notifications
 onMounted(() => {
-  fetchNotifications()
   document.addEventListener('click', onClickOutside)
+  
+  // Initialize data and start polling
+  initializeData().then(() => {
+    // Start polling after initial load is complete
+    startPolling()
+  })
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', onClickOutside)
+  // Clean up interval when component is destroyed
+  stopPolling()
 })
 </script>
 

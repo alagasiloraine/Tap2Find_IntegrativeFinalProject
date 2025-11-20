@@ -28,7 +28,9 @@ export const registerUser = async (req, res) => {
   try {
     const db = getDB("tap2find_db");
     const users = db.collection("users");
+
     const { role, emailAddress, password, firstName, middleName, lastName, idNumber, contactNumber, facultyPosition, program, yearLevel, section, avatarUrl, coverUrl } = req.body;
+
     const existingUser = await users.findOne({ emailAddress });
     if (existingUser)
       return res.status(400).json({ message: "Email already registered" });
@@ -148,7 +150,6 @@ export const loginUser = async (req, res) => {
   try {
     const db = getDB("tap2find_db");
     const users = db.collection("users");
-<<<<<<< HEAD
     const sessions = db.collection("user_sessions");
     
     const { email, password } = req.body;
@@ -171,14 +172,6 @@ export const loginUser = async (req, res) => {
         message: "Invalid email or password" 
       });
     }
-=======
-    const { email, emailAddress, password } = req.body;
-    const targetEmail = email || emailAddress;
-
-    const user = await users.findOne({ emailAddress: targetEmail });
-    if (!user)
-      return res.status(404).json({ success: false, message: "User not found" });
->>>>>>> origin/kim
 
     const isMatch = await bcrypt.compare(password, user.password);
 
@@ -203,7 +196,6 @@ export const loginUser = async (req, res) => {
       expiresIn: "1d",
     });
 
-<<<<<<< HEAD
     const when = new Date();
     const agent = req.headers['user-agent'] || 'Unknown';
     
@@ -299,56 +291,12 @@ export const loginUser = async (req, res) => {
     };
 
     console.log(existingSession ? '✅ Session updated' : '✅ New session created');
-=======
-    const when = new Date().toISOString()
-    const agent = req.headers['user-agent'] || 'Unknown'
-    const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString()
-    await users.updateOne({ _id: user._id }, { $set: { lastLogin: when, lastLoginAgent: agent } })
->>>>>>> origin/kim
 
-    // Record session
-    let sessionId = null
-    try {
-      const sessions = db.collection('sessions')
-      const ins = await sessions.insertOne({
-        userId: user._id,
-        userAgent: agent,
-        ip,
-        createdAt: when,
-        lastActive: when,
-      })
-      sessionId = String(ins.insertedId)
-    } catch (e) {
-      console.warn('Session record failed:', e?.message)
-    }
     res.status(200).json({
       success: true,
       message: "Login successful",
       token,
-<<<<<<< HEAD
       user: userResponse
-=======
-      sessionId,
-      user: {
-        id: user._id,
-        role: user.role,
-        emailAddress: user.emailAddress,
-        firstName: user.firstName,
-        middleName: user.middleName,
-        lastName: user.lastName,
-        birthdate: user.birthdate,
-        address: user.address,
-        idNumber: user.idNumber,
-        contactNumber: user.contactNumber,
-        program: user.program,
-        yearLevel: user.yearLevel,
-        section: user.section,
-        avatarUrl: user.avatarUrl,
-        coverUrl: user.coverUrl,
-        lastLogin: when,
-        lastLoginAgent: agent,
-      },
->>>>>>> origin/kim
     });
 
   } catch (error) {
@@ -549,4 +497,3 @@ export const resetPassword = async (req, res) => {
 };
 
 // (moved) updateProfile handler is now in studentprofileController.js
- 

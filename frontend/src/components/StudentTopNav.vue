@@ -19,10 +19,10 @@
             class="h-5 w-5"
           />
           <span
-            v-if="count > 0"
+            v-if="notificationCount > 0"
             class="absolute -top-1 -right-1 h-5 w-5 bg-[#F5C400] text-white text-xs rounded-full flex items-center justify-center"
           >
-            {{ count }}
+            {{ notificationCount }}
           </span>
         </button>
 
@@ -35,14 +35,34 @@
             <!-- Header -->
             <div class="px-6 py-4 flex justify-between items-center border-b border-gray-100">
               <h3 class="text-xl font-bold text-gray-900">Notifications</h3>
-              <button @click="clearAll" class="text-sm text-gray-500 hover:text-gray-700">
-                Clear All
+              <button
+                @click.stop="clearAllNotifications"
+                :disabled="notificationsLoading || clearingAll"
+                class="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <span v-if="clearingAll" class="inline-flex items-center">
+                  <span class="w-3.5 h-3.5 border-2 border-gray-400/40 border-t-gray-600 rounded-full animate-spin"></span>
+                </span>
+                <span>{{ clearingAll ? 'Marking...' : 'Mark all as read' }}</span>
               </button>
             </div>
 
             <!-- Notifications List -->
             <div class="max-h-96 overflow-y-auto px-6 py-2">
-              <template v-if="notifications.length > 0">
+              <!-- Skeleton while loading -->
+              <div v-if="notificationsLoading" class="space-y-4 animate-pulse">
+                <div v-for="n in 3" :key="n" class="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
+                  <div class="w-10 h-10 rounded-full bg-gray-100 flex-shrink-0"></div>
+                  <div class="flex-1 space-y-2">
+                    <div class="h-3 w-40 bg-gray-200 rounded"></div>
+                    <div class="h-3 w-56 bg-gray-100 rounded"></div>
+                    <div class="h-2 w-24 bg-gray-100 rounded"></div>
+                  </div>
+                  <div class="w-5 h-5 bg-gray-100 rounded-full flex-shrink-0"></div>
+                </div>
+              </div>
+
+              <template v-else-if="hasUnread">
                 <!-- TODAY -->
                 <div v-if="groupedNotifications.today.length">
                   <p class="text-sm text-gray-500 font-semibold mt-2 mb-1">Today</p>
@@ -191,11 +211,17 @@
       <div class="relative">
         <button
           @click="toggleProfileMenu"
-          class="flex items-center space-x-3 p-2  rounded-lg transition-colors"
+          class="flex items-center space-x-3 p-2 rounded-lg transition-colors"
         >
           <!-- Profile Picture -->
-          <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center overflow-hidden">
-            <span class="text-sm font-semibold text-blue-600">{{ initials }}</span>
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden bg-blue-100">
+            <img
+              v-if="user.avatarUrl"
+              :src="user.avatarUrl"
+              alt="Profile"
+              class="w-full h-full object-cover"
+            />
+            <span v-else class="text-sm font-semibold text-blue-600">{{ initials }}</span>
           </div>
           
           <!-- Profile Info -->
@@ -275,6 +301,9 @@ const route = useRoute()
 const showProfileMenu = ref(false)
 const showNotifications = ref(false)
 const showSignOutModal = ref(false)
+const notificationsLoading = ref(false)
+const clearingAll = ref(false)
+const pollInterval = ref(null) // Added for polling
 
 const user = ref({
   firstName: '',
@@ -297,15 +326,47 @@ const fetchNotifications = async () => {
     const userRole = userData.role // Get user role
 
     // Fetch notifications with both studentId and userRole
-    const { data } = await api.get(`/notification/get-notification?userId=${userId}&userRole=${userRole}`)
+    const { data } = await api.get(`/notification/get-unread-notifications?userId=${userId}&userRole=${userRole}`)
     if (data.success) {
       notifications.value = data.data
-      console.log(`✅ Loaded ${data.data.length} notifications for ${userRole}`)
+      console.log(`🔄 Polled ${data.data.length} notifications for ${userRole}`)
     } else {
       console.warn('⚠️ Failed to fetch notifications:', data.message)
     }
   } catch (error) {
     console.error('❌ Error fetching notifications:', error)
+  }
+}
+
+// ==============================
+// 🔹 Polling Functions (NEW)
+// ==============================
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+  }
+  
+  // Start new polling interval (2000ms = 2 seconds)
+  pollInterval.value = setInterval(fetchNotifications, 2000)
+  console.log('🔄 Started polling notifications every 2 seconds')
+}
+
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+    console.log('🛑 Stopped polling notifications')
+  }
+}
+
+// Initial data load with loading state
+const initializeNotifications = async () => {
+  try {
+    notificationsLoading.value = true
+    await fetchNotifications()
+  } finally {
+    notificationsLoading.value = false
   }
 }
 
@@ -330,6 +391,8 @@ const groupedNotifications = computed(() => {
   const groups = { today: [], yesterday: [], earlier: [] }
 
   notifications.value.forEach(n => {
+    // Only show UNREAD in dropdown
+    if (n.read) return
     const created = dayjs(n.createdAt)
     if (created.isAfter(today)) groups.today.push(n)
     else if (created.isAfter(yesterday)) groups.yesterday.push(n)
@@ -342,6 +405,12 @@ const groupedNotifications = computed(() => {
   return groups
 })
 
+// --- Notification count for badge (unread only) ---
+const notificationCount = computed(() => notifications.value.filter(n => !n.read).length)
+
+// --- Any unread? controls empty state ---
+const hasUnread = computed(() => notifications.value.some(n => !n.read))
+
 // --- UI Toggles ---
 const toggleProfileMenu = () => {
   showProfileMenu.value = !showProfileMenu.value
@@ -351,7 +420,33 @@ const toggleProfileMenu = () => {
 const toggleNotifications = async () => {
   showNotifications.value = !showNotifications.value
   showProfileMenu.value = false
-  if (showNotifications.value) await fetchNotifications()
+  if (showNotifications.value) await initializeNotifications()
+}
+
+const clearAllNotifications = async () => {
+  try {
+    if (clearingAll.value) return
+    clearingAll.value = true
+    // Keep dropdown open during action
+    showNotifications.value = true
+    const storedUser = localStorage.getItem('user')
+    if (!storedUser) return console.error('❌ No user found in localStorage')
+
+    const userData = JSON.parse(storedUser)
+    const userId = userData._id || userData.id
+    const userRole = userData.role
+
+    await api.post('/notification/mark-all-read', { userId, userRole })
+
+    // Locally mark all as read so badge goes to 0 and dropdown empties
+    notifications.value = notifications.value.map(n => ({ ...n, read: true }))
+  } catch (error) {
+    console.error('❌ Error clearing notifications:', error)
+  } finally {
+    clearingAll.value = false
+    // Ensure dropdown remains open after clearing
+    showNotifications.value = true
+  }
 }
 
 const logout = () => {
@@ -393,6 +488,9 @@ const updatePageInfo = () => {
   } else if (path.includes('/profile')) {
     currentPageTitle.value = 'Profile'
     currentPageDescription.value = 'Manage your account information'
+  } else if (path.includes('/settings')) {
+    currentPageTitle.value = 'Settings'
+    currentPageDescription.value = 'Manage your account preferences, notifications, and security'
   }
 }
 
@@ -412,11 +510,16 @@ onMounted(async () => {
   const storedUser = localStorage.getItem('user')
   if (storedUser) user.value = JSON.parse(storedUser)
   updatePageInfo()
-  await fetchNotifications()
+  
+  // Initialize notifications and start polling
+  await initializeNotifications()
+  startPolling()
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  // Clean up polling interval when component is destroyed
+  stopPolling()
 })
 </script>
 

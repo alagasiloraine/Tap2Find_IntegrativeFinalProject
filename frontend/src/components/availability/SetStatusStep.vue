@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 
@@ -98,6 +98,7 @@ const lastUpdate = ref('Loading...')
 const isLoading = ref(true)
 const professorId = ref(null)
 const professorUid = ref(null)
+const pollInterval = ref(null) // Added for polling
 
 // Get professor data from localStorage
 const getProfessorData = () => {
@@ -144,6 +145,28 @@ const getProfessorData = () => {
     alert('Error reading user data. Please log in again.')
     router.push('/auth/login')
     return null
+  }
+}
+
+// ==============================
+// 🔹 Polling Functions (NEW)
+// ==============================
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+  }
+  
+  // Start new polling interval (2000ms = 2 seconds)
+  pollInterval.value = setInterval(fetchProfessorData, 2000)
+  console.log('🔄 Started polling professor status every 2 seconds')
+}
+
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+    console.log('🛑 Stopped polling professor status')
   }
 }
 
@@ -201,10 +224,18 @@ const fetchProfessorData = async () => {
       // After loading professor data, fetch the last update info
       await fetchLastUpdate()
       
-      console.log('✅ Professor data loaded:', professorData.value)
+      console.log('🔄 Polled professor status:', professorData.value.status)
     }
   } catch (error) {
     console.error('❌ Error fetching professor data:', error)
+  }
+}
+
+// Initial data load with loading state
+const initializeData = async () => {
+  try {
+    isLoading.value = true
+    await fetchProfessorData()
   } finally {
     isLoading.value = false
   }
@@ -337,7 +368,15 @@ const ringInnerClass = computed(() => {
 
 // Fetch professor data when component mounts
 onMounted(() => {
-  fetchProfessorData()
+  initializeData().then(() => {
+    // Start polling after initial load is complete
+    startPolling()
+  })
+})
+
+onUnmounted(() => {
+  // Clean up interval when component is destroyed
+  stopPolling()
 })
 </script>
 

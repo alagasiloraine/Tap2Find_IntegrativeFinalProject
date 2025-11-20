@@ -11,8 +11,8 @@
         <div class="hidden md:flex items-center space-x-8 font-medium">
           <router-link to="/" class="text-white hover:text-gray-200">Home</router-link>
           <router-link to="/about" class="text-white hover:text-gray-200">About</router-link>
-          <a href="#features" class="text-white hover:text-gray-200">Features</a>
-          <a href="#contact" class="text-white hover:text-gray-200">Contact</a>
+          <a href="/features" class="text-white hover:text-gray-200">Features</a>
+          <a href="/contact" class="text-white hover:text-gray-200">Contact</a>
         </div>
         <div class="hidden md:flex items-center space-x-3">
           <router-link to="/auth/login" class="px-4 py-2  text-white hover:text-gray-200 text-base font-medium">Login</router-link>
@@ -25,7 +25,7 @@
             </svg>
           </button>
         </div>
-      </div>
+      </div>the images 
     </div>
     <div v-if="mobileMenuOpen" class="md:hidden bg-white border-t border-gray-200">
       <div class="px-2 pt-2 pb-3 space-y-1">

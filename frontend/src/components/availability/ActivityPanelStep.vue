@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 
@@ -62,6 +62,7 @@ const lastManualUpdate = ref('')
 const notificationHistory = ref([])
 const professorUid = ref('')
 const isLoading = ref(true)
+const pollInterval = ref(null) // Added for polling
 
 // Get professor data from localStorage
 const getProfessorData = () => {
@@ -106,6 +107,35 @@ const getProfessorData = () => {
   }
 }
 
+// ==============================
+// 🔹 Polling Functions (NEW)
+// ==============================
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+  }
+  
+  // Start new polling interval (2000ms = 2 seconds)
+  pollInterval.value = setInterval(fetchAllData, 2000)
+  console.log('🔄 Started polling status history every 2 seconds')
+}
+
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+    console.log('🛑 Stopped polling status history')
+  }
+}
+
+const fetchAllData = async () => {
+  await Promise.all([
+    fetchCurrentStatus(),
+    fetchStatusHistory()
+  ])
+}
+
 // Fetch current status and profile data
 const fetchCurrentStatus = async () => {
   try {
@@ -119,7 +149,7 @@ const fetchCurrentStatus = async () => {
     const response = await api.get(`/professors/${professorData.id}`)
     if (response.data.success) {
       currentStatus.value = response.data.professor.status || 'not-available'
-      console.log('✅ Current status loaded:', currentStatus.value)
+      console.log('🔄 Polled current status:', currentStatus.value)
     }
   } catch (error) {
     console.error('❌ Error fetching current status:', error)
@@ -142,12 +172,10 @@ const fetchStatusHistory = async () => {
       // Process the history data
       processHistoryData(historyData)
       
-      console.log('✅ Status history loaded:', historyData.length, 'records')
+      console.log('🔄 Polled status history:', historyData.length, 'records')
     }
   } catch (error) {
     console.error('❌ Error fetching status history:', error)
-  } finally {
-    isLoading.value = false
   }
 }
 
@@ -267,13 +295,25 @@ const statusGradientClass = computed(() => {
   }
 })
 
-// Initialize data when component mounts
+// Initial data load with loading state
 const initializeData = async () => {
-  await fetchCurrentStatus()
-  await fetchStatusHistory()
+  try {
+    isLoading.value = true
+    await fetchAllData()
+  } finally {
+    isLoading.value = false
+  }
 }
 
 onMounted(() => {
-  initializeData()
+  initializeData().then(() => {
+    // Start polling after initial load is complete
+    startPolling()
+  })
+})
+
+onUnmounted(() => {
+  // Clean up interval when component is destroyed
+  stopPolling()
 })
 </script>

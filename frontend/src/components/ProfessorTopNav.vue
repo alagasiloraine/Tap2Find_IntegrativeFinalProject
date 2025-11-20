@@ -262,6 +262,7 @@ const showProfileMenu = ref(false)
 const showNotifications = ref(false)
 const showSignOutModal = ref(false)
 const clearingAll = ref(false)
+const pollInterval = ref(null) // Added for polling
 
 const user = ref({
   firstName: '',
@@ -302,17 +303,44 @@ const fetchNotifications = async () => {
     }
 
     // Fetch notifications with both userId and userRole
-    const { data } = await api.get(`/notification/get-notification?userId=${userId}&userRole=${userRole}`)
+    const { data } = await api.get(`/notification/get-unread-notifications?userId=${userId}&userRole=${userRole}`)
     
     if (data.success) {
       notifications.value = data.data
-      console.log(`✅ Loaded ${data.data.length} notifications for ${userRole}`)
+      console.log(`🔄 Polled ${data.data.length} notifications for ${userRole}`)
     } else {
       console.warn('⚠️ Failed to fetch notifications:', data.message)
     }
   } catch (error) {
     console.error('❌ Error fetching notifications:', error)
   }
+}
+
+// ==============================
+// 🔹 Polling Functions (NEW)
+// ==============================
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+  }
+  
+  // Start new polling interval (2000ms = 2 seconds)
+  pollInterval.value = setInterval(fetchNotifications, 2000)
+  console.log('🔄 Started polling notifications every 2 seconds')
+}
+
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+    console.log('🛑 Stopped polling notifications')
+  }
+}
+
+// Initial notifications load
+const initializeNotifications = async () => {
+  await fetchNotifications()
 }
 
 // --- Utility: format date nicely ---
@@ -367,7 +395,7 @@ const toggleProfileMenu = () => {
 const toggleNotifications = async () => {
   showNotifications.value = !showNotifications.value
   showProfileMenu.value = false
-  if (showNotifications.value) await fetchNotifications()
+  if (showNotifications.value) await initializeNotifications()
 }
 
 const clearAll = async () => {
@@ -473,12 +501,15 @@ onMounted(async () => {
   updatePageInfo()
   
   await fetchProfessorAvatar()
-  // Fetch initial notifications
-  await fetchNotifications()
+  // Fetch initial notifications and start polling
+  await initializeNotifications()
+  startPolling()
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  // Clean up polling interval when component is destroyed
+  stopPolling()
 })
 </script>
 

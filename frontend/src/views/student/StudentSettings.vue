@@ -122,40 +122,32 @@
 
         <!-- Active sessions -->
         <div class="border rounded-xl">
-          <div class="bg-gray-100 px-4 py-3 flex items-center justify-between text-sm font-medium text-gray-900">
-            <span>Active Sessions / Devices</span>
-            <button class="text-xs text-[#102A71] hover:underline disabled:opacity-60" @click="refreshSessions" :disabled="refreshing">
-              {{ refreshing ? 'Refreshing...' : 'Refresh' }}
-            </button>
-          </div>
-          <ul>
-            <li
-              v-for="(s, i) in sessions"
-              :key="s.id || i"
-              class="flex items-start justify-between px-4 py-4 border-t"
-            >
-              <div class="flex flex-col gap-0.5">
-                <div class="flex items-center gap-2 text-sm">
-                  <span class="text-gray-900 font-medium">{{ s.device || 'Unknown Browser' }}</span>
-                  <span v-if="s.isCurrent" class="text-[11px] px-2 py-0.5 rounded-full bg-green-100 text-green-700">Current</span>
+          <div class="bg-gray-100 px-4 py-3  text-sm font-medium text-gray-900">Active Sessions / Devices</div>
+          <ul  v-if="sessions.length > 0">
+            <li v-for="session in sessions" :key="session.id" class="flex items-center justify-between px-4 py-3 border-t text-sm">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-900 font-medium">{{ session.device }}</span>
+                  <span v-if="session.isCurrent" class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                    Current
+                  </span>
                 </div>
-                <div class="text-xs text-gray-500">
-                  <span>{{ s.location || 'Localhost' }}</span>
-                  <span v-if="s.ipAddress"> • {{ s.ipAddress }}</span>
+                <div class="text-xs text-gray-500 mt-1">
+                  {{ session.location }} • {{ session.ipAddress }}
                 </div>
-                <div class="text-xs text-gray-500">Last active: {{ formatRelativeTime(s.lastActive) }}</div>
+                <div class="text-xs text-gray-400 mt-1">
+                  Last active: {{ formatRelativeTime(session.lastActive) }}
+                </div>
               </div>
-              <div class="text-right">
-                <div v-if="s.isCurrent" class="text-[11px] text-gray-400">Current session</div>
-                <button
-                  v-else
-                  class="text-xs text-red-600 hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
-                  @click="signOutSession(i)"
-                  :disabled="signingOutIndex === i || signingOutAll"
-                >
-                  {{ signingOutIndex === i ? 'Signing out...' : 'Sign out' }}
-                </button>
-              </div>
+              <button 
+                v-if="!session.isCurrent"
+                @click="signOutSession(session.id)" 
+                class="text-xs text-red-600 hover:text-red-800 hover:underline ml-4"
+                :disabled="loading.sessionSignOut"
+              >
+                Sign out
+              </button>
+              <span v-else class="text-xs text-gray-400 ml-4">Current session</span>
             </li>
           </ul>
         </div>
@@ -180,360 +172,367 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import api from "@/utils/api"
 
 const router = useRouter()
+
+// Get current user data from localStorage
+const getUserData = () => {
+  try {
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      return JSON.parse(userData)
+    }
+    return null
+  } catch (error) {
+    console.error('Error parsing user data from localStorage:', error)
+    return null
+  }
+}
+
+// Reactive user data
+const userData = reactive({
+  id: '',
+  emailAddress: '',
+  contactNumber: '',
+  firstName: '',
+  lastName: '',
+  role: ''
+})
+
 const goBack = () => {
   router.back()
 }
 
-// Toast helper (bottom-right, white card, icon + title, progress line)
-const showToast = (message, type = 'success', duration = 2800) => {
-  let container = document.getElementById('t2f-toast-container')
-  if (!container) {
-    container = document.createElement('div')
-    container.id = 't2f-toast-container'
-    container.style.position = 'fixed'
-    container.style.bottom = '16px'
-    container.style.right = '16px'
-    container.style.zIndex = '9999'
-    container.style.display = 'flex'
-    container.style.flexDirection = 'column-reverse'
-    container.style.gap = '10px'
-    document.body.appendChild(container)
-  }
+// Loading states
+const loading = ref({
+  password: false,
+  notifications: false,
+  security: false,
+  sessions: false,
+  sessionSignOut: false,
+  signOutAll: false
+})
 
-  const colors = type === 'success'
-    ? { border: '#34D399', text: '#065F46', iconBg: '#ECFDF5', iconFg: '#10B981', bar: '#6EE7B7' }
-    : { border: '#F87171', text: '#7F1D1D', iconBg: '#FEF2F2', iconFg: '#EF4444', bar: '#FCA5A5' }
-
-  const toast = document.createElement('div')
-  toast.style.minWidth = '280px'
-  toast.style.maxWidth = '460px'
-  toast.style.background = '#FFFFFF'
-  toast.style.border = `1.5px solid ${colors.border}`
-  toast.style.borderRadius = '14px'
-  toast.style.boxShadow = '0 12px 20px -6px rgba(0,0,0,0.12), 0 6px 10px -4px rgba(0,0,0,0.06)'
-  toast.style.overflow = 'hidden'
-  toast.style.opacity = '0'
-  toast.style.transform = 'translateY(12px)'
-  toast.style.transition = 'opacity 220ms ease, transform 220ms ease'
-
-  const row = document.createElement('div')
-  row.style.display = 'flex'
-  row.style.alignItems = 'center'
-  row.style.gap = '12px'
-  row.style.padding = '12px 16px'
-
-  const iconWrap = document.createElement('div')
-  iconWrap.style.width = '26px'
-  iconWrap.style.height = '26px'
-  iconWrap.style.borderRadius = '50%'
-  iconWrap.style.background = colors.iconBg
-  iconWrap.style.display = 'flex'
-  iconWrap.style.alignItems = 'center'
-  iconWrap.style.justifyContent = 'center'
-  iconWrap.style.flex = '0 0 auto'
-
-  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-  icon.setAttribute('viewBox', '0 0 24 24')
-  icon.setAttribute('width', '16')
-  icon.setAttribute('height', '16')
-  icon.innerHTML = type === 'success'
-    ? `<path d="M9 12.75 11.25 15 15 9.75" fill="none" stroke="${colors.iconFg}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
-    : `<path d="M12 8v4m0 4h.01" fill="none" stroke="${colors.iconFg}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" fill="none" stroke="${colors.iconFg}" stroke-width="1.5" opacity="0.25"/>`
-  iconWrap.appendChild(icon)
-
-  const textBlock = document.createElement('div')
-  textBlock.style.display = 'flex'
-  textBlock.style.flexDirection = 'column'
-  textBlock.style.gap = '2px'
-
-  const title = document.createElement('div')
-  title.textContent = type === 'success' ? 'SUCCESS' : 'ERROR'
-  title.style.fontSize = '12px'
-  title.style.fontWeight = '800'
-  title.style.letterSpacing = '0.04em'
-  title.style.color = colors.text
-
-  const body = document.createElement('div')
-  body.textContent = message
-  body.style.fontSize = '14px'
-  body.style.fontWeight = '600'
-  body.style.color = '#111827'
-
-  textBlock.appendChild(title)
-  textBlock.appendChild(body)
-
-  row.appendChild(iconWrap)
-  row.appendChild(textBlock)
-
-  const barWrap = document.createElement('div')
-  barWrap.style.height = '2px'
-  barWrap.style.background = 'transparent'
-  barWrap.style.width = '100%'
-  const bar = document.createElement('div')
-  bar.style.height = '100%'
-  bar.style.width = '100%'
-  bar.style.background = colors.bar
-  bar.style.transition = `width ${duration}ms linear`
-  barWrap.appendChild(bar)
-
-  toast.appendChild(row)
-  toast.appendChild(barWrap)
-  container.appendChild(toast)
-
-  requestAnimationFrame(() => {
-    toast.style.opacity = '1'
-    toast.style.transform = 'translateY(0)'
-    requestAnimationFrame(() => (bar.style.width = '0%'))
-  })
-
-  setTimeout(() => {
-    toast.style.opacity = '0'
-    toast.style.transform = 'translateY(8px)'
-    setTimeout(() => {
-      toast.remove()
-      if (!container.childElementCount) container.remove()
-    }, 240)
-  }, duration)
-}
+const isLoading = ref(true)
+const savingNotifications = ref(false)
 
 // Change Password
 const password = ref({ current: '', new: '', confirm: '' })
 const passwordMessage = ref('')
 const passwordOk = ref(false)
-const savingPassword = ref(false)
+
 const savePassword = async () => {
-  if (savingPassword.value) return
-  passwordOk.value = false
-  passwordMessage.value = ''
   if (!password.value.current || !password.value.new || !password.value.confirm) {
-    showToast('Please complete all password fields.', 'error')
-    return
-  }
-  if (password.value.new !== password.value.confirm) {
-    showToast('New password and Confirm password do not match.', 'error')
-    return
-  }
-  if (password.value.new.length < 8) {
-    showToast('New password must be at least 8 characters.', 'error')
-    return
-  }
-  const token = localStorage.getItem('token') || localStorage.getItem('t2f_token')
-  if (!token) {
-    showToast('Not authenticated. Please log in again.', 'error')
-    return
-  }
-  savingPassword.value = true
-  try {
-    const res = await fetch('http://localhost:3000/api/auth/change-password', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        currentPassword: password.value.current,
-        newPassword: password.value.new,
-        confirmPassword: password.value.confirm,
-      })
-    })
-    const data = await res.json()
-    if (!res.ok || data.success === false) {
-      throw new Error(data.message || 'Failed to update password')
-    }
-    passwordOk.value = true
-    passwordMessage.value = ''
-    password.value = { current: '', new: '', confirm: '' }
-    showToast('Password updated successfully', 'success')
-  } catch (err) {
     passwordOk.value = false
-    if (err?.message) {
-      showToast(err.message, 'error')
-    } else {
-      showToast('Failed to update password', 'error')
+    passwordMessage.value = 'Please complete all fields.'
+    return
+  }
+  
+  if (password.value.new !== password.value.confirm) {
+    passwordOk.value = false
+    passwordMessage.value = 'New passwords do not match.'
+    return
+  }
+
+  if (password.value.new.length < 6) {
+    passwordOk.value = false
+    passwordMessage.value = 'New password must be at least 6 characters long.'
+    return
+  }
+
+  loading.value.password = true
+  passwordMessage.value = ''
+
+  try {
+    const user = getUserData()
+    if (!user || !user.id) {
+      throw new Error('User not authenticated. Please log in again.')
     }
+
+    console.log('🔄 Changing password for user:', user.id)
+
+    const response = await api.post(`/user-settings/${user.id}/password/change`, {
+      currentPassword: password.value.current,
+      newPassword: password.value.new
+    })
+
+    if (response.data.success) {
+      passwordOk.value = true
+      passwordMessage.value = response.data.message
+      password.value = { current: '', new: '', confirm: '' }
+    } else {
+      throw new Error(response.data.message)
+    }
+  } catch (error) {
+    passwordOk.value = false
+    passwordMessage.value = error.response?.data?.message || error.message || 'Failed to update password'
+    console.error('❌ Password change error:', error)
   } finally {
-    savingPassword.value = false
+    loading.value.password = false
   }
 }
 
 // Notifications
 const notify = ref({ enabled: true, channels: { email: true, sms: false } })
-const savingNotifications = ref(false)
+const notificationMessage = ref('')
+const notificationOk = ref(false)
 
-async function loadPreferences() {
+const loadNotificationPreferences = async () => {
   try {
-    const userId = getCurrentUserId()
-    if (!userId) return
-    const res = await fetch(`http://localhost:3000/api/user-settings/${userId}/notifications`, {
-      headers: { ...authHeaders() }
-    })
-    const data = await res.json()
-    if (res.ok && data?.success) {
-      const prefs = data.data?.preferences
-      if (prefs && typeof prefs === 'object') {
-        notify.value = {
-          enabled: !!prefs.enabled,
-          channels: {
-            email: !!(prefs.channels?.email),
-            sms: !!(prefs.channels?.sms)
-          }
-        }
-      }
+    isLoading.value = true
+    const user = getUserData()
+    if (!user || !user.id) {
+      console.warn('No user data found for loading notifications')
+      return
     }
-  } catch {}
+
+    console.log('🔄 Loading notification preferences for user:', user.id)
+
+    const response = await api.get(`/user-settings/${user.id}/notifications`)
+    
+    if (response.data.success) {
+      notify.value = response.data.data.preferences
+      console.log('✅ Loaded notification preferences:', notify.value)
+      isLoading.value = false
+    }
+  } catch (error) {
+    console.error('❌ Failed to load notification preferences:', error)
+    isLoading.value = false
+  }
 }
 
 const saveNotifications = async () => {
-  if (savingNotifications.value) return
-  savingNotifications.value = true
+  loading.value.notifications = true
+  notificationMessage.value = ''
+  saveNotifications.value = false
+
   try {
-    const userId = getCurrentUserId()
-    if (!userId) throw new Error('Missing user')
-    const res = await fetch(`http://localhost:3000/api/user-settings/${userId}/notifications`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ preferences: notify.value })
+    saveNotifications.value = true
+    const user = getUserData()
+    if (!user || !user.id) {
+      throw new Error('User not authenticated. Please log in again.')
+    }
+
+    console.log('🔄 Saving notification preferences for user:', user.id)
+
+    const response = await api.put(`/user-settings/${user.id}/notifications`, {
+      preferences: notify.value
     })
-    const data = await res.json()
-    if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to save preferences')
-    showToast('Notification preferences saved', 'success')
-  } catch (e) {
-    showToast(e?.message || 'Failed to save preferences', 'error')
+
+    if (response.data.success) {
+      notificationOk.value = true
+      notificationMessage.value = response.data.message
+      console.log('✅ Notification preferences saved')
+      savingNotifications.value = false
+    } else {
+      throw new Error(response.data.message)
+      savingNotifications.value = false
+    }
+  } catch (error) {
+    notificationOk.value = false
+    notificationMessage.value = error.response?.data?.message || error.message || 'Failed to save notification preferences'
+    console.error('❌ Save notification preferences error:', error)
+    savingNotifications.value = false
   } finally {
+    loading.value.notifications = false
     savingNotifications.value = false
   }
 }
 
 // Login & Security
+const security = ref({ twoFA: false, otpChannel: 'email' })
+const securityMessage = ref('')
+const securityOk = ref(false)
+
+// Load security settings
+const loadSecuritySettings = async () => {
+  try {
+    const user = getUserData()
+    if (!user || !user.id) {
+      console.warn('No user data found for loading security settings')
+      return
+    }
+
+    console.log('🔄 Loading security settings for user:', user.id)
+
+    const response = await api.get(`/user-settings/${user.id}/security`)
+    
+    if (response.data.success) {
+      security.value = response.data.data
+      console.log('✅ Loaded security settings:', security.value)
+    }
+  } catch (error) {
+    console.error('❌ Failed to load security settings:', error)
+  }
+}
+
+const saveSecuritySettings = async () => {
+  loading.value.security = true
+  securityMessage.value = ''
+
+  try {
+    const user = getUserData()
+    if (!user || !user.id) {
+      throw new Error('User not authenticated. Please log in again.')
+    }
+
+    console.log('🔄 Saving security settings for user:', user.id)
+
+    // Validate SMS channel if selected
+    if (security.value.twoFA && security.value.otpChannel === 'sms' && !userData.contactNumber) {
+      securityOk.value = false
+      securityMessage.value = 'Phone number is required for SMS notifications. Please update your profile first.'
+      return
+    }
+
+    const response = await api.put(`/user-settings/${user.id}/security`, {
+      twoFA: security.value.twoFA,
+      otpChannel: security.value.otpChannel
+    })
+
+    if (response.data.success) {
+      securityOk.value = true
+      securityMessage.value = response.data.message
+      console.log('✅ Security settings saved')
+    } else {
+      throw new Error(response.data.message)
+    }
+  } catch (error) {
+    securityOk.value = false
+    securityMessage.value = error.response?.data?.message || error.message || 'Failed to save security settings'
+    console.error('❌ Save security settings error:', error)
+  } finally {
+    loading.value.security = false
+  }
+}
+
+// Sessions management
 const sessions = ref([])
-const isLoading = ref(true)
-const signingOutIndex = ref(null)
-const signingOutAll = ref(false)
-const refreshing = ref(false)
+const sessionMessage = ref('')
+const sessionOk = ref(false)
 
-function getCurrentUserId() {
-  try {
-    const raw = localStorage.getItem('user') || localStorage.getItem('student') || localStorage.getItem('currentUser')
-    if (!raw) return null
-    const obj = JSON.parse(raw)
-    return obj._id || obj.id || null
-  } catch { return null }
+const formatRelativeTime = (dateString) => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMins < 1) return 'Just now'
+  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`
+  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
+  
+  return date.toLocaleDateString()
 }
 
-function authHeaders() {
-  const token = localStorage.getItem('token') || localStorage.getItem('t2f_token')
-  const headers = token ? { Authorization: `Bearer ${token}` } : {}
-  const sid = localStorage.getItem('t2f_session_id')
-  if (sid) headers['x-session-id'] = sid
-  return headers
-}
-
-// (2FA removed)
-
-function formatRelativeTime(input) {
+const loadSessions = async () => {
   try {
-    const ts = new Date(input)
-    const now = new Date()
-    const diff = Math.max(0, (now - ts) / 1000)
-    if (diff < 60) return 'Just now'
-    const mins = Math.floor(diff / 60)
-    if (mins < 60) return `${mins} minute${mins===1?'':'s'} ago`
-    const hrs = Math.floor(mins / 60)
-    if (hrs < 24) return `${hrs} hour${hrs===1?'':'s'} ago`
-    const days = Math.floor(hrs / 24)
-    return `${days} day${days===1?'':'s'} ago`
-  } catch { return String(input || '') }
-}
-
-async function loadSessions() {
-  try {
-    const userId = getCurrentUserId()
-    const url = userId ? `http://localhost:3000/api/user-settings/${userId}/sessions` : null
-    if (!url) throw new Error('Missing user')
-    const res = await fetch(url, { headers: { ...authHeaders() } })
-    const data = await res.json()
-    if (res.ok && data?.success) {
-      const list = data.data?.sessions || []
-      sessions.value = list.map(s => ({
-        id: s.id || s._id,
-        device: s.device || 'Unknown Browser',
-        location: s.location || 'Local Network',
-        ipAddress: s.ipAddress || '',
-        lastActive: s.lastActive || s.createdAt || '',
-        isCurrent: !!s.isCurrent
-      }))
+    const user = getUserData()
+    if (!user || !user.id) {
+      console.warn('No user data found for loading sessions')
+      return
     }
-  } catch {} finally {
-    isLoading.value = false
-  }
-}
 
-async function refreshSessions() {
-  if (refreshing.value) return
-  refreshing.value = true
-  try { await loadSessions() } finally { refreshing.value = false }
-}
+    loading.value.sessions = true
+    console.log('🔄 Loading active sessions for user:', user.id)
 
-async function signOutSession(index) {
-  const sess = sessions.value[index]
-  if (!sess?.id) return
-  try {
-    signingOutIndex.value = index
-    const userId = getCurrentUserId()
-    const res = await fetch(`http://localhost:3000/api/user-settings/${userId}/sessions/${sess.id}`, {
-      method: 'DELETE',
-      headers: { ...authHeaders() }
-    })
-    const data = await res.json()
-    if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to sign out session')
-    sessions.value.splice(index, 1)
-    if (sess.isCurrent) {
-      try {
-        localStorage.removeItem('t2f_token')
-        localStorage.removeItem('t2f_user')
-      } catch {}
-      router.push('/login')
+    const response = await api.get(`/user-settings/${user.id}/sessions`)
+    
+    if (response.data.success) {
+      sessions.value = response.data.data.sessions
+      console.log('✅ Loaded sessions:', sessions.value.length)
+    } else {
+      throw new Error(response.data.message)
     }
-    showToast('Session signed out', 'success')
-  } catch (e) {
-    alert(e.message)
+  } catch (error) {
+    console.error('❌ Failed to load sessions:', error)
+    sessionMessage.value = error.response?.data?.message || 'Failed to load sessions'
+    sessionOk.value = false
   } finally {
-    signingOutIndex.value = null
+    loading.value.sessions = false
   }
 }
 
-async function signOutAll() {
+const signOutSession = async (sessionId) => {
   try {
-    if (signingOutAll.value) return
-    signingOutAll.value = true
-    const userId = getCurrentUserId()
-    const res = await fetch(`http://localhost:3000/api/user-settings/${userId}/sessions`, {
-      method: 'DELETE',
-      headers: { ...authHeaders() }
-    })
-    const data = await res.json()
-    if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to sign out all devices')
-    sessions.value = []
-    // Also sign out this device
-    try {
-      localStorage.removeItem('t2f_token')
-      localStorage.removeItem('t2f_user')
-    } catch {}
-    router.push('/login')
-    showToast('Signed out of all devices', 'success')
-  } catch (e) {
-    alert(e.message)
+    const user = getUserData()
+    if (!user || !user.id) {
+      throw new Error('User not authenticated')
+    }
+
+    loading.value.sessionSignOut = true
+    console.log('🔄 Signing out session:', sessionId)
+
+    const response = await api.delete(`/user-settings/${user.id}/sessions/${sessionId}`)
+
+    if (response.data.success) {
+      sessionMessage.value = response.data.message
+      sessionOk.value = true
+      sessions.value = sessions.value.filter(s => s.id !== sessionId)
+      console.log('✅ Session signed out')
+    } else {
+      throw new Error(response.data.message)
+    }
+  } catch (error) {
+    console.error('❌ Failed to sign out session:', error)
+    sessionMessage.value = error.response?.data?.message || 'Failed to sign out session'
+    sessionOk.value = false
   } finally {
-    signingOutAll.value = false
+    loading.value.sessionSignOut = false
   }
 }
 
+const signOutAll = async () => {
+  try {
+    const user = getUserData()
+    if (!user || !user.id) {
+      throw new Error('User not authenticated')
+    }
+
+    if (!confirm('Are you sure you want to sign out of all other devices? You will remain signed in on this device.')) {
+      return
+    }
+
+    loading.value.signOutAll = true
+    sessionMessage.value = ''
+    console.log('🔄 Signing out all sessions for user:', user.id)
+
+    const response = await api.delete(`/user-settings/${user.id}/sessions`)
+
+    if (response.data.success) {
+      sessionMessage.value = response.data.message
+      sessionOk.value = true
+      await loadSessions()
+      console.log('✅ All sessions signed out')
+    } else {
+      throw new Error(response.data.message)
+    }
+  } catch (error) {
+    console.error('❌ Failed to sign out all sessions:', error)
+    sessionMessage.value = error.response?.data?.message || 'Failed to sign out sessions'
+    sessionOk.value = false
+  } finally {
+    loading.value.signOutAll = false
+  }
+}
+
+// Initialize user data and load settings when component mounts
 onMounted(() => {
-  loadSessions()
-  loadPreferences()
+  const user = getUserData()
+  if (user) {
+    Object.assign(userData, user)
+    console.log('👤 User data loaded:', userData)
+    loadSessions()
+  } else {
+    console.error('❌ No user data found in localStorage')
+  }
+
+  loadNotificationPreferences()
+  loadSecuritySettings()
 })
 </script>

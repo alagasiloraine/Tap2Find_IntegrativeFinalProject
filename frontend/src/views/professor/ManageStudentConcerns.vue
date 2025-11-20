@@ -223,7 +223,7 @@
                         @click="resolveConcern(item)"
                         :disabled="isProcessing(item.id)"
                         class="group inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                        :class="item.status === 'pending' ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50'"
+                        :class="item.status === 'resolved' ? 'border-green-300 text-green-700 hover:bg-green-50' : 'border-amber-300 text-amber-700 hover:bg-amber-50'"
                       >
                         <template v-if="isProcessing(item.id)">
                           <svg class="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -233,8 +233,8 @@
                           <span class="hidden sm:inline text-xs">Processing...</span>
                         </template>
                         <template v-else>
-                          <iconify-icon :icon="item.status === 'pending' ? 'tabler:mail-up' : 'mdi:email-check-outline'" class="text-base" />
-                          <span class="hidden sm:inline text-xs">{{ item.status === 'pending' ? 'Resolve' : 'Resolved' }}</span>
+                          <iconify-icon :icon="item.status === 'resolved' ? 'mdi:email-check-outline' : 'tabler:mail-up'" class="text-base" />
+                          <span class="hidden sm:inline text-xs">{{ item.status === 'resolved' ? 'Resolved' : 'Resolve' }}</span>
                         </template>
                       </button>
                     </div>
@@ -285,20 +285,20 @@
 
             <div class="mt-6 grid grid-cols-2 gap-3">
               <button
-                @click="declineSelected()"
+                @click="openReplyModal"
                 :disabled="!!modalProcessingAction"
-                class="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                class="px-4 py-2 rounded-xl bg-red-100 text-red-700 font-medium hover:bg-red-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <span v-if="modalProcessingAction==='pending'" class="inline-flex items-center gap-2"><svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Processing...</span>
-                <span v-else>Mark as Pending</span>
+                <span v-if="modalProcessingAction==='decline'" class="inline-flex items-center gap-2"><svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Processing...</span>
+                <span v-else>Decline</span>
               </button>
               <button
                 @click="acceptSelected()"
                 :disabled="!!modalProcessingAction"
                 class="px-4 py-2 rounded-xl bg-[#102A71] text-white font-medium hover:bg-[#102A71]/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <span v-if="modalProcessingAction==='resolved'" class="inline-flex items-center gap-2"><svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Processing...</span>
-                <span v-else>Mark as Resolved</span>
+                <span v-if="modalProcessingAction==='accept'" class="inline-flex items-center gap-2"><svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Processing...</span>
+                <span v-else>Accept</span>
               </button>
             </div>
           </div>
@@ -307,6 +307,58 @@
           <button @click="closeViewModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
             <iconify-icon icon="mdi:close" class="text-2xl" />
           </button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Reply Modal -->
+    <Transition name="modal">
+      <div v-if="isReplyModalOpen" class="fixed inset-0 z-[110] grid place-items-center">
+        <div class="absolute inset-0 bg-black/40" @click="closeReplyModal"></div>
+        <div class="relative w-[90%] max-w-md rounded-2xl shadow-xl overflow-hidden bg-white">
+          <!-- Header -->
+          <div class="flex items-center justify-between bg-gray-100 px-6 py-4">
+            <div class="font-semibold text-gray-900">Reply to Student</div>
+            <button @click="closeReplyModal" class="text-gray-500 hover:text-gray-700">
+              <iconify-icon icon="mdi:close" class="text-2xl" />
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="p-6">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Your Response</label>
+              <textarea
+                v-model="replyMessage"
+                placeholder="Enter your response to the student..."
+                rows="5"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              ></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3">
+              <button
+                @click="closeReplyModal"
+                class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                @click="sendReply"
+                :disabled="!replyMessage.trim() || modalProcessingAction === 'decline'"
+                class="px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <span v-if="modalProcessingAction === 'decline'" class="inline-flex items-center gap-2">
+                  <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                  </svg>
+                  Sending...
+                </span>
+                <span v-else>Send Response</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </Transition>
@@ -443,10 +495,13 @@ const openDropdowns = ref({
   status: false,
   date: false
 })
+const pollInterval = ref(null) // Added for polling
 
 // Modal state
 const isViewModalOpen = ref(false)
 const selectedConcern = ref(null)
+const isReplyModalOpen = ref(false)
+const replyMessage = ref('')
 
 // Per-item processing state and modal processing
 const processingIds = ref(new Set())
@@ -457,6 +512,42 @@ const setProcessing = (id, val) => {
   processingIds.value = s
 }
 const modalProcessingAction = ref('') // '', 'pending', 'resolved'
+
+// Open reply modal
+const openReplyModal = () => {
+  isReplyModalOpen.value = true
+}
+
+// Close reply modal
+const closeReplyModal = () => {
+  isReplyModalOpen.value = false
+  replyMessage.value = ''
+}
+
+// Send reply to student
+const sendReply = async () => {
+  if (!selectedConcern.value || !replyMessage.value.trim()) return
+  
+  try {
+    modalProcessingAction.value = 'decline'
+    
+    console.log('📤 Sending reply to concern:', selectedConcern.value.id)
+    console.log('📝 Reply message:', replyMessage.value)
+    
+    // Use 'declined' status (with 'd') to match backend expectation
+    await updateConcernStatus(selectedConcern.value.id, 'declined', replyMessage.value)
+    
+    showToast('Response sent to student successfully', 'success')
+    closeReplyModal()
+    closeViewModal()
+  } catch (error) {
+    console.error('❌ Failed to send response:', error)
+    console.error('📋 Error details:', error.response?.data)
+    showToast('Failed to send response. Please try again.', 'error')
+  } finally {
+    modalProcessingAction.value = ''
+  }
+}
 
 // Close dropdowns when clicking outside
 const handleClickOutside = (event) => {
@@ -471,7 +562,6 @@ const handleClickOutside = (event) => {
 // Fetch all concerns for the professor
 const fetchAllConcerns = async () => {
   try {
-    loading.value = true
     const professorId = user.value.id
     if (!professorId) {
       console.error('No professorId found')
@@ -506,28 +596,65 @@ const fetchAllConcerns = async () => {
         section: inquiry.section || '',
         studentId: inquiry.studentId
       }))
-      console.log('Mapped concerns:', concerns.value)
+      console.log('🔄 Polled concerns:', concerns.value.length)
     } else {
       console.error('API returned success: false', response.data)
     }
   } catch (error) {
     console.error('Error fetching concerns:', error)
     console.error('Error details:', error.response?.data)
+  }
+}
+
+// ==============================
+// 🔹 Polling Functions (NEW)
+// ==============================
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+  }
+  
+  // Start new polling interval (2000ms = 2 seconds)
+  pollInterval.value = setInterval(fetchAllConcerns, 2000)
+  console.log('🔄 Started polling concerns every 2 seconds')
+}
+
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+    console.log('🛑 Stopped polling concerns')
+  }
+}
+
+// Initial data load with loading state
+const initializeData = async () => {
+  try {
+    loading.value = true
+    await fetchAllConcerns()
   } finally {
     loading.value = false
   }
 }
 
 // Update concern status
-const updateConcernStatus = async (concernId, status) => {
+const updateConcernStatus = async (concernId, status, replyMessage = '') => {
   try {
     const professorId = user.value.id
-    console.log('Updating concern:', concernId, 'to status:', status)
+    console.log('Updating concern:', concernId, 'to status:', status, 'with reply:', replyMessage ? 'yes' : 'no')
     
-    const response = await api.patch(`/professors/concerns/${concernId}`, { 
+    const requestData = { 
       status,
       professorId 
-    })
+    }
+    
+    // Add reply message if provided
+    if (replyMessage) {
+      requestData.replyMessage = replyMessage
+    }
+    
+    const response = await api.patch(`/professors/concerns/${concernId}`, requestData)
     
     console.log('Update response:', response.data)
     
@@ -545,7 +672,7 @@ const updateConcernStatus = async (concernId, status) => {
     console.error('Error details:', error.response?.data)
     throw error
   }
-}
+} 
 
 // Statistics
 const totalConcerns = computed(() => concerns.value.length)
@@ -598,8 +725,14 @@ const getDateFilterText = () => {
 
 const getStatusClass = (status) => {
   switch (status) {
+    case 'accepted':
+      return 'bg-green-50 text-green-700 border-green-200'
+    case 'replied':
+      return 'bg-blue-50 text-blue-700 border-blue-200'
     case 'resolved':
       return 'bg-green-50 text-green-700 border-green-200'
+    case 'declined':
+      return 'bg-red-50 text-red-700 border-red-200'
     case 'in-progress':
       return 'bg-blue-50 text-blue-700 border-blue-200'
     default:
@@ -609,8 +742,14 @@ const getStatusClass = (status) => {
 
 const getStatusDotClass = (status) => {
   switch (status) {
+    case 'accepted':
+      return 'bg-green-500'
+    case 'replied':
+      return 'bg-blue-500'
     case 'resolved':
       return 'bg-green-500'
+    case 'declined':
+      return 'bg-red-500'
     case 'in-progress':
       return 'bg-blue-500'
     default:
@@ -620,8 +759,14 @@ const getStatusDotClass = (status) => {
 
 const getStatusText = (status) => {
   switch (status) {
+    case 'accepted':
+      return 'Accepted'
+    case 'replied':
+      return 'Replied'
     case 'resolved':
       return 'Resolved'
+    case 'declined':
+      return 'Declined'
     case 'in-progress':
       return 'In Progress'
     default:
@@ -667,8 +812,8 @@ async function resolveConcern(item) {
 async function acceptSelected() {
   if (!selectedConcern.value) return
   try {
-    modalProcessingAction.value = 'resolved'
-    await updateConcernStatus(selectedConcern.value.id, 'resolved')
+    modalProcessingAction.value = 'accepted'
+    await updateConcernStatus(selectedConcern.value.id, 'accepted')
     showToast('Concern marked as resolved', 'success')
     closeViewModal()
   } catch (error) {
@@ -682,8 +827,8 @@ async function acceptSelected() {
 async function declineSelected() {
   if (!selectedConcern.value) return
   try {
-    modalProcessingAction.value = 'pending'
-    await updateConcernStatus(selectedConcern.value.id, 'pending')
+    modalProcessingAction.value = 'decline'
+    await updateConcernStatus(selectedConcern.value.id, 'decline')
     showToast('Concern marked as pending', 'success')
     closeViewModal()
   } catch (error) {
@@ -717,7 +862,12 @@ onMounted(() => {
   if (storedUser) {
     user.value = JSON.parse(storedUser)
     console.log('User loaded:', user.value)
-    fetchAllConcerns()
+    
+    // Initialize data and start polling
+    initializeData().then(() => {
+      // Start polling after initial load is complete
+      startPolling()
+    })
   } else {
     console.error('No user found in localStorage')
   }
@@ -725,6 +875,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  // Clean up interval when component is destroyed
+  stopPolling()
 })
 </script>
 

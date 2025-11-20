@@ -234,6 +234,7 @@ const deletingSelected = ref(false)
 const deletingAll = ref(false)
 const showDeleteAllModal = ref(false)
 const showDeleteSelectedModal = ref(false)
+const pollInterval = ref(null) // Added for polling
 
 // Toast helper (bottom-right, white card, icon + title, progress line)
 const showToast = (message, type = 'success', duration = 2800) => {
@@ -539,7 +540,7 @@ const fetchNotifications = async () => {
     const userRole = user.role // Get user role
 
     // Fetch notifications from backend with role parameter
-    const { data } = await api.get(`/notification/get-notification?userId=${userId}&userRole=${userRole}&onlyUnread=false`)
+    const { data } = await api.get(`/notification/get-all-notifications?userId=${userId}&userRole=${userRole}&onlyUnread=false`)
 
     if (data.success) {
       // General notifications → seen by all
@@ -554,6 +555,36 @@ const fetchNotifications = async () => {
     }
   } catch (error) {
     console.error('❌ Error fetching notifications:', error)
+  }
+}
+
+// ==============================
+// 🔹 Polling Functions (NEW)
+// ==============================
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+  }
+  
+  // Start new polling interval (2000ms = 2 seconds)
+  pollInterval.value = setInterval(fetchNotifications, 2000)
+  console.log('🔄 Started polling notifications every 2 seconds')
+}
+
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+    console.log('🛑 Stopped polling notifications')
+  }
+}
+
+// Initial data load with loading state
+const initializeData = async () => {
+  try {
+    loading.value = true
+    await fetchNotifications()
   } finally {
     loading.value = false
   }
@@ -561,12 +592,19 @@ const fetchNotifications = async () => {
 
 // ✅ On mount: load notifications
 onMounted(() => {
-  fetchNotifications()
   document.addEventListener('click', onClickOutside)
+  
+  // Initialize data and start polling
+  initializeData().then(() => {
+    // Start polling after initial load is complete
+    startPolling()
+  })
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', onClickOutside)
+  // Clean up interval when component is destroyed
+  stopPolling()
 })
 </script>
 

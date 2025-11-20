@@ -354,6 +354,7 @@ const deletingSelected = ref(false)
 const deletingAll = ref(false)
 const showDeleteAllModal = ref(false)
 const showDeleteSelectedModal = ref(false)
+const pollInterval = ref(null) // Added for polling
 
 // 🧠 Utility: check if date is today
 const isToday = (date) => {
@@ -555,7 +556,7 @@ const fetchNotifications = async () => {
     const userRole = user.role // Get user role
 
     // Fetch notifications from backend with role parameter
-    const { data } = await api.get(`/notification/get-notification?userId=${userId}&userRole=${userRole}&onlyUnread=false`)
+    const { data } = await api.get(`/notification/get-all-notifications?userId=${userId}&userRole=${userRole}&onlyUnread=false`)
 
     if (data.success) {
       // Process notifications based on role
@@ -564,12 +565,42 @@ const fetchNotifications = async () => {
         isGeneral: !n.professorId || n.professorId === 'all', // add field for clarity
         isForCurrentRole: n.targetRole ? n.targetRole === userRole : true // Check if notification is for current user's role
       }))
-      console.log(`✅ Loaded ${notifications.value.length} notifications for ${userRole}`)
+      console.log(`🔄 Polled ${notifications.value.length} notifications for ${userRole}`)
     } else {
       console.warn('⚠️ Failed to fetch notifications:', data.message)
     }
   } catch (error) {
     console.error('❌ Error fetching notifications:', error)
+  }
+}
+
+// ==============================
+// 🔹 Polling Functions (NEW)
+// ==============================
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+  }
+  
+  // Start new polling interval (2000ms = 2 seconds)
+  pollInterval.value = setInterval(fetchNotifications, 2000)
+  console.log('🔄 Started polling notifications every 2 seconds')
+}
+
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+    console.log('🛑 Stopped polling notifications')
+  }
+}
+
+// Initial data load with loading state
+const initializeData = async () => {
+  try {
+    loading.value = true
+    await fetchNotifications()
   } finally {
     loading.value = false
   }
@@ -577,12 +608,19 @@ const fetchNotifications = async () => {
 
 // ✅ On mount: load notifications
 onMounted(() => {
-  fetchNotifications()
   document.addEventListener('click', onClickOutside)
+  
+  // Initialize data and start polling
+  initializeData().then(() => {
+    // Start polling after initial load is complete
+    startPolling()
+  })
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', onClickOutside)
+  // Clean up interval when component is destroyed
+  stopPolling()
 })
 </script>
 

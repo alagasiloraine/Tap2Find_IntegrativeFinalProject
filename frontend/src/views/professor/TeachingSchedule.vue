@@ -622,7 +622,7 @@ const updateSchedule = async () => {
   const sh = parseHour(startTime.value)
   const eh = parseHour(endTime.value)
   if (sh == null || eh == null || eh <= sh || selectedDayIndex.value == null) {
-    alert('Please fill all required fields correctly')
+    showToast('Please fill all required fields correctly', 'warning')
     return
   }
   
@@ -631,13 +631,13 @@ const updateSchedule = async () => {
 
   // Validate time range
   if (sh < 7 || eh > 18) {
-    alert('Schedule time must be between 7:00 AM and 6:00 PM.')
+    showToast('Schedule time must be between 7:00 AM and 6:00 PM.', 'warning')
     return
   }
 
   // Validate duration (max 4 hours per session)
   if (durationVal > 4) {
-    alert('Schedule duration cannot exceed 4 hours per session.')
+    showToast('Schedule duration cannot exceed 4 hours per session.', 'warning')
     return
   }
 
@@ -654,7 +654,7 @@ const updateSchedule = async () => {
   })
   
   if (hasOverlap) {
-    alert('This time slot overlaps with an existing schedule on the same day!')
+    showToast('This time slot overlaps with an existing schedule on the same day!', 'warning')
     return
   }
 
@@ -673,11 +673,11 @@ const updateSchedule = async () => {
     // Save ALL schedules to backend
     const result = await saveAllSchedules()
     closeAddModal()
-    alert(`Schedule updated successfully! ${result.scheduleCount} total entries saved.`)
+    showToast(`Schedule updated successfully! ${result.scheduleCount} total entries saved.`, 'success')
   } catch (error) {
     // Revert changes if save failed
     Object.assign(editingCourse.value, originalCourse)
-    alert('Failed to update schedule: ' + (error.response?.data?.message || error.message))
+    showToast('Failed to update schedule: ' + (error.response?.data?.message || error.message), 'error')
   }
 }
 
@@ -698,11 +698,11 @@ const deleteSchedule = async () => {
     // Save ALL schedules to backend
     const result = await saveAllSchedules()
     closeDeleteModal()
-    alert(`Schedule deleted successfully! ${result.scheduleCount} total entries saved.`)
+    showToast(`Schedule deleted successfully! ${result.scheduleCount} total entries saved.`, 'success')
   } catch (error) {
     // Revert changes if save failed
     scheduleData.value = originalSchedules
-    alert('Failed to delete schedule: ' + (error.response?.data?.message || error.message))
+    showToast('Failed to delete schedule: ' + (error.response?.data?.message || error.message), 'error')
   }
 }
 

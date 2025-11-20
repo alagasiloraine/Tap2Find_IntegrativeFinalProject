@@ -317,6 +317,7 @@ const inquiries = ref([])
 const user = ref({ firstName: '', lastName: '', role: '', emailAddress: '' })
 const studentId = localStorage.getItem('id')
 const isLoading = ref(true)
+const pollInterval = ref(null) // Added for polling
 
 // ==============================
 // 🔹 Dropdown and Filter Config
@@ -380,8 +381,10 @@ const getStatusColor = (status) => {
   const statusLower = status?.toLowerCase() || 'pending';
   
   const colorMap = {
+    'accepted': 'bg-green-50 text-green-700 border-green-200',
     'replied': 'bg-green-50 text-green-700 border-green-200',
     'resolved': 'bg-green-50 text-green-700 border-green-200',
+    'declined': 'bg-red-50 text-red-700 border-red-200',
     'pending': 'bg-amber-50 text-amber-700 border-amber-200',
     'unread': 'bg-blue-50 text-blue-700 border-blue-200',
     'closed': 'bg-gray-50 text-gray-700 border-gray-200',
@@ -395,8 +398,10 @@ const getStatusDot = (status) => {
   const statusLower = status?.toLowerCase() || 'pending';
   
   const dotMap = {
+    'accepted': 'bg-green-500',
     'replied': 'bg-green-500',
     'resolved': 'bg-green-500',
+    'declined': 'bg-red-500',
     'pending': 'bg-amber-500',
     'unread': 'bg-blue-500',
     'in-progress': 'bg-blue-500'
@@ -409,8 +414,10 @@ const getStatusDisplayText = (status) => {
   const statusLower = status?.toLowerCase() || 'pending';
   
   const textMap = {
+    'accepted': 'Accepted',
     'replied': 'Replied',
     'resolved': 'Resolved', 
+    'declined': 'Declined',
     'pending': 'Pending',
     'unread': 'Unread',
     'in-progress': 'In Progress',
@@ -482,9 +489,15 @@ const fetchDashboardData = async () => {
     }
 
     const { data } = await api.get(`/dashboard/student?studentId=${studentId}`)
+    console.log('📊 Dashboard API Response:', data) // Add this for debugging
 
     if (data.success) {
       const d = data.data
+      
+      // Debug log to see what's coming from backend
+      console.log('📈 Stats from backend:', d.stats)
+      console.log('📋 Recent inquiries:', d.recentInquiries)
+      
       stats.value = {
         available: d.stats?.available || 0,
         busy: d.stats?.busy || 0,
@@ -492,11 +505,44 @@ const fetchDashboardData = async () => {
         inquiriesSentCount: d.inquiriesSentCount || 0
       }
       inquiries.value = d.recentInquiries || []
+      
+      console.log('🎯 Final stats:', stats.value)
     } else {
       console.warn('⚠️ Failed to fetch dashboard data:', data.message)
     }
   } catch (err) {
     console.error('❌ Error fetching dashboard:', err)
+    console.error('📋 Error details:', err.response?.data)
+  }
+}
+
+// ==============================
+// 🔹 Polling Functions (NEW)
+// ==============================
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+  }
+  
+  // Start new polling interval (2000ms = 2 seconds)
+  pollInterval.value = setInterval(fetchDashboardData, 2000)
+  console.log('🔄 Started polling dashboard data every 2 seconds')
+}
+
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+    console.log('🛑 Stopped polling dashboard data')
+  }
+}
+
+// Initial data load with loading state
+const initializeData = async () => {
+  try {
+    isLoading.value = true
+    await fetchDashboardData()
   } finally {
     isLoading.value = false
   }
@@ -509,11 +555,18 @@ onMounted(() => {
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.dropdown-container')) openStatus.value = false
   })
-  fetchDashboardData()
+  
+  // Initialize data and start polling
+  initializeData().then(() => {
+    // Start polling after initial load is complete
+    startPolling()
+  })
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', () => {})
+  // Clean up interval when component is destroyed
+  stopPolling()
 })
 </script>
 

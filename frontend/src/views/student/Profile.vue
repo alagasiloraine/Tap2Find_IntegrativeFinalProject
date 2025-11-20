@@ -246,26 +246,6 @@
             </div>
           </div>
 
-          <div class="bg-white shadow rounded-xl p-6">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-lg font-semibold text-gray-900">RFID & Access</h3>
-            </div>
-            <div class="flex flex-col gap-3">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-600">RFID / Card UID</span>
-                <span class="text-sm font-medium">{{ form.rfidUid }}</span>
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm text-gray-600 mb-1">Email</label>
-              <div class="flex items-center gap-2">
-                <input v-model="form.email" type="email" class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" placeholder="name@school.edu">
-                <span class="text-xs" :class="form.emailVerified ? 'text-green-600' : 'text-gray-500'">Status: {{ form.emailVerified ? 'Verified' : 'Unverified' }}</span>
-              </div>
-            </div>
-          </div>
-
-          
         </div>
       </div>
     </div>
@@ -324,100 +304,73 @@ const openProgram = ref(false)
 const openYear = ref(false)
 const openSection = ref(false)
 
-// Toast helper (bottom-right, white card, icon + title, progress line)
-const showToast = (message, type = 'success', duration = 2800) => {
-  // container at bottom-right (reuse if present)
+// Toast helper (top-center, smooth slide/fade, spinner + progress bar)
+const showToast = (message, type = 'success', duration = 2500) => {
+  // container at top-center (reuse if present)
   let container = document.getElementById('t2f-toast-container')
   if (!container) {
     container = document.createElement('div')
     container.id = 't2f-toast-container'
     container.style.position = 'fixed'
-    container.style.bottom = '16px'
+    container.style.top = '16px'
     container.style.right = '16px'
+    container.style.transform = 'none'
     container.style.zIndex = '9999'
     container.style.display = 'flex'
-    container.style.flexDirection = 'column-reverse'
-    container.style.gap = '10px'
+    container.style.flexDirection = 'column'
+    container.style.gap = '8px'
     document.body.appendChild(container)
   }
 
-  const colors = type === 'success'
-    ? { border: '#34D399', text: '#065F46', iconBg: '#ECFDF5', iconFg: '#10B981', bar: '#6EE7B7' }
-    : { border: '#F87171', text: '#7F1D1D', iconBg: '#FEF2F2', iconFg: '#EF4444', bar: '#FCA5A5' }
-
   const toast = document.createElement('div')
-  toast.style.minWidth = '280px'
-  toast.style.maxWidth = '460px'
-  toast.style.background = '#FFFFFF'
-  toast.style.border = `1.5px solid ${colors.border}`
-  toast.style.borderRadius = '14px'
-  toast.style.boxShadow = '0 12px 20px -6px rgba(0,0,0,0.12), 0 6px 10px -4px rgba(0,0,0,0.06)'
+  toast.style.minWidth = '260px'
+  toast.style.maxWidth = '420px'
+  toast.style.background = type === 'success' ? '#ECFDF5' : '#FEF2F2' // emerald-50 / red-50
+  toast.style.border = `1px solid ${type === 'success' ? '#34D399' : '#F87171'}` // emerald-400 / red-400
+  toast.style.color = '#111827'
+  toast.style.borderRadius = '12px'
+  toast.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)'
   toast.style.overflow = 'hidden'
   toast.style.opacity = '0'
-  toast.style.transform = 'translateY(12px)'
+  toast.style.transform = 'translateY(-12px)'
   toast.style.transition = 'opacity 220ms ease, transform 220ms ease'
 
-  // content row with icon + text
+  // content row with spinner and message
   const row = document.createElement('div')
   row.style.display = 'flex'
   row.style.alignItems = 'center'
-  row.style.gap = '12px'
-  row.style.padding = '12px 16px'
+  row.style.gap = '10px'
+  row.style.padding = '10px 14px'
 
-  // icon circle
-  const iconWrap = document.createElement('div')
-  iconWrap.style.width = '26px'
-  iconWrap.style.height = '26px'
-  iconWrap.style.borderRadius = '50%'
-  iconWrap.style.background = colors.iconBg
-  iconWrap.style.display = 'flex'
-  iconWrap.style.alignItems = 'center'
-  iconWrap.style.justifyContent = 'center'
-  iconWrap.style.flex = '0 0 auto'
+  // SVG spinner that rotates via animateTransform (no CSS keyframes needed)
+  const spinner = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  spinner.setAttribute('viewBox', '0 0 24 24')
+  spinner.setAttribute('width', '18')
+  spinner.setAttribute('height', '18')
+  spinner.innerHTML = `
+    <circle cx="12" cy="12" r="9" stroke="${type === 'success' ? '#10B981' : '#EF4444'}" stroke-width="3" fill="none" opacity="0.25"/>
+    <path d="M21 12a9 9 0 0 0-9-9" stroke="${type === 'success' ? '#10B981' : '#EF4444'}" stroke-width="3" fill="none" stroke-linecap="round">
+      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.9s" repeatCount="indefinite" />
+    </path>
+  `
 
-  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-  icon.setAttribute('viewBox', '0 0 24 24')
-  icon.setAttribute('width', '16')
-  icon.setAttribute('height', '16')
-  icon.innerHTML = type === 'success'
-    ? `<path d="M9 12.75 11.25 15 15 9.75" fill="none" stroke="${colors.iconFg}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
-    : `<path d="M12 8v4m0 4h.01" fill="none" stroke="${colors.iconFg}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" fill="none" stroke="${colors.iconFg}" stroke-width="1.5" opacity="0.25"/>`
-  iconWrap.appendChild(icon)
+  const text = document.createElement('div')
+  text.textContent = message
+  text.style.fontSize = '14px'
+  text.style.fontWeight = '600'
 
-  // text block
-  const textBlock = document.createElement('div')
-  textBlock.style.display = 'flex'
-  textBlock.style.flexDirection = 'column'
-  textBlock.style.gap = '2px'
+  row.appendChild(spinner)
+  row.appendChild(text)
 
-  const title = document.createElement('div')
-  title.textContent = type === 'success' ? 'SUCCESS' : 'ERROR'
-  title.style.fontSize = '12px'
-  title.style.fontWeight = '800'
-  title.style.letterSpacing = '0.04em'
-  title.style.color = colors.text
-
-  const body = document.createElement('div')
-  body.textContent = message
-  body.style.fontSize = '14px'
-  body.style.fontWeight = '600'
-  body.style.color = '#111827'
-
-  textBlock.appendChild(title)
-  textBlock.appendChild(body)
-
-  row.appendChild(iconWrap)
-  row.appendChild(textBlock)
-
-  // progress bar (bottom thin line)
+  // progress bar (indicates remaining time)
   const barWrap = document.createElement('div')
-  barWrap.style.height = '2px'
+  barWrap.style.height = '3px'
   barWrap.style.background = 'transparent'
   barWrap.style.width = '100%'
   const bar = document.createElement('div')
   bar.style.height = '100%'
   bar.style.width = '100%'
-  bar.style.background = colors.bar
+  bar.style.background = type === 'success' ? '#6EE7B7' : '#FCA5A5' // emerald-300 / red-300
   bar.style.transition = `width ${duration}ms linear`
   barWrap.appendChild(bar)
 
@@ -436,7 +389,7 @@ const showToast = (message, type = 'success', duration = 2800) => {
   // exit
   setTimeout(() => {
     toast.style.opacity = '0'
-    toast.style.transform = 'translateY(8px)'
+    toast.style.transform = 'translateY(-8px)'
     setTimeout(() => {
       toast.remove()
       if (!container.childElementCount) container.remove()
@@ -707,4 +660,3 @@ onMounted(() => {
   }
 })
 </script>
-

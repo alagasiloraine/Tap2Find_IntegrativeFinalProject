@@ -30,15 +30,15 @@ dotenv.config();
 
 const professors = [
   {
-    role: "admin",
-    emailAddress: "devpsychopath@gmail.com",
-    password: "admin123", // plain text for now (will be hashed)
-    firstName: "Admin",
-    middleName: "",
-    lastName: "User",
-    idNumber: "Admin-001",
+    role: "professor",
+    emailAddress: "dontdeletethis@gmail.com",
+    password: "professor123", // plain text for now (will be hashed)
+    firstName: "Dont",
+    middleName: "Delete",
+    lastName: "Please",
+    idNumber: "DEADBEEF",
     contactNumber: "09924334316",
-    facultyPosition: "Super Duper Admin",
+    facultyPosition: "",
     program: "",
     yearLevel: "",
     section: "",

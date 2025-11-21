@@ -494,6 +494,92 @@ export const updateConcernStatus = async (req, res) => {
   }
 };
 
+//export const replyToConcern = async (req, res) => {
+//  try {
+//    const { id } = req.params;
+//    const { message, professorId } = req.body;
+//
+//    if (!professorId) {
+//      return res.status(400).json({ success: false, message: "Missing professorId" });
+//    }
+//
+//    const db = getDB();
+//    const inquiries = db.collection("inquiries");
+//    const users = db.collection("users");
+//
+//    // Verify the inquiry belongs to this professor
+//    const inquiry = await inquiries.findOne({
+//      _id: new ObjectId(id),
+//      professorId: new ObjectId(professorId)
+//    });
+//
+//    if (!inquiry) {
+//      return res.status(404).json({ success: false, message: "Inquiry not found" });
+//    }
+//
+//    // Get student details for notification
+//    const professor = await users.findOne({ _id: new ObjectId(professorId) });
+//    const student = await users.findOne({ _id: inquiry.studentId });
+//
+//    if (!professor || !student) {
+//      return res.status(404).json({ success: false, message: "Professor or student not found" });
+//    }
+//
+//    // Add reply to the inquiry
+//    const reply = {
+//      message,
+//      repliedBy: new ObjectId(professorId),
+//      repliedAt: new Date()
+//    };
+//
+//    const result = await inquiries.updateOne(
+//      { _id: new ObjectId(id) },
+//      { 
+//        $set: { 
+//          status: "replied",
+//          updatedAt: new Date()
+//        },
+//        $push: { replies: reply }
+//      }
+//    );
+//
+//    if (result.modifiedCount === 0) {
+//      return res.status(400).json({ success: false, message: "Failed to send reply" });
+//    }
+//
+//    // 🎯 CREATE NOTIFICATION FOR REPLY (WITH PREFERENCE CHECKING)
+//    try {
+//      await createNotification({
+//        title: `Reply to: ${inquiry.subject}`,
+//        message: `Prof. ${professor.lastName} has replied to your inquiry: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"`,
+//        type: 'inquiry_reply',
+//        studentId: inquiry.studentId.toString(),
+//        sendEmail: true,
+//        sendSMS: true,
+//        phoneNumber: student.phoneNumber // Add phone number for SMS
+//      });
+//      
+//      console.log(`📢 Reply notification sent to student: ${student.firstName} ${student.lastName}`);
+//    } catch (notifError) {
+//      console.error('❌ Error creating reply notification:', notifError);
+//      // Don't fail the main request if notification fails
+//    }
+//
+//    res.json({ 
+//      success: true, 
+//      message: "Reply sent successfully", 
+//      data: { 
+//        reply,
+//        studentName: `${student.firstName} ${student.lastName}`,
+//        professorName: `${professor.firstName} ${professor.lastName}`
+//      } 
+//    });
+//  } catch (error) {
+//    console.error("❌ Error replying to concern:", error);
+//    res.status(500).json({ success: false, message: "Server error" });
+//  }
+//};
+
 export const replyToConcern = async (req, res) => {
   try {
     const { id } = req.params;
@@ -551,7 +637,7 @@ export const replyToConcern = async (req, res) => {
     try {
       await createNotification({
         title: `Reply to: ${inquiry.subject}`,
-        message: `Prof. ${professor.lastName} has replied to your inquiry: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"`,
+        message: `Prof. ${professor.lastName} has replied to your inquiry: "${message}"`,
         type: 'inquiry_reply',
         studentId: inquiry.studentId.toString(),
         sendEmail: true,

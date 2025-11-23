@@ -232,8 +232,23 @@
               <div>
                 <label class="block text-sm text-gray-600 mb-1">Contact Number</label>
                 <div class="flex items-center gap-2">
-                  <input v-model="form.contactNumber" type="text" class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" :disabled="!isEditing" placeholder="+63 9xx xxx xxxx" />
+                  <input 
+                    v-model="form.contactNumber" 
+                    @input="onContactNumberInput"
+                    type="text" 
+                    class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed" 
+                    :disabled="!isEditing" 
+                    placeholder="+63 912 345 6789" 
+                  />
                   <span class="text-xs" :class="form.contactVerified ? 'text-green-600' : 'text-gray-500'">Status: {{ form.contactVerified ? 'Verified' : 'Unverified' }}</span>
+                </div>
+                <!-- Validation error message -->
+                <div v-if="contactNumberError && isEditing" class="mt-1 text-xs text-red-600">
+                  {{ contactNumberError }}
+                </div>
+                <!-- Format hint -->
+                <div v-if="isEditing && !contactNumberError" class="mt-1 text-xs text-gray-500">
+                  Format: +63 912 345 6789, 0912 345 6789, or 912 345 6789
                 </div>
               </div>
               <div>
@@ -264,6 +279,62 @@ const years = ['1st Year', '2nd Year', '3rd Year', '4th Year']
 const sections = ['F1', 'F2', 'F3', 'F4','F5', 'F6', 'F7']
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
 
+const validateContactNumber = (number) => {
+  if (!number) return { isValid: true, message: '' } // Allow empty during editing
+  
+  // Remove all non-digit characters except +
+  const cleaned = number.replace(/[^\d+]/g, '')
+  
+  // Check if it starts with +63 or 09
+  if (cleaned.startsWith('+63')) {
+    // +63 format: should be +63 followed by 9 digits (total 13 characters)
+    if (cleaned.length !== 13) {
+      return { 
+        isValid: false, 
+        message: 'Invalid format: +63 should be followed by 9 digits (e.g., +639123456789)' 
+      }
+    }
+    
+    // Check if the digit after +63 is 9 (Philippine mobile numbers start with 9)
+    const afterPrefix = cleaned.substring(3)
+    if (!afterPrefix.startsWith('9')) {
+      return { 
+        isValid: false, 
+        message: 'Philippine mobile numbers should start with 9 after +63' 
+      }
+    }
+    
+    return { isValid: true, message: '' }
+    
+  } else if (cleaned.startsWith('09')) {
+    // 09 format: should be 09 followed by 9 digits (total 11 characters)
+    if (cleaned.length !== 11) {
+      return { 
+        isValid: false, 
+        message: 'Invalid format: 09 should be followed by 9 digits (e.g., 09123456789)' 
+      }
+    }
+    
+    return { isValid: true, message: '' }
+    
+  } else if (cleaned.startsWith('9')) {
+    // 9 format: should be 9 followed by 9 digits (total 10 characters)
+    if (cleaned.length !== 10) {
+      return { 
+        isValid: false, 
+        message: 'Invalid format: 9 should be followed by 9 digits (e.g., 9123456789)' 
+      }
+    }
+    
+    return { isValid: true, message: '' }
+  }
+  
+  return { 
+    isValid: false, 
+    message: 'Invalid format. Use: +639XXXXXXXXX, 09XXXXXXXXX, or 9XXXXXXXXX' 
+  }
+}
+
 const initialForm = {
   firstName: '',
   lastName: '',
@@ -274,11 +345,11 @@ const initialForm = {
   program: '',
   yearLevel: '',
   section: '',
-  contactNumber: '+63 9xx xxx xxxx',
+  contactNumber: '',
   contactVerified: true,
   email: '',
   emailVerified: true,
-  rfidUid: '04:A1:C3:..',
+  rfidUid: '',
   avatarUrl: '',
   coverUrl: '',
   notify: {
@@ -303,6 +374,74 @@ const isLoading = ref(true)
 const openProgram = ref(false)
 const openYear = ref(false)
 const openSection = ref(false)
+
+const contactNumberError = ref('')
+
+// Format contact number as user types
+const formatContactNumber = (value) => {
+  if (!value) return ''
+  
+  // Remove all non-digit characters except +
+  let cleaned = value.replace(/[^\d+]/g, '')
+  
+  // Format based on the pattern
+  if (cleaned.startsWith('+63')) {
+    // +63 XXX XXX XXXX format
+    const digits = cleaned.substring(3)
+    if (digits.length <= 3) {
+      return `+63 ${digits}`
+    } else if (digits.length <= 6) {
+      return `+63 ${digits.substring(0, 3)} ${digits.substring(3)}`
+    } else {
+      return `+63 ${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6, 10)}`
+    }
+  } else if (cleaned.startsWith('09')) {
+    // 09XX XXX XXXX format
+    const digits = cleaned.substring(2)
+    if (digits.length <= 2) {
+      return `09${digits}`
+    } else if (digits.length <= 5) {
+      return `09${digits.substring(0, 2)} ${digits.substring(2)}`
+    } else {
+      return `09${digits.substring(0, 2)} ${digits.substring(2, 5)} ${digits.substring(5, 9)}`
+    }
+  } else if (cleaned.startsWith('9') && cleaned.length > 1) {
+    // 9XXX XXX XXXX format
+    const digits = cleaned.substring(1)
+    if (digits.length <= 3) {
+      return `9${digits}`
+    } else if (digits.length <= 6) {
+      return `9${digits.substring(0, 3)} ${digits.substring(3)}`
+    } else {
+      return `9${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6, 10)}`
+    }
+  }
+  
+  return value
+}
+
+// Watch for contact number changes and validate
+const onContactNumberInput = (event) => {
+  const rawValue = event.target.value
+  const formatted = formatContactNumber(rawValue)
+  
+  // Update the form value with formatted number
+  form.value.contactNumber = formatted
+  
+  // Validate the raw value (without spaces for validation)
+  const validation = validateContactNumber(rawValue.replace(/\s/g, ''))
+  contactNumberError.value = validation.message
+  
+  // Update UI to show validation state
+  const inputElement = event.target
+  if (validation.isValid) {
+    inputElement.classList.remove('border-red-300', 'bg-red-50')
+    inputElement.classList.add('border-gray-300', 'bg-white')
+  } else {
+    inputElement.classList.remove('border-gray-300', 'bg-white')
+    inputElement.classList.add('border-red-300', 'bg-red-50')
+  }
+}
 
 // Toast helper (top-center, smooth slide/fade, spinner + progress bar)
 const showToast = (message, type = 'success', duration = 2500) => {
@@ -461,6 +600,16 @@ import api from '@/utils/api'
 const onSave = async () => {
   if (isSaving.value) return
   isSaving.value = true
+
+   // Validate contact number before saving
+  if (form.value.contactNumber) {
+    const validation = validateContactNumber(form.value.contactNumber.replace(/\s/g, ''))
+    if (!validation.isValid) {
+      showToast(`Contact number validation failed: ${validation.message}`, 'error')
+      return
+    }
+  }
+
   try {
     const token = localStorage.getItem('token')
     // Basic validation for Account & Security section
